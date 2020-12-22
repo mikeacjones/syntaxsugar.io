@@ -6,6 +6,10 @@ const siteMetadata = {
       title: 'About',
       path: '/about',
     },
+    {
+      title: 'DW Cookbook',
+      path: '/dw-cookbook',
+    },
   ],
 }
 
@@ -32,34 +36,17 @@ module.exports = {
         name: `pages`,
       },
     },
-    `gatsby-transformer-sharp`,
-    `gatsby-plugin-sharp`,
     {
       resolve: `gatsby-transformer-remark`,
       options: {
         plugins: [
-          `gatsby-remark-copy-linked-files`,
-          {
-            resolve: 'gatsby-remark-embed-video',
-            options: {
-              related: false,
-              noIframeBorder: true,
-            },
-          },
-          {
-            resolve: `gatsby-remark-images`,
-            options: {
-              maxWidth: 800,
-              quality: 100,
-            },
-          },
           {
             resolve: `gatsby-remark-vscode`,
             options: {
               theme: 'Material Theme Palenight High Contrast',
               extensions: [
-                '/home/runner/work/dataweave-blog-src/dataweave-blog-src/vendor/menduz.data-weave-2.0.11.vsix',
-                '/home/runner/work/dataweave-blog-src/dataweave-blog-src/vendor/Equinusocio.vsc-material-theme-32.6.0.vsix',
+                '/users/mjones1/source/gastby-blog/vendor/menduz.data-weave-2.0.11.vsix',
+                '/users/mjones1/source/gastby-blog/vendor/Equinusocio.vsc-material-theme-32.6.0.vsix',
               ], // Or install your favorite theme from GitHub
             },
           },

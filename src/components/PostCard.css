@@ -60,4 +60,9 @@
   border-radius: 10px;
   margin-right: 5px;
   color: #000;
+  transition: all 500ms ease;
+}
+
+.chip:hover {
+  transform: scale(1.15);
 }

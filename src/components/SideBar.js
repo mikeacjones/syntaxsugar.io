@@ -25,10 +25,15 @@ export default () => {
         <div id='aboutMe_pages'>
           <div id='aboutMe_pages_links'>
             <ul>
-              <li className='active'>
-                <Link to='/'>Posts</Link>
-              </li>
-              {menuItems && menuItems.map((menuItem) => <li key={menuItem.title}><Link to={menuItem.path}>{menuItem.title}</Link></li>)}
+              <Link to='/' activeClassName='active'>
+                <li>Posts</li>
+              </Link>
+              {menuItems &&
+                menuItems.map((menuItem) => (
+                  <Link to={menuItem.path} activeClassName='active'>
+                    <li key={menuItem.title}>{menuItem.title}</li>
+                  </Link>
+                ))}
             </ul>
           </div>
         </div>

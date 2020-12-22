@@ -53,7 +53,7 @@ exports.createPages = ({ actions, graphql, getNodes }) => {
 
     const pages = allNodes.filter(
       ({ internal, fileAbsolutePath }) =>
-        internal.type === 'Mdx' && fileAbsolutePath.indexOf('/pages/') !== -1
+        (internal.type === 'Mdx' || internal.type === 'MarkdownRemark') && fileAbsolutePath.indexOf('/pages/') !== -1
     )
     pages.forEach((page) => {
       createPage({
@@ -69,10 +69,8 @@ exports.createPages = ({ actions, graphql, getNodes }) => {
 
 exports.onCreateNode = ({ node, actions, getNode }) => {
   const { createNodeField } = actions
-  if (node.internal.type === `Mdx`) {
-    console.log(JSON.stringify(node, null, 2))
+  if (node.internal.type === `Mdx` || node.internal.type === `MarkdownRemark`) {
     const value = createFilePath({ node, getNode })
-    console.log(JSON.stringify({ value: value }))
     createNodeField({
       name: `slug`,
       node,

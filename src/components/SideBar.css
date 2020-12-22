@@ -26,7 +26,7 @@
 }
 
 #aboutMe_icons {
-  flex: 0 0 40px;
+  flex: 0 0 60px;
   font-size: 25px;
   display: flex;
   width: 100%;
@@ -41,7 +41,7 @@
 }
 
 #aboutMe_pages_links {
-  width: 40%;
+  min-width: 40%;
   text-align: left;
 }
 
@@ -51,10 +51,14 @@
   margin: 0;
   margin-bottom: 8px;
   cursor: pointer;
+  padding-right: 15px;
+}
+
+a li {
   border-bottom: 1px solid transparent;
 }
 
-#aboutMe_pages li.active,
+a.active li,
 #aboutMe_pages li:hover {
   border-bottom: 1px solid #ffffd2;
 }

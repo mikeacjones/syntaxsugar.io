@@ -5,7 +5,6 @@ import { graphql } from 'gatsby'
 import { Layout } from '../components/Layout'
 
 export default ({ data, pageContext }) => {
-  console.log(JSON.stringify(data, null, 2))
   const { frontmatter, body } = data.mdx
   const { previous, next } = pageContext
   return (

@@ -4,7 +4,7 @@
   flex-direction: column;
   align-items: center;
   min-height: 100vh;
-  font-size: 1.5rem;
+  font-size: 1em;
 }
 
 .post-view-title {
@@ -20,6 +20,7 @@
   margin-top: -3rem;
   font-weight: lighter;
   font-size: 1rem;
+  text-align: center;
 }
 
 .post-view-content {
