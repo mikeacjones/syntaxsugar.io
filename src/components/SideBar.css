@@ -1,0 +1,83 @@
+#sideBar {
+  flex: 0 0 18rem;
+  width: 18rem;
+  position: fixed;
+  height: 100%;
+  background-color: #52307c;
+  color: #ffffd2;
+  display: flex;
+  flex-direction: column;
+}
+
+#aboutMe {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 8rem;
+}
+
+#aboutMe_image {
+  display: flex;
+  justify-content: center;
+}
+#aboutMe_image img {
+  width: 50%;
+}
+
+#aboutMe_icons {
+  flex: 0 0 40px;
+  font-size: 25px;
+  display: flex;
+  width: 100%;
+  justify-content: space-evenly;
+}
+
+#aboutMe_pages {
+  width: 100%;
+  text-align: right;
+  display: flex;
+  justify-content: flex-end;
+}
+
+#aboutMe_pages_links {
+  width: 40%;
+  text-align: left;
+}
+
+#aboutMe_pages li {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  margin-bottom: 8px;
+  cursor: pointer;
+  border-bottom: 1px solid transparent;
+}
+
+#aboutMe_pages li.active,
+#aboutMe_pages li:hover {
+  border-bottom: 1px solid #ffffd2;
+}
+
+#aboutMe_pages ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+#aboutMe_pages a {
+  color: inherit;
+  font-size: 20px;
+  text-decoration: none;
+  text-align: left;
+}
+
+#aboutMe_icons i {
+  cursor: pointer;
+  transition: all 500ms ease;
+}
+
+#aboutMe_icons i:hover {
+  color: #ffffff;
+  transform: scale(1.3);
+}

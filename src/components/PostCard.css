@@ -1,0 +1,63 @@
+.post-card {
+  color: #52307c;
+  background-color: #fff; /*#b491c8*/
+  padding: 20px;
+  margin: 15px 20px 0 20px;
+  cursor: pointer;
+  
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  border-radius: 0px;
+  -webkit-transition: all 0.6s cubic-bezier(0.165, 0.84, 0.44, 1);
+  transition: all 0.6s cubic-bezier(0.165, 0.84, 0.44, 1);
+}
+
+.post-card-description {
+  color: #663a82;
+}
+
+.post-card:hover {
+  transform: scale(1.005, 1.005);
+}
+
+.post-card::after {
+  content: "";
+  border-radius: 0px;
+  position: absolute;
+  z-index: -1;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  opacity: 0;
+  -webkit-transition: all 0.6s cubic-bezier(0.165, 0.84, 0.44, 1);
+  transition: all 0.6s cubic-bezier(0.165, 0.84, 0.44, 1);
+}
+
+.post-card:hover::after {
+  opacity: 1;
+}
+
+.post-card-title {
+  font-size: 30px;
+  font-weight: bold;
+}
+
+.post-card-header-date {
+  font-weight: lighter;
+}
+
+.post-card-tags {
+  display: flex;
+  flex-direction: row;
+  margin-top: 10px;
+}
+
+.chip {
+  font-size: 12px;
+  background-color: #eddbf4;
+  padding: 8px;
+  border-radius: 10px;
+  margin-right: 5px;
+  color: #000;
+}
