@@ -32,6 +32,9 @@
     "styled-components": "^5.2.1"
   },
   "scripts": {
-    "dev": "gatsby develop -p 9988 -o"
+    "build": "gatsby build",
+    "dev": "gatsby clean && gatsby develop -o",
+    "format": "prettier --write \"src/**/*.js\"",
+    "test": "echo \"Write tests! -> https://gatsby.app/unit-testing\"",
   }
 }
