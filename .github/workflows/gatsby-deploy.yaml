@@ -11,7 +11,12 @@ jobs:
     steps:
       - uses: actions/checkout@v1
       - run: rm ./static/CNAME && echo syntaxsugar.io >> ./static/CNAME
-      - uses: enriikke/gatsby-gh-pages-action@v2
+      - run: yarn
+      - run: yarn build
+      - name: Deploy 🚀
+        uses: JamesIves/github-pages-deploy-action@3.7.1
         with:
-          access-token: ${{ secrets.GITHUB_TOKEN }}
-          deploy-branch: gh-pages
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH: gh-pages
+          FOLDER: public
+          CLEAN: true
