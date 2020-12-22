@@ -1,7 +1,7 @@
 import React from 'react'
 import { Link } from 'gatsby'
 import './SideBar.css'
-import profilePicture from '../../public/profilePicture.png'
+import profilePicture from '../../static/profilePicture.png'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   faGithub,
