@@ -10,12 +10,6 @@ body {
   background-color: #efefef;
 }
 
-#Layout {
-  min-height: 100vh;
-  min-width: 100vw;
-  display: flex !important;
-  flex-direction: row;
-}
 
 a.link-to {
   text-decoration: none;

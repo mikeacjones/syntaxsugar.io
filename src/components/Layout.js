@@ -7,7 +7,7 @@ export const Layout = ({ children }) => {
   return (
     <div id='Layout'>
       <div id='side-nav-toggle'>
-        <label for='side-nav-toggle-cb' class='toggle'>
+        <label htmlFor='side-nav-toggle-cb' className='toggle'>
           ☰
         </label>
       </div>
