@@ -30,8 +30,8 @@ export default () => {
               </Link>
               {menuItems &&
                 menuItems.map((menuItem) => (
-                  <Link to={menuItem.path} activeClassName='active'>
-                    <li key={menuItem.title}>{menuItem.title}</li>
+                  <Link to={menuItem.path} activeClassName='active' key={menuItem.title}>
+                    <li>{menuItem.title}</li>
                   </Link>
                 ))}
             </ul>

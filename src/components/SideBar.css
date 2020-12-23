@@ -85,3 +85,11 @@ a.active li,
   color: #ffffff;
   transform: scale(1.3);
 }
+
+@media only screen 
+  and (max-device-width: 800px)
+  and (-webkit-min-device-pixel-ratio: 2) {
+    #sideBar {
+      display: none;
+    }
+}

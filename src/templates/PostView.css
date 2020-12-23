@@ -8,16 +8,22 @@
 }
 
 .post-view-title {
-  font-size: 2rem;
   color: #52307c;
   padding: 0;
   margin: 0;
-  white-space: nowrap;
+  word-wrap: break-word;
+}
+
+.post-view-title h1 {
+  font-size: 4em;
+  word-wrap: break-word;
+  margin: 0;
+  overflow: hidden;
+  text-align: center;
 }
 
 .post-view-date {
   padding: 0;
-  margin-top: -3rem;
   font-weight: lighter;
   font-size: 1rem;
   text-align: center;
@@ -26,4 +32,21 @@
 .post-view-content {
   align-self: stretch;
   padding: 6rem;
+}
+
+@media only screen 
+  and (max-device-width: 800px)
+  and (-webkit-min-device-pixel-ratio: 2) {
+    .post-view-title h1 {
+      font-size: 3em;
+      padding: 0;
+      margin: 0;
+    }
+    .post-view-date {
+      margin: 0;
+      font-size: 1rem;
+    }
+    .post-view-content {
+      padding: 10px;
+    }
 }

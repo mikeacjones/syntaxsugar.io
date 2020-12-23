@@ -13,9 +13,11 @@ export default ({ data, pageContext }) => {
         <div className='post-view-header'>
           <div className='post-view-title'>
             <h1>{frontmatter.title}</h1>
-          </div>
-          <div className='post-view-date'>
-            {frontmatter?.date !== null && <>Written on {frontmatter.date.substring(0,10)}</>}
+            {frontmatter?.date !== null && (
+              <div className='post-view-date'>
+                Written on {frontmatter.date.substring(0, 10)}
+              </div>
+            )}
           </div>
         </div>
         <div className='post-view-content'>

@@ -5,3 +5,11 @@
   align-items: stretch;
   margin-left: 18rem;
 }
+
+@media only screen 
+  and (max-device-width: 800px)
+  and (-webkit-min-device-pixel-ratio: 2) {
+    #content {
+      margin: 0;
+    }
+}
