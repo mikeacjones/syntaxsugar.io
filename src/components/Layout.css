@@ -90,10 +90,10 @@ code {
   width: 100%;
   flex: 0 0 50px;
   z-index: 99;
+  position: fixed;
 }
 
 #side-nav-toggle {
-  position: fixed;
   width: 100%;
 }
 
@@ -122,122 +122,6 @@ code {
   }
 
   #content {
-    padding-top: 15px;
+    margin-top: 60px;
   }
 }
-
-/*
-#Layout {
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
-
-#side-nav-toggle-wrapper {
-  flex: 0 0 3rem;
-  display: none;
-}
-
-#Layout-inner {
-  position: relative;
-  display: flex;
-  flex: 1 1 auto;
-}
-
-.sideBar {
-  flex: 0 0 18rem;
-  height: 100%;
-  position: fixed;
-}
-
-#sideBar {
-  z-index: 99;
-  width: 18rem;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-}
-
-#side-nav-toggle {
-  z-index: 100;
-
-  position: fixed;
-  height: 3rem;
-  width: 100%;
-
-  display: flex;
-  align-items: center;
-}
-
-  .toggle {
-    padding-left: 10px;
-    justify-self: center;
-  }
-
-  #aboutMe {
-    margin-top: 100px;
-    flex: 1 1 auto;
-
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
-
-    #aboutMe_image {
-      width: 50%;
-      height: auto;
-      margin-left: auto;
-      margin-right: auto;
-    }
-
-      #aboutMe_image img {
-        width: 100%;
-      }
-
-      #aboutMe_pages {
-        width: 100%;
-        display: flex;
-        flex-direction: column;
-        align-items: flex-end;
-      }
-
-  #aboutMe_icons {
-    height: 60px;
-    font-size: 25px;
-    width: 100%;
-
-    display: flex;
-    justify-content: space-evenly;
-  }
-
-#content {
-  overflow: scroll;
-  padding: 1rem;
-  width: 100%;
-}
-
-#side-nav-toggle-cb {
-  display: none;
-}
-
-@media only screen 
-  and (max-device-width: 800px)
-  and (-webkit-min-device-pixel-ratio: 2) {
-
-    .sideBar {
-      margin-left: -18rem;
-    }
-    
-    #side-nav-toggle-wrapper {
-      display: block;
-    }
-
-      #side-nav-toggle-cb:checked + #sideBar {
-        transform: translateX(18rem);
-      }
-    
-    #sideBar {
-      transition: all 500ms ease;
-    }
-}
-*/
