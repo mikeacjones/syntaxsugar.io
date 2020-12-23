@@ -23,6 +23,7 @@
 }
 #aboutMe_image img {
   width: 50%;
+  height: auto;
 }
 
 #aboutMe_icons {
