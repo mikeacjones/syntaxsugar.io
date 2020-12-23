@@ -23,8 +23,8 @@ export default () => {
         </Link>
         <h1>Michael Jones</h1>
         <div id='aboutMe_pages'>
-          <div id='aboutMe_pages_links'>
-            <ul>
+          <div>
+            <ul id='aboutMe_pages_links'>
               <Link to='/' activeClassName='active'>
                 <li>Posts</li>
               </Link>

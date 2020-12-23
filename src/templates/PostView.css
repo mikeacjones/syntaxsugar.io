@@ -5,6 +5,7 @@
   align-items: center;
   min-height: 100vh;
   font-size: 1em;
+  overflow: hidden;
 }
 
 .post-view-title {

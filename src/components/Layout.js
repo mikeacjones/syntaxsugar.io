@@ -6,14 +6,20 @@ import ContentWrapper from './ContentWrapper'
 export const Layout = ({ children }) => {
   return (
     <div id='Layout'>
-      <div id='side-nav-toggle'>
-        <label htmlFor='side-nav-toggle-cb' className='toggle'>
-          ☰
-        </label>
+      <div id='side-nav-toggle-wrapper'>
+        <div id='side-nav-toggle'>
+          <label htmlFor='side-nav-toggle-cb' className='toggle'>
+            ☰
+          </label>
+        </div>
       </div>
-      <input type='checkbox' id='side-nav-toggle-cb' name='' value='' />
-      <SideBar />
-      <ContentWrapper>{children}</ContentWrapper>
+      <div id='Layout-inner'>
+        <div className='sideBar'>
+          <input type='checkbox' id='side-nav-toggle-cb' name='' value='' />
+          <SideBar />
+        </div>
+        <ContentWrapper>{children}</ContentWrapper>
+      </div>
     </div>
   )
 }

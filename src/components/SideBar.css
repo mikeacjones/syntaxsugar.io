@@ -1,85 +1,13 @@
 #sideBar {
-  flex: 0 0 18rem;
-  max-width: 18rem;
   background-color: #52307c;
   color: #ffffd2;
-  display: flex;
-  flex-direction: column;
-  position: fixed;
-  bottom: 0;
-  top: 0;
-  z-index: 99;
 }
 
-#aboutMe {
-  flex: 1 1 auto;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-top: 8em;
-}
-
-#aboutMe_image {
-  display: flex;
-  width: 50%;
-  height: auto;
-  margin-left: auto;
-  margin-right: auto;
-}
-#aboutMe_image img {
-  width: 100%;
-  align-self: flex-start;
-}
-
-#aboutMe_icons {
-  flex: 0 0 60px;
-  font-size: 25px;
-  display: flex;
-  width: 100%;
-  justify-content: space-evenly;
-}
-
-#aboutMe_pages {
-  width: 100%;
-  text-align: right;
-  display: flex;
-  justify-content: flex-end;
-}
-
-#aboutMe_pages_links {
-  min-width: 40%;
-  text-align: left;
-}
-
-#aboutMe_pages li {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  margin-bottom: 8px;
-  cursor: pointer;
-  padding-right: 15px;
-}
-
-a li {
-  border-bottom: 1px solid transparent;
-}
-
-a.active li,
-#aboutMe_pages li:hover {
+#side-nav-toggle {
+  background-color: #52307c;
+  color: #ffffd2;
+  font-size: 2.5rem;
   border-bottom: 1px solid #ffffd2;
-}
-
-#aboutMe_pages ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-#aboutMe_pages a {
-  color: inherit;
-  font-size: 20px;
-  text-decoration: none;
-  text-align: left;
 }
 
 #aboutMe_icons i {
@@ -92,38 +20,32 @@ a.active li,
   transform: scale(1.3);
 }
 
-#side-nav-toggle {
-  display: none;
-  height: 50px;
-  font-size: 30px;
-  background-color: #52307c;
-  color: #fff;
+#aboutMe_pages_links {
+  list-style: none;
+  font-size: 1.2rem;
+}
+
+#aboutMe_pages_links a {
+  text-decoration: none;
+}
+
+#aboutMe_pages_links a li {
+  padding-right: 1rem;
+  margin-bottom: 1rem;
+  transition: border-width 500ms ease;
+}
+
+#aboutMe_pages_links a li:after {
+  content: '';
+  display: block;
+  width: 0;
+  height: 1px;
+  background: #ffffd2;
+  transition: width 0.3s;
+}
+
+#aboutMe_pages_links a.active li:after,
+#aboutMe_pages_links a:hover li:after {
   width: 100%;
-  border-bottom: 1px solid #efefef;
-}
-
-#side-nav-toggle-cb {
-  display: none;
-}
-
-.toggle {
-  margin-left: 18px;
-}
-
-@media only screen 
-  and (max-device-width: 800px)
-  and (-webkit-min-device-pixel-ratio: 2) {
-    #sideBar {
-      transform: translateX(-18rem);
-      transition: all 500ms ease;
-      top: 50px;
-    }
-
-    #side-nav-toggle {
-      display: inline-block;
-    }
-
-    #side-nav-toggle-cb:checked + #sideBar {
-      transform: translateX(0);
-    }
+  padding-right: 1rem;
 }
