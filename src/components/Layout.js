@@ -6,6 +6,7 @@ import ContentWrapper from './ContentWrapper'
 export const Layout = ({ children }) => {
   return (
     <div className='root'>
+      <input type='checkbox' id='side-nav-toggle' name='' value='' />
       <SideBar />
       <ContentWrapper>
         {children}
