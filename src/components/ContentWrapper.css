@@ -3,7 +3,6 @@
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  margin-left: 18rem;
 }
 
 @media only screen 

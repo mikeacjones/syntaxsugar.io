@@ -1,8 +1,5 @@
 #sideBar {
-  flex: 0 0 18rem;
-  width: 18rem;
-  position: fixed;
-  height: 100%;
+  flex: 0 0 18em;
   background-color: #52307c;
   color: #ffffd2;
   display: flex;
@@ -14,16 +11,19 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-top: 8rem;
+  margin-top: 8em;
 }
 
 #aboutMe_image {
   display: flex;
-  justify-content: center;
-}
-#aboutMe_image img {
   width: 50%;
   height: auto;
+  margin-left: auto;
+  margin-right: auto;
+}
+#aboutMe_image img {
+  width: 100%;
+  align-self: flex-start;
 }
 
 #aboutMe_icons {
@@ -103,8 +103,7 @@ a.active li,
 }
 
 @media only screen 
-  and (max-device-width: 800px)
-  and (-webkit-min-device-pixel-ratio: 2) {
+  and (max-device-width: 800px) {
     #sideBar {
       transform: translateX(-18rem);
       transition: all 500ms ease;

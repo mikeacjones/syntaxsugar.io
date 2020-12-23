@@ -5,7 +5,7 @@ import ContentWrapper from './ContentWrapper'
 
 export const Layout = ({ children }) => {
   return (
-    <div className='root'>
+    <div id='Layout'>
       <div id='side-nav-toggle'>
         <label for='side-nav-toggle-cb' class='toggle'>
           ☰
