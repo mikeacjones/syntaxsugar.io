@@ -88,6 +88,17 @@ a.active li,
 
 #side-nav-toggle {
   display: none;
+  height: 50px;
+  font-size: 30px;
+  padding-left: 18px;
+  background-color: #52307c;
+  color: #fff;
+  width: 100%;
+  border-bottom: 1px solid #efefef;
+}
+
+#side-nav-toggle-cb {
+  display: none;
 }
 
 @media only screen 
@@ -102,7 +113,7 @@ a.active li,
       display: inline-block;
     }
 
-    #side-nav-toggle:checked + #sideBar {
+    #side-nav-toggle-cb:checked + #sideBar {
       transform: translateX(0);
     }
 }
