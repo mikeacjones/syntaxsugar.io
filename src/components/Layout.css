@@ -120,6 +120,10 @@ code {
     transition: all 500ms ease;
     transform: translateX(-18rem);
   }
+
+  #content {
+    padding-top: 15px;
+  }
 }
 
 /*
