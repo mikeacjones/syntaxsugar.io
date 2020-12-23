@@ -17,6 +17,114 @@ a.link-to {
   color: inherit;
 }
 
+code {
+  display: block;
+  white-space: pre-wrap;
+}
+
+#Layout {
+  display: flex;
+  flex-direction: row;
+  height: 100%;
+  overflow: hidden;
+}
+
+.sideBar {
+  flex: 0 0 18rem;
+}
+
+#sideBar {
+  position: fixed;
+  width: 18rem;
+  height: 100%;
+
+  display: flex;
+  flex-direction: column;
+}
+
+#side-nav-toggle-wrapper {
+
+}
+
+#content-wrapper {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+}
+
+#aboutMe {
+  margin-top: 100px;
+  flex: 1 1 auto;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+#aboutMe_image {
+  width: 50%;
+  height: auto;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+#aboutMe_image img {
+  width: 100%;
+}
+
+#aboutMe_pages {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+#aboutMe_icons {
+  height: 60px;
+  font-size: 25px;
+  width: 100%;
+
+  display: flex;
+  justify-content: space-evenly;
+}
+
+#side-nav-toggle-wrapper {
+  display: none;
+  width: 100%;
+  flex: 0 0 50px;
+}
+
+#side-nav-toggle {
+  position: fixed;
+  width: 100%;
+}
+
+.toggle {
+  padding-left: 10px;
+  justify-self: center;
+}
+
+@media only screen and (max-device-width: 800px) and (-webkit-min-device-pixel-ratio: 2) {
+
+  #side-nav-toggle-wrapper {
+    display: block;
+  }
+
+  #side-nav-toggle-cb:checked + #sideBar {
+    transform: translateX(0);
+  }
+
+  .sideBar {
+    flex: 0 0 0px;
+  }
+
+  #sideBar {
+    transition: all 500ms ease;
+    transform: translateX(-18rem);
+  }
+}
+
+/*
 #Layout {
   height: 100vh;
   display: flex;
@@ -32,16 +140,15 @@ a.link-to {
   position: relative;
   display: flex;
   flex: 1 1 auto;
-  overflow: hidden;
 }
 
 .sideBar {
   flex: 0 0 18rem;
   height: 100%;
+  position: fixed;
 }
 
 #sideBar {
-  position: relative;
   z-index: 99;
   width: 18rem;
   height: 100%;
@@ -131,3 +238,4 @@ a.link-to {
       transition: all 500ms ease;
     }
 }
+*/
