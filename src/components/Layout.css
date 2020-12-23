@@ -31,6 +31,7 @@ code {
 
 .sideBar {
   flex: 0 0 18rem;
+  z-index: 98;
 }
 
 #sideBar {
@@ -40,10 +41,6 @@ code {
 
   display: flex;
   flex-direction: column;
-}
-
-#side-nav-toggle-wrapper {
-
 }
 
 #content-wrapper {
@@ -92,6 +89,7 @@ code {
   display: none;
   width: 100%;
   flex: 0 0 50px;
+  z-index: 99;
 }
 
 #side-nav-toggle {
