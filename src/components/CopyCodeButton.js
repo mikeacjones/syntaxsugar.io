@@ -9,10 +9,10 @@ const CopyCodeButton = (props) => (
       border: 'none',
       boxShadow: 'none',
       textDecoration: 'none',
-      margin: '8px',
       padding: '8px 12px',
       background: '#52307c',
-      borderRadius: '8px',
+      borderTopRightRadius: '8px',
+      borderBottomLeftRadius: '8px',
       cursor: 'pointer',
       color: '#ffffd2',
       fontSize: '14px',
@@ -22,6 +22,29 @@ const CopyCodeButton = (props) => (
     }}
     {...props}
   />
+)
+
+const CodeLanguageStub = ({ language }) => (
+  <div
+    style={{
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      border: 'none',
+      boxShadow: 'none',
+      padding: '8px 12px',
+      background: '#52307c',
+      borderTopLeftRadius: '8px',
+      borderBottomRightRadius: '8px',
+      color: '#ffffd2',
+      fontSize: '14px',
+      fontFamily: "'Ubuntu Mono', monospace",
+      lineHeight: '1',
+      zIndex: 98,
+    }}
+  >
+    {language}
+  </div>
 )
 
 const copyToClipboard = (str) => {
@@ -45,4 +68,4 @@ const ConfettiWrapper = (props) => (
   />
 )
 
-export { CopyCodeButton, copyToClipboard, Wrapper, ConfettiWrapper }
+export { CopyCodeButton, copyToClipboard, Wrapper, ConfettiWrapper, CodeLanguageStub }

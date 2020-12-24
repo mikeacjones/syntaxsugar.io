@@ -1,5 +1,6 @@
 import {
   CopyCodeButton,
+  CodeLanguageStub,
   copyToClipboard,
   Wrapper,
   ConfettiWrapper,
@@ -60,6 +61,7 @@ const CodeWrapper = (props) => {
       >
         {isCopied ? '🎉 Copied!' : 'Copy'}
       </CopyCodeButton>
+      <CodeLanguageStub language={props.children.props['data-language']} />
       <ConfettiWrapper>
         <Confetti active={isCopied} config={confettiConfig} />
       </ConfettiWrapper>
