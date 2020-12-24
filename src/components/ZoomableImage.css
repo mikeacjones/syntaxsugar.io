@@ -1,5 +1,5 @@
 .ZoomableImage {
-  max-width: 100%;
+  max-width: 98vw;
   width: 700px;
   overflow: hidden;
   cursor: pointer;
