@@ -17,6 +17,16 @@
   object-fit: contain;
 }
 
+.embedVideo-container {
+  display: block;
+  max-width: 98vw;
+  width: 700px;
+}
+
+.embedVideo-iframe {
+  width: 100%;
+}
+
 .post-view-title {
   color: #52307c;
   padding: 0;
