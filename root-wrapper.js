@@ -4,9 +4,22 @@ import CodeWrapper from './src/components/CodeWrapper'
 
 const components = {
   pre: (props) => (
-      <CodeWrapper>
-        <pre {...props} />
-      </CodeWrapper>
+    <CodeWrapper>
+      <pre {...props} />
+    </CodeWrapper>
+  ),
+  img: (props) => (
+    <div
+      style={{
+        maxWidth: '700px',
+        marginLeft: 'auto',
+        marginRight: 'auto',
+        padding: '20px',
+        cursor: 'pointer',
+      }}
+    >
+      <img {...props} />
+    </div>
   ),
 }
 

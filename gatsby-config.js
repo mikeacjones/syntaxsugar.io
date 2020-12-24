@@ -17,6 +17,8 @@ module.exports = {
   plugins: [
     `gatsby-transformer-sharp`,
     `gatsby-plugin-sharp`,
+    `gatsby-remark-images`,
+    `gatsby-remark-copy-linked-files`,
     {
       resolve: `gatsby-plugin-mdx`,
       options: {
@@ -27,13 +29,6 @@ module.exports = {
             resolve: `gatsby-remark-autolink-headers`,
             options: {
               className: `autolink-header`,
-            },
-          },
-          {
-            resolve: `gatsby-remark-images`,
-            options: {
-              maxWidth: 800,
-              quality: 100,
             },
           },
           {
