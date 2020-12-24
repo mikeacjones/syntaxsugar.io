@@ -22,6 +22,10 @@ code {
   font-family: 'Ubuntu Mono', monospace;
 }
 
+.grvsc-code {
+  padding-top: 20px;
+}
+
 .grvsc-line {
   white-space: pre-wrap;
 }

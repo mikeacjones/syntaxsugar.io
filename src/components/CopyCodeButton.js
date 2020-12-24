@@ -18,28 +18,31 @@ const CopyCodeButton = (props) => (
       fontSize: '14px',
       fontFamily: "'Ubuntu Mono', monospace",
       lineHeight: '1',
-      zIndex: 98
+      zIndex: 98,
     }}
     {...props}
   />
 )
 
 const copyToClipboard = (str) => {
-  const el = document.createElement("textarea")
+  const el = document.createElement('textarea')
   el.value = str
-  el.setAttribute("readonly", "")
-  el.style.position = "absolute"
-  el.style.left = "-9999px"
+  el.setAttribute('readonly', '')
+  el.style.position = 'absolute'
+  el.style.left = '-9999px'
   document.body.appendChild(el)
   el.select()
-  document.execCommand("copy")
+  document.execCommand('copy')
   document.body.removeChild(el)
 }
 
-const Wrapper = (props) => <div style={{ position: "relative" }} {...props} />
- 
+const Wrapper = (props) => <div style={{ position: 'relative' }} {...props} />
+
 const ConfettiWrapper = (props) => (
-  <div style={{ position: "absolute", top: 0, right: 0, zIndex: 99 }} {...props} />
+  <div
+    style={{ position: 'absolute', top: 0, right: 0, zIndex: 99 }}
+    {...props}
+  />
 )
 
 export { CopyCodeButton, copyToClipboard, Wrapper, ConfettiWrapper }
