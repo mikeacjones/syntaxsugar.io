@@ -1,0 +1,21 @@
+.ZoomableImage {
+  max-width: 100%;
+  width: 700px;
+  overflow: hidden;
+  cursor: pointer;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.ZoomableImage-enlarged {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  cursor: pointer;
+  display: flex;
+  padding: 50px;
+  z-index: 100;
+  background-color: rgba(0, 0, 0, .8);
+}
