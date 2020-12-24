@@ -5,13 +5,13 @@ const CopyCodeButton = (props) => (
     style={{
       position: 'absolute',
       top: 0,
-      right: 0,
+      right: '8px',
       border: 'none',
       boxShadow: 'none',
       textDecoration: 'none',
       padding: '8px 12px',
       background: '#52307c',
-      borderTopRightRadius: '8px',
+      borderBottomRightRadius: '8px',
       borderBottomLeftRadius: '8px',
       cursor: 'pointer',
       color: '#ffffd2',
@@ -29,18 +29,19 @@ const CodeLanguageStub = ({ language }) => (
     style={{
       position: 'absolute',
       top: 0,
-      left: 0,
+      left: '8px',
       border: 'none',
       boxShadow: 'none',
       padding: '8px 12px',
       background: '#52307c',
-      borderTopLeftRadius: '8px',
+      borderBottomLeftRadius: '8px',
       borderBottomRightRadius: '8px',
       color: '#ffffd2',
       fontSize: '14px',
       fontFamily: "'Ubuntu Mono', monospace",
       lineHeight: '1',
       zIndex: 98,
+      userSelect: 'none'
     }}
   >
     {language}

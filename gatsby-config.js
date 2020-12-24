@@ -15,11 +15,14 @@ const siteMetadata = {
 module.exports = {
   siteMetadata: siteMetadata,
   plugins: [
+    `gatsby-transformer-sharp`,
+    `gatsby-plugin-sharp`,
     {
       resolve: `gatsby-plugin-mdx`,
       options: {
         extensions: [`.mdx`, `.md`],
         gatsbyRemarkPlugins: [
+          `gatsby-remark-copy-linked-files`,
           {
             resolve: `gatsby-remark-autolink-headers`,
             options: {
