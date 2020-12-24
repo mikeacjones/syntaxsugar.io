@@ -1,6 +1,7 @@
 import { MDXProvider } from '@mdx-js/react'
 import React from 'react'
 import CodeWrapper from './src/components/CodeWrapper'
+import ZoomableImage from './src/components/ZoomableImage'
 
 const components = {
   pre: (props) => (
@@ -9,17 +10,9 @@ const components = {
     </CodeWrapper>
   ),
   img: (props) => (
-    <div
-      style={{
-        maxWidth: '700px',
-        marginLeft: 'auto',
-        marginRight: 'auto',
-        padding: '20px',
-        cursor: 'pointer',
-      }}
-    >
+    <ZoomableImage>
       <img {...props} />
-    </div>
+    </ZoomableImage>
   ),
 }
 
