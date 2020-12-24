@@ -1,25 +1,35 @@
 const { createFilePath } = require(`gatsby-source-filesystem`)
 const path = require(`path`)
 
-exports.createPages = ({ actions, graphql, getNodes }) => {
+exports.createPages = ({ actions, graphql }) => {
   const { createPage } = actions
   const PostView = path.resolve(`src/templates/PostView.js`)
-  const allNodes = getNodes()
 
   return graphql(`
     {
-      allMdx {
-        nodes {
-          fields {
-            slug
-          }
-          frontmatter {
-            title
+      allMdx(sort: { fields: frontmatter___date, order: DESC }, limit: 1000) {
+        edges {
+          node {
+            fields {
+              slug
+            }
+            frontmatter {
+              date
+              published
+              tags
+              shortDescription
+              title
+            }
+            fileAbsolutePath
+            internal {
+              type
+            }
           }
         }
       }
       site {
         siteMetadata {
+          postsPerPage
           menuItems {
             path
             title
@@ -31,36 +41,41 @@ exports.createPages = ({ actions, graphql, getNodes }) => {
     if (result.errors) {
       throw result.errors
     }
-
-    const posts = allNodes.filter(
-      ({ internal, fileAbsolutePath }) =>
-        internal.type === 'Mdx' && fileAbsolutePath.indexOf('/posts/') !== -1
+    const posts = result.data.allMdx.edges.filter(
+      ({ node }) =>
+        node.internal.type === 'Mdx' &&
+        node.fileAbsolutePath.indexOf('/posts/') !== -1 &&
+        node.frontmatter.published
     )
 
-    posts.forEach((post, index) => {
+    posts.forEach(({ node }, index) => {
       const previous = index === posts.length - 1 ? null : posts[index + 1]
       const next = index === 0 ? null : posts[index - 1]
       createPage({
-        path: post.fields.slug,
+        path: node.fields.slug,
         component: PostView,
         context: {
-          slug: post.fields.slug,
+          slug: node.fields.slug,
           previous,
           next,
         },
       })
     })
 
-    const pages = allNodes.filter(
-      ({ internal, fileAbsolutePath }) =>
-        (internal.type === 'Mdx' || internal.type === 'MarkdownRemark') && fileAbsolutePath.indexOf('/pages/') !== -1
+    const pages = result.data.allMdx.edges.filter(
+      ({ node }) =>
+        node.internal.type === 'Mdx' &&
+        node.fileAbsolutePath.indexOf('/pages/') !== -1 &&
+        node.frontmatter.published
     )
-    pages.forEach((page) => {
+      
+
+    pages.forEach(({ node }) => {
       createPage({
-        path: page.fields.slug,
+        path: node.fields.slug,
         component: PostView,
         context: {
-          slug: page.fields.slug,
+          slug: node.fields.slug,
         },
       })
     })

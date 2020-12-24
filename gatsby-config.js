@@ -3,15 +3,14 @@ const siteMetadata = {
   description: `This is my coding blog where I write about my coding journey.`,
   menuItems: [
     {
-      title: 'About',
-      path: '/about',
-    },
-    {
       title: 'DW Cookbook',
       path: '/dw-cookbook',
     },
   ],
+  postsPerPage: 1,
 }
+
+
 
 module.exports = {
   siteMetadata: siteMetadata,
@@ -20,6 +19,46 @@ module.exports = {
       resolve: `gatsby-plugin-mdx`,
       options: {
         extensions: [`.mdx`, `.md`],
+        gatsbyRemarkPlugins: [
+          {
+            resolve: `gatsby-remark-autolink-headers`,
+            options: {
+              className: `autolink-header`,
+            },
+          },
+          {
+            resolve: `gatsby-remark-images`,
+            options: {
+              maxWidth: 800,
+              quality: 100,
+            },
+          },
+          {
+            resolve: `gatsby-remark-vscode`,
+            options: {
+              //theme: 'Material Theme Palenight High Contrast',
+              theme: 'Community Material Theme Palenight',
+              //theme: 'Shades of Purple',
+              extensions: [
+                `${__dirname}/vendor/blzjns.vscode-raml-3.0.1.vsix`,
+                `${__dirname}/vendor/coenraads.bracket-pair-colorizer-1.0.61.vsix`,
+                `${__dirname}/vendor/dataweave.data-weave-0.1.1.vsix`,
+                `${__dirname}/vendor/equinusocio.vsc-community-material-theme-1.4.2.vsix`
+              ],
+            },
+          },
+          {
+            resolve: 'gatsby-remark-embed-video',
+            options: {
+              width: 800,
+              ratio: 1.77, // Optional: Defaults to 16/9 = 1.77
+              height: 400, // Optional: Overrides optional.ratio
+              related: false, //Optional: Will remove related videos from the end of an embedded YouTube video.
+              noIframeBorder: true, //Optional: Disable insertion of <style> border: 0
+              containerClass: 'embedVideo-container', //Optional: Custom CSS class for iframe container, for multiple classes separate them by space
+            },
+          },
+        ],
       },
     },
     {
@@ -37,47 +76,18 @@ module.exports = {
       },
     },
     {
-      resolve: `gatsby-transformer-remark`,
+      resolve: `gatsby-source-filesystem`,
       options: {
-        plugins: [
-          {
-            resolve: `gatsby-remark-vscode`,
-            options: {
-              theme: 'Material Theme Palenight High Contrast',
-              extensions: [
-                '/users/mjones1/source/gastby-blog/vendor/menduz.data-weave-2.0.11.vsix',
-                '/users/mjones1/source/gastby-blog/vendor/Equinusocio.vsc-material-theme-32.6.0.vsix',
-              ], // Or install your favorite theme from GitHub
-            },
-          },
-          {
-            resolve: `gatsby-remark-autolink-headers`,
-            options: {
-              className: `autolink-header`,
-            },
-          },
-          {
-            resolve: `gatsby-remark-prismjs`,
-            options: {
-              classPrefix: 'language-',
-              inlineCodeMarker: null,
-              aliases: {},
-              showLineNumbers: false,
-              noInlineHighlight: false,
-            },
-          },
-        ],
+        path: `${__dirname}/codelabs`,
+        name: `labs`,
       },
     },
     {
-      resolve: 'gatsby-remark-embed-video',
+      resolve: `gatsby-transformer-remark`,
       options: {
-        width: 800,
-        ratio: 1.77, // Optional: Defaults to 16/9 = 1.77
-        height: 400, // Optional: Overrides optional.ratio
-        related: false, //Optional: Will remove related videos from the end of an embedded YouTube video.
-        noIframeBorder: true, //Optional: Disable insertion of <style> border: 0
-        containerClass: 'embedVideo-container', //Optional: Custom CSS class for iframe container, for multiple classes separate them by space
+        plugins: [
+          `gatsby-remark-copy-linked-files`,
+        ],
       },
     },
   ],
