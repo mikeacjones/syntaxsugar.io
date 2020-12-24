@@ -14,6 +14,7 @@
   height: auto;
   margin-left: auto;
   margin-right: auto;
+  object-fit: contain;
 }
 
 .post-view-title {
@@ -35,11 +36,6 @@
   font-weight: lighter;
   font-size: 1rem;
   text-align: center;
-}
-
-.post-view-content {
-  align-self: stretch;
-  padding: 6rem;
 }
 
 @media only screen 

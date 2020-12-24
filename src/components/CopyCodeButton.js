@@ -18,7 +18,7 @@ const CopyCodeButton = (props) => (
       fontSize: '14px',
       fontFamily: "'Ubuntu Mono', monospace",
       lineHeight: '1',
-      zIndex: 98,
+      zIndex: 90,
     }}
     {...props}
   />
@@ -40,7 +40,7 @@ const CodeLanguageStub = ({ language }) => (
       fontSize: '14px',
       fontFamily: "'Ubuntu Mono', monospace",
       lineHeight: '1',
-      zIndex: 98,
+      zIndex: 90,
       userSelect: 'none'
     }}
   >

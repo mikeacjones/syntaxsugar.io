@@ -47,7 +47,6 @@ p code {
   background-color: #efefef;
 }
 
-
 #Layout {
   display: flex;
   flex-direction: row;
@@ -129,7 +128,12 @@ p code {
   cursor: pointer;
 }
 
-@media only screen and (max-width: 800px) and (-webkit-min-device-pixel-ratio: 2) {
+.post-view-content {
+  align-self: stretch;
+  padding: 6rem;
+}
+
+@media only screen and (max-width: 1000px) and (-webkit-min-device-pixel-ratio: 2) {
   #side-nav-toggle-wrapper {
     display: block;
   }
@@ -149,5 +153,9 @@ p code {
 
   #content {
     margin-top: 60px;
+  }
+
+  .post-view-content {
+    padding: 5px;
   }
 }
