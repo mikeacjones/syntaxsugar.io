@@ -3,7 +3,8 @@ const path = require(`path`)
 
 exports.createPages = ({ actions, graphql }) => {
   const { createPage } = actions
-  const PostView = path.resolve(`src/templates/PostView.js`)
+  const PostView = path.resolve(`src/components/PostView.js`)
+  const IndexView = path.resolve(`src/templates/index.js`)
 
   return graphql(`
     {
@@ -42,6 +43,15 @@ exports.createPages = ({ actions, graphql }) => {
       throw result.errors
     }
 
+    createPage({
+      path: '/',
+      component: IndexView,
+      context: {
+        pubStates:
+          process.env.NODE_ENV === 'development' ? [true, false] : [true],
+      },
+    })
+
     const posts = result.data.allMdx.edges.filter(
       ({ node }) =>
         node.internal.type === 'Mdx' &&
@@ -56,6 +66,7 @@ exports.createPages = ({ actions, graphql }) => {
         path: node.fields.slug,
         component: PostView,
         context: {
+          isDev: process.env.NODE_ENV === 'development',
           slug: node.fields.slug,
           previous: previous?.node.fields.slug,
           next: next?.node.fields.slug,
@@ -69,7 +80,6 @@ exports.createPages = ({ actions, graphql }) => {
         node.fileAbsolutePath.indexOf('/pages/') !== -1 &&
         node.frontmatter.published
     )
-      
 
     pages.forEach(({ node }) => {
       createPage({

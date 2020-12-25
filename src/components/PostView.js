@@ -2,8 +2,8 @@ import React from 'react'
 import './PostView.css'
 import { MDXRenderer } from 'gatsby-plugin-mdx'
 import { graphql } from 'gatsby'
-import { Layout } from '../components/Layout'
-import SEO from '../components/SEO'
+import { Layout } from './Layout'
+import SEO from './SEO'
 
 export default ({ data, pageContext }) => {
   const { frontmatter, body } = data.mdx
