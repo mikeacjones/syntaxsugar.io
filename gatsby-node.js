@@ -56,8 +56,8 @@ exports.createPages = ({ actions, graphql }) => {
         component: PostView,
         context: {
           slug: node.fields.slug,
-          previous,
-          next,
+          previous: previous?.node.fields.slug,
+          next: next?.node.fields.slug,
         },
       })
     })

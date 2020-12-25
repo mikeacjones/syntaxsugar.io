@@ -5,6 +5,7 @@ const CopyCodeButton = (props) => (
     style={{
       position: 'absolute',
       top: 0,
+      margin: 0,
       right: '8px',
       border: 'none',
       boxShadow: 'none',
@@ -29,6 +30,7 @@ const CodeLanguageStub = ({ language }) => (
     style={{
       position: 'absolute',
       top: 0,
+      margin: 0,
       left: '8px',
       border: 'none',
       boxShadow: 'none',
@@ -60,7 +62,7 @@ const copyToClipboard = (str) => {
   document.body.removeChild(el)
 }
 
-const Wrapper = (props) => <div style={{ position: 'relative' }} {...props} />
+const Wrapper = (props) => <div className='codeWrapper' style={{ position: 'relative' }} {...props} />
 
 const ConfettiWrapper = (props) => (
   <div

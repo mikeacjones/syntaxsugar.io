@@ -23,6 +23,7 @@
     "gatsby-remark-copy-linked-files": "^2.7.0",
     "gatsby-remark-embed-video": "^3.0.10",
     "gatsby-remark-images": "^3.8.1",
+    "gatsby-remark-interactive-gifs": "^1.0.4",
     "gatsby-remark-prismjs": "^3.10.0",
     "gatsby-remark-vscode": "^3.2.0",
     "gatsby-source-filesystem": "^2.8.0",
@@ -33,6 +34,7 @@
     "react": "^17.0.1",
     "react-dom": "^17.0.1",
     "react-dom-confetti": "^0.2.0",
+    "react-helmet": "^6.1.0",
     "react-live": "^2.2.3",
     "shiki": "^0.2.7",
     "styled-components": "^5.2.1"

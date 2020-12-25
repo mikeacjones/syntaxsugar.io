@@ -1,5 +1,5 @@
 const siteMetadata = {
-  title: `The Localhost Blog`,
+  title: `Michael Jones`,
   description: `This is my coding blog where I write about my coding journey.`,
   menuItems: [
     {
@@ -7,10 +7,11 @@ const siteMetadata = {
       path: '/dw-cookbook',
     },
   ],
+  author: 'Michael Jones',
+  description:
+    'Just a personal blog currently focused on Mulesoft/Anypoint development',
   postsPerPage: 1,
 }
-
-
 
 module.exports = {
   siteMetadata: siteMetadata,
@@ -41,7 +42,7 @@ module.exports = {
                 `${__dirname}/vendor/blzjns.vscode-raml-3.0.1.vsix`,
                 `${__dirname}/vendor/coenraads.bracket-pair-colorizer-1.0.61.vsix`,
                 `${__dirname}/vendor/dataweave.data-weave-0.1.1.vsix`,
-                `${__dirname}/vendor/equinusocio.vsc-community-material-theme-1.4.2.vsix`
+                `${__dirname}/vendor/equinusocio.vsc-community-material-theme-1.4.2.vsix`,
               ],
             },
           },
@@ -74,9 +75,7 @@ module.exports = {
     {
       resolve: `gatsby-transformer-remark`,
       options: {
-        plugins: [
-          `gatsby-remark-copy-linked-files`,
-        ],
+        plugins: [`gatsby-remark-copy-linked-files`],
       },
     },
   ],

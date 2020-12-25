@@ -3,12 +3,14 @@ import './PostView.css'
 import { MDXRenderer } from 'gatsby-plugin-mdx'
 import { graphql } from 'gatsby'
 import { Layout } from '../components/Layout'
+import SEO from '../components/SEO'
 
 export default ({ data, pageContext }) => {
   const { frontmatter, body } = data.mdx
   const { previous, next } = pageContext
   return (
     <Layout>
+      <SEO title={frontmatter.title} description={frontmatter.shortDescription} keywords={frontmatter.tags} />
       <div className='post-view'>
         <div className='post-view-header'>
           <div className='post-view-title'>
@@ -35,6 +37,8 @@ export const query = graphql`
       frontmatter {
         title
         date
+        tags
+        shortDescription
       }
     }
   }

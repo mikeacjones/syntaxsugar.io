@@ -53,8 +53,27 @@ const CodeWrapper = (props) => {
       <CopyCodeButton
         onClick={(e) => {
           let elm = e.target.parentNode.children
-          elm = elm[elm.length - 1]
-          copyToClipboard(elm.innerText)
+          elm = elm[elm.length - 1].querySelectorAll('.grvsc-source')
+
+          const pre = document.createElement('pre')
+          const lines = document.createElement('code')
+          pre.className = 'grvsc-container'
+          pre.style.position = 'absolute'
+          pre.style.left = '-9999px'
+          lines.className = 'grvsc-code'
+          pre.appendChild(lines)
+
+          elm.forEach((line) => {
+            const thisLine = document.createElement('span')
+            thisLine.className = 'grvsc-line'
+            thisLine.appendChild(line.cloneNode(true))
+            lines.appendChild(thisLine)
+          })
+
+          document.body.appendChild(pre)
+          copyToClipboard(pre.innerText)
+          document.body.removeChild(pre)
+
           setIsCopied(true)
           setTimeout(() => setIsCopied(false), 3000)
         }}

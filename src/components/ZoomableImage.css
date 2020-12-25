@@ -5,6 +5,7 @@
   cursor: pointer;
   margin-left: auto;
   margin-right: auto;
+  border: 1px solid #3B415C;
 }
 
 .ZoomableImage-enlarged {

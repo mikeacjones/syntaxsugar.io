@@ -14,6 +14,8 @@ const components = {
       <img {...props} />
     </ZoomableImage>
   ),
+  a: (props) => <a {...props} target='_blank' />,
+  p: (props) => <div {...props} />
 }
 
 export const wrapRootElement = ({ element }) => (
