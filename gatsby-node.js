@@ -41,11 +41,12 @@ exports.createPages = ({ actions, graphql }) => {
     if (result.errors) {
       throw result.errors
     }
+
     const posts = result.data.allMdx.edges.filter(
       ({ node }) =>
         node.internal.type === 'Mdx' &&
         node.fileAbsolutePath.indexOf('/posts/') !== -1 &&
-        node.frontmatter.published
+        (node.frontmatter.published || process.env.NODE_ENV === 'development')
     )
 
     posts.forEach(({ node }, index) => {

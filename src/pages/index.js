@@ -23,7 +23,6 @@ export const query = graphql`
       sort: { fields: [frontmatter___date], order: DESC }
       filter: {
         fileAbsolutePath: { regex: "//posts//" }
-        frontmatter: { published: { eq: true } }
       }
     ) {
       nodes {
