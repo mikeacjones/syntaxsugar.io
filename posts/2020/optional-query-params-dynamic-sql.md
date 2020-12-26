@@ -16,6 +16,7 @@ __Table of contents:__
   * [Setup MySQL Connection](#setup-mysql-connection)
   * [Create Basic Select and Map Data](#create-basic-select-and-map-data)
 * [Building Dynamic Parameterized SQL](#building-dynamic-parameterized-sql)
+* [Bonus Round - Making it Reusable](#bonus-round---making-it-reusable)
 
 <hr />
 
@@ -320,3 +321,110 @@ var buildParameterMap = (weightUnitMeasureCodes) ->
 Start up the API and give it a test via the API Kit Console located at [http://localhost:8081/console/](http://localhost:8081/console/). You should now be able to filter by multiple `weightUnitMeasureCode` query parameters.
 
 Our `buildParameterMap` function takes in the `attributes.queryParams.*weightUnitMeasureCode` and builds a new map structure, or returns an empty object if the query parameter wasn't provided. If you're unfamiliar with the `.*` selector, it exists to select values from a repeated key into a single array, typically used with XML; in this case, we're using it to select the multiple query parameters. In the query itself, which we've converted to data-weave with our `#[ ]`, we are only including the `WHERE` clause itself if the query parameter was provided.
+
+# Bonus Round - Making it Reusable
+
+This was a lot of work for something that, frankly, isn't all that complicated. So to make things easier for ourselves, we can start building a reusable data-weave library.
+
+As a starting point, I've built a few common functions and bundled them into the module `dw::sql`
+
+```data-weave
+%dw 2.0
+
+fun SELECT(keys) =
+keys match {
+    case is String -> "SELECT $(keys)"
+    case is Array<StringCoerceable> -> "SELECT $((keys default []) joinBy ', ')"
+}
+
+fun FROM(query: String, tableName: String) =
+"$(query) FROM $(tableName default '')"
+
+fun WHERE(query: String, where: String) =
+if (isEmpty(where)) query
+else "$(query) WHERE $(where)"
+
+fun EQ(keyName: String, value: Any) =
+if (value == null) ""
+else "$(keyName) = :$(keyName)"
+
+fun IN(keyName: String, values, wrapIn: String = "", separateWith: String = ", ") =
+if (sizeOf(values default []) == 0) ""
+else "$(keyName) IN (" ++ ((values default []) map "$(wrapIn):$(keyName)_$($$)$(wrapIn)" joinBy separateWith) ++ ")"
+
+fun OR(left: String, right: String) =
+ANDOR(left, right, false)
+
+fun AND(left: String, right: String) =
+ANDOR(left, right, true)
+
+fun LIMIT(query: String, limit) =
+if (limit == null) ""
+else "$(query) LIMIT $(limit)"
+
+fun OFFSET(query: String, offset) =
+if (offset == null) ""
+else "$(query) OFFSET $(offset)"
+
+fun MySQL_BOOL(val) =
+if (val == null) null
+else (
+if (val) 1
+else 0
+)
+
+fun PARAMS_EQ(keyName: String, value: Any) =
+if (value == null) {}
+else { (keyName): value }
+
+fun PARAMS_IN(keyName: String, values, wrapIn: String = "") =
+if (sizeOf(values default []) == 0) {}
+else (values reduce (val, res={}) ->
+    res - "index" ++ {
+        "$(keyName)_$(res.index default 0)": val
+    } ++ {
+        index: (res.index default 0) + 1
+    }) - "index"
+
+fun ANDOR(left: String, right: String, requireBoth: Boolean) =
+if (isEmpty(left)) right
+else if (isEmpty(right)) left
+else if ((right contains " AND ") or (right contains " OR ")) "$(left) $(if(requireBoth) 'AND' else 'OR') ($(right))"
+else "$(left) $((if (requireBoth) 'AND' else 'OR')) $(right)"
+```
+
+This now lets us convert our SQL Query Text to this far more succinct script:
+
+```data-weave
+#[
+  import * from dw::sql
+  output text/plain
+  ---
+  SELECT([
+    'id', 'name', 'description', 'product_number', 'manufactured', 
+    'colors', 'categories', 'stock', 'safety_stock_level', 
+    'standard_cost', 'list_price', 'size', 'size_unit_measure_code', 
+    'weight', 'weight_unit_measure_code', 'images', 'modified_date', 
+    'created_date'
+  ])
+  FROM('product')
+  WHERE(
+    EQ('manufactured', MySQL_BOOL(attributes.queryParams['manufactured']))
+    AND 
+    IN('weight_unit_measure_code', attributes.queryParams.*weightUnitMeasureCode)
+  )
+]
+```
+
+And our input parameters to:
+
+```data-weave
+import * from dw::sql
+---
+{
+  (PARAMS_EQ('manufactured', MySQL_BOOL(attributes.queryParams['manufactured']))),
+  (PARAMS_IN('weight_unit_measure_code', attributes.queryParams.*weightUnitMeasureCode))
+}
+```
+
+By taking these functions and building a reusable library that handles the logic for us, we make our lives much easier the next time around!
