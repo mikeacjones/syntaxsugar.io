@@ -6,11 +6,16 @@ const siteMetadata = {
       title: 'DW Cookbook',
       path: '/dw-cookbook',
     },
+    {
+      title: 'Labs',
+      path: '/labs'
+    },
   ],
   author: 'Michael Jones',
   description:
     'Just a personal blog currently focused on Mulesoft/Anypoint development',
   postsPerPage: 10,
+  labsPerPage: 10,
   isDev: process.env.NODE_ENV === 'development',
 }
 
@@ -74,6 +79,12 @@ module.exports = {
       },
     },
     {
+      resolve: `gatsby-transformer-json`,
+      options: {
+        typeName: 'json'
+      }
+    },
+    {
       resolve: `gatsby-source-filesystem`,
       options: {
         path: `${__dirname}/posts`,
@@ -85,6 +96,13 @@ module.exports = {
       options: {
         path: `${__dirname}/pages`,
         name: `pages`,
+      },
+    },
+    {
+      resolve: `gatsby-source-filesystem`,
+      options: {
+        path: `${__dirname}/static/lab-content`,
+        name: `labs`
       },
     },
   ],

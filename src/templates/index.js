@@ -25,7 +25,7 @@ export default ({ data, pageContext }) => {
 }
 
 export const query = graphql`
-  query query($pubStates: [Boolean]!, $skip: Int!, $limit: Int!) {
+  query indexQuery($pubStates: [Boolean]!, $skip: Int!, $limit: Int!) {
     allMdx(
       sort: { fields: [frontmatter___date], order: DESC }
       filter: {

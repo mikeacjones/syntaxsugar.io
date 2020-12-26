@@ -2,12 +2,18 @@ const { createFilePath } = require(`gatsby-source-filesystem`)
 const path = require(`path`)
 const { paginate } = require(`gatsby-awesome-pagination`)
 const { createTagSlug } = require('./src/helpers')
+const { generateCodeLabs } = require('./codelabs-script')
+
+exports.onPreInit = async () => {
+  await generateCodeLabs()
+}
 
 exports.createPages = ({ actions, graphql }) => {
   const { createPage } = actions
   const PostView = path.resolve(`src/components/PostView.js`)
-  const IndexView = path.resolve(`src/templates/index.js`)
-  const TagView = path.resolve(`src/templates/tag.js`)
+  const IndexView = path.resolve(`./src/templates/index.js`)
+  const TagView = path.resolve(`./src/templates/tag.js`)
+  const LabsView = path.resolve(`./src/templates/labs.js`)
 
   return graphql(`
     {
@@ -40,11 +46,30 @@ exports.createPages = ({ actions, graphql }) => {
           }
         }
       }
+      allFile(filter: { absolutePath: { regex: "/.+codelab.json$/" } }) {
+        edges {
+          node {
+            absolutePath
+          }
+        }
+      }
     }
   `).then((result) => {
     if (result.errors) {
       throw result.errors
     }
+
+    const labs = result.data.allFile.edges.map(({ node }) => {
+      return { path: node.absolutePath }
+    })
+    createPage({
+      path: '/labs',
+      component: LabsView,
+      context: {
+        limit: 10,
+        skip: 0,
+      },
+    })
 
     const posts = result.data.allMdx.edges.filter(
       ({ node }) =>
@@ -52,7 +77,6 @@ exports.createPages = ({ actions, graphql }) => {
         node.fileAbsolutePath.indexOf('/posts/') !== -1 &&
         (node.frontmatter.published || process.env.NODE_ENV === 'development')
     )
-
     paginate({
       createPage,
       items: posts,
@@ -60,8 +84,7 @@ exports.createPages = ({ actions, graphql }) => {
       pathPrefix: '/',
       component: IndexView,
       context: {
-        pubStates:
-          process.env.NODE_ENV === 'development' ? [true, false] : [true],
+        pubStates: process.env.NODE_ENV === 'development' ? [true, false] : [true],
       },
     })
 
@@ -98,17 +121,12 @@ exports.createPages = ({ actions, graphql }) => {
     })
 
     const tags = posts
-      .filter(
-        ({ node }) => node.frontmatter.tags && node.frontmatter.tags != null
-      )
+      .filter(({ node }) => node.frontmatter.tags && node.frontmatter.tags != null)
       .flatMap(({ node }) => node.frontmatter.tags)
       .filter((tag, index, self) => self.indexOf(tag) === index)
 
     tags.forEach((tag) => {
-      const postsWithTag = posts.filter(
-        ({ node }) =>
-          node.frontmatter.tags && node.frontmatter.tags.indexOf(tag) !== -1
-      )
+      const postsWithTag = posts.filter(({ node }) => node.frontmatter.tags && node.frontmatter.tags.indexOf(tag) !== -1)
       paginate({
         createPage,
         items: postsWithTag,
@@ -117,8 +135,7 @@ exports.createPages = ({ actions, graphql }) => {
         pathPrefix: `/tag/${createTagSlug(tag)}`,
         context: {
           tag,
-          pubStates:
-            process.env.NODE_ENV === 'development' ? [true, false] : [true],
+          pubStates: process.env.NODE_ENV === 'development' ? [true, false] : [true],
         },
       })
     })
