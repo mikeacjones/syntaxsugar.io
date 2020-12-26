@@ -8,7 +8,12 @@ import { Link } from 'gatsby'
 export default ({ data, pageContext }) => {
   return (
     <Layout>
-      <SEO title='Blog Posts' />
+      <SEO title={`${pageContext.tag} Posts`} />
+      <div className='post-view-header'>
+        <div className='post-view-title'>
+          <h1>tag: {pageContext.tag}</h1>
+        </div>
+      </div>
       {data.allMdx.nodes.map(({ id, fields, frontmatter }) => (
         <PostCard fields={fields} frontmatter={frontmatter} key={id} />
       ))}
@@ -24,10 +29,7 @@ export const query = graphql`
   query tagQuery($pubStates: [Boolean]!, $skip: Int!, $limit: Int!, $tag: String!) {
     allMdx(
       sort: { fields: [frontmatter___date], order: DESC }
-      filter: {
-        fileAbsolutePath: { regex: "//posts//" }
-        frontmatter: { published: { in: $pubStates }, tags: { in: [$tag] } }
-      }
+      filter: { fileAbsolutePath: { regex: "//posts//" }, frontmatter: { published: { in: $pubStates }, tags: { in: [$tag] } } }
       skip: $skip
       limit: $limit
     ) {
