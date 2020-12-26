@@ -6,7 +6,7 @@ on:
     branches: master
     paths-ignore: 
       - README.md
-      - gatsby-deploy.yaml
+      - .github/workflows/gatsby-deploy.yaml
 
 jobs:
   build:
