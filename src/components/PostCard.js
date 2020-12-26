@@ -8,7 +8,7 @@ export default ({ fields, frontmatter }) => {
   const { slug } = fields
   return (
       <div className='post-card'>
-        <Link to={slug} className='link-to'>
+        <Link to={slug} className='post-link' />
         <div className='post-card-header'>
           <div className='post-card-header-date'>
             {date && date.substring(0, 10)}
@@ -16,12 +16,11 @@ export default ({ fields, frontmatter }) => {
           <div className='post-card-title'>{title}</div>
         </div>
         <div className='post-card-description'>{shortDescription}</div>
-        </Link>
         <div className='post-card-tags'>
           {tags &&
             tags.map((tag, index) => (
               <div className='chip' key={index}>
-                <Link to={`/tag/${createTagSlug(tag)}`} className='link-to'>{tag}</Link>
+                <Link to={`/tag/${createTagSlug(tag)}`} className='tag-link'>{tag}</Link>
               </div>
             ))}
         </div>

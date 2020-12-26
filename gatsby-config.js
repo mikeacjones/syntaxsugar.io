@@ -17,6 +17,16 @@ const siteMetadata = {
 module.exports = {
   siteMetadata: siteMetadata,
   plugins: [
+    {
+      resolve: `gatsby-plugin-google-fonts`,
+      options: {
+        fonts: [
+          `Titillium Web`,
+          `Ubuntu Mono` // you can also specify font weights and styles
+        ],
+        display: 'swap'
+      }
+    },
     `gatsby-remark-copy-linked-files`,
     {
       resolve: `gatsby-plugin-mdx`,
