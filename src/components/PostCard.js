@@ -1,5 +1,6 @@
 import React from 'react'
 import { Link } from 'gatsby'
+import { createTagSlug } from '../helpers'
 import './PostCard.css'
 
 export default ({ fields, frontmatter }) => {
@@ -14,7 +15,7 @@ export default ({ fields, frontmatter }) => {
         </div>
         <div className='post-card-description'>{shortDescription}</div>
         <div className='post-card-tags'>
-          {tags && tags.map((tag) => <div key={tag} className='chip'>{tag}</div>)}
+          {tags && tags.map((tag) => <Link to={`/tag/${createTagSlug(tag)}`} key={tag} className='chip-link'><div className='chip'>{tag}</div></Link>)}
         </div>
       </div>
     </Link>
