@@ -14,7 +14,6 @@ const components = {
       <img {...props} />
     </ZoomableImage>
   ),
-  a: (props) => <a {...props} />,
   p: (props) => <div {...props} className='div-paragraph' />
 }
 

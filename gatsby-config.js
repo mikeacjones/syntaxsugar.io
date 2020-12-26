@@ -17,9 +17,6 @@ const siteMetadata = {
 module.exports = {
   siteMetadata: siteMetadata,
   plugins: [
-    `gatsby-transformer-sharp`,
-    `gatsby-plugin-sharp`,
-    `gatsby-remark-images`,
     `gatsby-remark-copy-linked-files`,
     {
       resolve: `gatsby-plugin-mdx`,
@@ -78,12 +75,6 @@ module.exports = {
       options: {
         path: `${__dirname}/pages`,
         name: `pages`,
-      },
-    },
-    {
-      resolve: `gatsby-transformer-remark`,
-      options: {
-        plugins: [`gatsby-remark-copy-linked-files`],
       },
     },
   ],
