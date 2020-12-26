@@ -5,6 +5,7 @@ shortDescription: "Need to get working with data-weave as fast as possible? Let'
 tags: ["dataweave", "mule 4"]
 published: true
 ---
+# Update: [https://dwlang.fun](https://dwlang.fun) is now the _best_ way to get started with dataweave
 
 ## Table of Contents
 
