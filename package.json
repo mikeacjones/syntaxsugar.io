@@ -22,6 +22,7 @@
     "gatsby-remark-code-buttons": "^2.0.4",
     "gatsby-remark-copy-linked-files": "^2.7.0",
     "gatsby-remark-embed-video": "^3.0.10",
+    "gatsby-remark-external-links": "^0.0.4",
     "gatsby-remark-images": "^3.8.1",
     "gatsby-remark-interactive-gifs": "^1.0.4",
     "gatsby-remark-prismjs": "^3.10.0",

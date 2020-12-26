@@ -78,7 +78,7 @@ exports.createPages = ({ actions, graphql }) => {
       ({ node }) =>
         node.internal.type === 'Mdx' &&
         node.fileAbsolutePath.indexOf('/pages/') !== -1 &&
-        node.frontmatter.published
+        (node.frontmatter.published || process.env.NODE_ENV === 'development')
     )
 
     pages.forEach(({ node }) => {
