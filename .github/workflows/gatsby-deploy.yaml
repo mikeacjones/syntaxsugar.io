@@ -17,6 +17,10 @@ jobs:
       - run: rm ./static/CNAME && echo syntaxsugar.io >> ./static/CNAME
       - run: yarn
       - run: yarn build
+        env:
+          GOOG_SA_EMAIL: ${{ secrets.GOOG_SA_EMAIL }}
+          GOOG_SA_KEY: ${{ secrets.GOOG_SA_KEY }}
+          GOOG_FOLDER_ID: ${{ secrets.GOOG_FOLDER_ID }}
       - name: Deploy 🚀
         uses: JamesIves/github-pages-deploy-action@3.7.1
         with:
