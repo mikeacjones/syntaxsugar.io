@@ -1,10 +1,12 @@
 name: Gatsby Publish
 
 on:
+  workflow_dispatch:
   push:
-    paths-ignore:
-      - 'README.md'
     branches: master
+    paths-ignore: 
+      - README.md
+      - .github/
 
 jobs:
   build:
