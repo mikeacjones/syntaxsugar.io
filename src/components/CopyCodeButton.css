@@ -1,0 +1,52 @@
+.codeWrapper {
+  position: relative;
+  max-width: 98vw;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.ConfettiWrapper {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 9;
+}
+
+.CodeLanguageStub {
+  position: absolute;
+  top: 0;
+  margin: 0;
+  left: 8px;
+  border: none;
+  box-shadow: 'none';
+  padding: 8px 12px;
+  background: #52307c;
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+  color: #ffffd2;
+  font-size: 14px;
+  font-family: 'Ubuntu Mono', monospace;
+  line-height: 1;
+  z-index: 90;
+  user-select: none;
+}
+
+.CopyCodeButton {
+  position: absolute;
+  top: 0;
+  margin: 0;
+  right: 8px;
+  border: none;
+  box-shadow: none;
+  text-decoration: none;
+  padding: 8px 12px;
+  background: #52307c;
+  border-bottom-right-radius: 8px;
+  border-bottom-left-radius: 8px;
+  cursor: pointer;
+  color: #ffffd2;
+  font-size: 14px;
+  font-family: 'Ubuntu Mono', monospace;
+  line-height: 1;
+  z-index: 90;
+}
