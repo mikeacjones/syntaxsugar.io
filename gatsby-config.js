@@ -10,7 +10,7 @@ const siteMetadata = {
   author: 'Michael Jones',
   description:
     'Just a personal blog currently focused on Mulesoft/Anypoint development',
-  postsPerPage: 1,
+  postsPerPage: 10,
   isDev: process.env.NODE_ENV === 'development',
 }
 

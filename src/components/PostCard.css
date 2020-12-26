@@ -63,6 +63,11 @@
   transition: all 500ms ease;
 }
 
+.chip-link {
+  text-decoration: none;
+  color: inherit;
+}
+
 .chip:hover {
   transform: scale(1.15);
 }

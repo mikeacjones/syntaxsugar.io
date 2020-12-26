@@ -27,6 +27,22 @@ a.link-to {
   display: none;
 }
 
+.paging-links {
+  width: 100%;
+  text-align: center;
+  margin-top: 16px;
+}
+
+.paging-links a {
+  text-decoration: none;
+  font-size: 1.2rem;
+  background-color: #3B415C;
+  color: #ffffd2;
+  border-radius: 8px;
+  padding: 8px;
+  margin: 4px;
+}
+
 h1:hover .autolink-header.before,
 h2:hover .autolink-header.before,
 h3:hover .autolink-header.before,

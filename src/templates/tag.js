@@ -13,24 +13,20 @@ export default ({ data, pageContext }) => {
         <PostCard fields={fields} frontmatter={frontmatter} key={id} />
       ))}
       <div className='paging-links'>
-        {pageContext.previousPagePath && (
-          <Link to={pageContext.previousPagePath}>Newer Posts</Link>
-        )}
-        {pageContext.nextPagePath && (
-          <Link to={pageContext.nextPagePath}>Older Posts</Link>
-        )}
+        {pageContext.previousPagePath && <Link to={pageContext.previousPagePath}>Newer Posts</Link>}
+        {pageContext.nextPagePath && <Link to={pageContext.nextPagePath}>Older Posts</Link>}
       </div>
     </Layout>
   )
 }
 
 export const query = graphql`
-  query SITE_INDEX_QUERY($pubStates: [Boolean]!, $skip: Int!, $limit: Int!) {
+  query tagQuery($pubStates: [Boolean]!, $skip: Int!, $limit: Int!, $tag: String!) {
     allMdx(
       sort: { fields: [frontmatter___date], order: DESC }
       filter: {
         fileAbsolutePath: { regex: "//posts//" }
-        frontmatter: { published: { in: $pubStates } }
+        frontmatter: { published: { in: $pubStates }, tags: { in: [$tag] } }
       }
       skip: $skip
       limit: $limit

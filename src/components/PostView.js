@@ -7,7 +7,6 @@ import SEO from './SEO'
 
 export default ({ data, pageContext }) => {
   const { frontmatter, body } = data.mdx
-  const { previous, next } = pageContext
   return (
     <Layout>
       <SEO title={frontmatter.title} description={frontmatter.shortDescription} keywords={frontmatter.tags} />
