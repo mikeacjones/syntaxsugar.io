@@ -1,7 +1,7 @@
 ---
 title: Optional Query Params via Dynamic SQL
 shortDescription: When building APIs, we typically provide the ability to sort or filter data on GET operations via query parameters. While building basic query parameters in Mulesoft is simple, expanding your API to support optional and repeatable parameters can seem daunting when you're new to the platform. We will be building a simplistic Product System API in order to demo optional and repeatable query params. To accomplish this, we will be building dynamic (parameterized) SQL, and as a bonus wrapping this functionality into a reusable library.
-published: false
+published: true
 date: 2020-12-25
 tags: [dataweave, mule 4, sql]
 ---
