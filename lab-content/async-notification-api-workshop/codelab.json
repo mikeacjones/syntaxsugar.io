@@ -1,0 +1,24 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2020-12-26T23:25:50Z",
+  "id": "async-notification-api-workshop",
+  "duration": 0,
+  "title": "Anypoint MQ Notification Demo",
+  "authors": "Michael Jones \u0026 Catherine Roebuck",
+  "summary": "In this example, you will build a Mulesoft application using multiple queues to facilitate notifications to multiple channels.",
+  "source": "1KgwVFYMoM8i56Xqif1m0cVWw9KLYRiBRRHhYXFaH_wA",
+  "theme": "anypoint-mq",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "Anypoint MQ"
+  ],
+  "tags": [
+    "web"
+  ],
+  "url": "async-notification-api-workshop"
+}
