@@ -13,7 +13,6 @@ const CategoryLabView = ({ data, pageContext }) => {
       <SEO title={`${pageContext.labCategory} Guided Labs`} description='Guided labs which walk you through a specific concept / task' />
       <div className='post-view-header'>
         <div className='post-view-title'>
-          <h1>Guided Labs</h1>
           <h3>Categories:</h3>
           <div className='category-tags'>
             <Link to='/labs' className='tag-link chip' activeClassName='active'>
