@@ -7,16 +7,16 @@ import LabCard from '../components/LabCard'
 import { createTagSlug } from '../helpers'
 import '../components/Labs.css'
 
-const LabView = ({ data, pageContext }) => {
+const CategoryLabView = ({ data, pageContext }) => {
   return (
     <Layout>
-      <SEO title='Guided Labs' description='Guided labs which walk you through a specific concept / task' />
+      <SEO title={`${pageContext.labCategory} Guided Labs`} description='Guided labs which walk you through a specific concept / task' />
       <div className='post-view-header'>
         <div className='post-view-title'>
           <h1>Guided Labs</h1>
           <h3>Categories:</h3>
           <div className='category-tags'>
-            <Link to='/labs' className='chip tag-link' activeClassName='active' partiallyActive={true}>
+            <Link to='/labs' className='tag-link chip' activeClassName='active'>
               All Labs
             </Link>
             {data.allCategories.edges
@@ -49,11 +49,16 @@ const LabView = ({ data, pageContext }) => {
   )
 }
 
-export default LabView
+export default CategoryLabView
 
 export const query = graphql`
-  query labQuery($limit: Int!, $skip: Int!) {
-    allFile(sort: { fields: [childJson___title], order: DESC }, filter: { absolutePath: { regex: "/.+codelab.json$/" } }, limit: $limit, skip: $skip) {
+  query labCategoryQuery($limit: Int!, $skip: Int!, $labCategory: String!) {
+    allFile(
+      sort: { fields: [childJson___title], order: DESC }
+      filter: { absolutePath: { regex: "/.+codelab.json$/" }, childJson: { category: { eq: $labCategory } } }
+      limit: $limit
+      skip: $skip
+    ) {
       edges {
         node {
           absolutePath

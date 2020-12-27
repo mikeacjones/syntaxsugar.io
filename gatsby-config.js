@@ -15,7 +15,7 @@ const siteMetadata = {
   description:
     'Just a personal blog currently focused on Mulesoft/Anypoint development',
   postsPerPage: 10,
-  labsPerPage: 10,
+  labsPerPage: 20,
   isDev: process.env.NODE_ENV === 'development',
 }
 

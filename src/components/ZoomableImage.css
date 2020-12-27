@@ -5,7 +5,7 @@
   cursor: pointer;
   margin-left: auto;
   margin-right: auto;
-  border: 1px solid #3B415C;
+  border: 1px solid #3b415c;
 }
 
 .ZoomableImage-enlarged {
@@ -18,5 +18,5 @@
   display: flex;
   padding: 50px;
   z-index: 100;
-  background-color: rgba(0, 0, 0, .8);
+  background-color: rgba(0, 0, 0, 0.8);
 }
