@@ -4,11 +4,30 @@ import { Layout } from '../components/Layout'
 import PostCard from '../components/PostCard'
 import SEO from '../components/SEO'
 import { Link } from 'gatsby'
+import { createTagSlug } from '../helpers'
 
 export default ({ data, pageContext }) => {
   return (
     <Layout>
       <SEO title='Blog Posts' />
+      <div className='post-view-header'>
+        <div className='post-view-title'>
+          <h3>tags:</h3>
+          <div className='category-tags'>
+            <Link to='/' className='tag-link chip' activeClassName='active' partiallyActive={true}>
+              all
+            </Link>
+            {data.allTags.nodes
+              .flatMap(({ frontmatter }) => frontmatter.tags)
+              .filter((tag, index, self) => self.indexOf(tag) === index)
+              .map((tag) => (
+                <Link to={`/tag/${createTagSlug(tag)}`} className='tag-link chip' activeClassName='active' partiallyActive={true}>
+                  {tag}
+                </Link>
+              ))}
+          </div>
+        </div>
+      </div>
       {data.allMdx.nodes.map(({ id, fields, frontmatter }) => (
         <PostCard fields={fields} frontmatter={frontmatter} key={id} />
       ))}
@@ -42,6 +61,13 @@ export const query = graphql`
         }
         fields {
           slug
+        }
+      }
+    }
+    allTags: allMdx(filter: { fileAbsolutePath: { regex: "//posts//" }, frontmatter: { published: { in: $pubStates } } }) {
+      nodes {
+        frontmatter {
+          tags
         }
       }
     }

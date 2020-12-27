@@ -16,14 +16,14 @@ const LabView = ({ data, pageContext }) => {
           <h1>Guided Labs</h1>
           <h3>Categories:</h3>
           <div className='category-tags'>
-            <Link to='/labs' className='chip tag-link' activeClassName='active'>
+            <Link to='/labs' className='chip tag-link' activeClassName='active' partiallyActive={true}>
               All Labs
             </Link>
             {data.allCategories.edges
               .flatMap(({ node }) => node.childJson.category)
               .filter((cat, index, self) => self.indexOf(cat) === index)
               .map((cat) => (
-                <Link to={`/labs/${createTagSlug(cat)}`} className='tag-link chip' activeClassName='active'>
+                <Link to={`/labs/${createTagSlug(cat)}`} className='tag-link chip' activeClassName='active' partiallyActive={true}>
                   {cat}
                 </Link>
               ))}

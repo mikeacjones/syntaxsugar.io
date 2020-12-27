@@ -8,6 +8,8 @@ import { useSiteMetadata } from '../hooks/useSiteMetadata'
 
 export default () => {
   const { menuItems } = useSiteMetadata()
+  const url = typeof window !== 'undefined' ? window.location.href : '';
+  const onPost = url.indexOf('/tag/') !== -1 || url.indexOf('/post/') !== -1
 
   return (
     <div id='sideBar'>
@@ -21,15 +23,17 @@ export default () => {
         <div id='aboutMe_pages'>
           <div>
             <ul id='aboutMe_pages_links'>
-              <Link to='/' activeClassName='active'>
+              <Link to='/' activeClassName='active' {...(onPost ? {className: 'active'} : {})}>
                 <li>Posts</li>
               </Link>
               {menuItems &&
-                menuItems.map((menuItem) => (
-                  <Link to={menuItem.path} activeClassName='active' key={menuItem.title}>
-                    <li>{menuItem.title}</li>
-                  </Link>
-                ))}
+                menuItems.map((menuItem) => {
+                  return (
+                    <Link to={menuItem.path} activeClassName='active' key={menuItem.title} partiallyActive={true}>
+                      <li>{menuItem.title}</li>
+                    </Link>
+                  )
+                })}
             </ul>
           </div>
         </div>

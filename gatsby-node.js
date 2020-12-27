@@ -133,11 +133,12 @@ exports.createPages = ({ actions, graphql }) => {
     //Create actual posts
     posts.forEach(({ node }, index) => {
       createPage({
-        path: node.fields.slug,
+        path: `/post${node.fields.slug}`,
         component: PostView,
         context: {
           isDev: process.env.NODE_ENV === 'development',
           slug: node.fields.slug,
+          url: `/post${node.fields.slug}`
         },
       })
     })
@@ -165,6 +166,7 @@ exports.onCreateNode = ({ node, actions, getNode }) => {
   const { createNodeField } = actions
   if (node.internal.type === `Mdx` || node.internal.type === `MarkdownRemark`) {
     const value = createFilePath({ node, getNode })
+    console.log(value)
     createNodeField({
       name: `slug`,
       node,

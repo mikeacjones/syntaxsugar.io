@@ -8,7 +8,7 @@ export default ({ fields, frontmatter }) => {
   const { slug } = fields
   return (
     <div className='post-card'>
-      <Link to={slug} className='post-link' />
+      <Link to={`/post${slug}`} className='post-link' />
       <div className='post-card-header'>
         <div className='post-card-header-date'>{date && date.substring(0, 10)}</div>
         <div className='post-card-title'>{title}</div>
