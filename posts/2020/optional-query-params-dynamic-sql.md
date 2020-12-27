@@ -245,9 +245,9 @@ And then in the `Input Parameters` window, you can click the `𝑓x` button and 
 }
 ```
 
-By putting this data-weave in the `Input Parameters` fields, we are passing in parameterized values to our SQL. You should _always_ take this approach when dealing with user input to protect against SQL injection. In our SQL, we are checking if the parameter is null first - if it is we are basically saying `if (true === true)`, meaning don't filter anything. If we do provide a `manufactured` query param, we can safely pass in the value since the scaffolding has already validated it is a boolean. MySQL doesn't support booleans and instead stores such information as a 1 or 0, so we have to convert the boolean to a 1 or 0 when parameterizing our value. Our logic is `if the key exists, pass 1 for true 0 for false, otherwise pass null`. Go ahead and run the API now and see how it does!
+By putting this data-weave in the `Input Parameters` fields, we are passing in parameterized values to our SQL. You should _always_ take this approach when dealing with user input to protect against SQL injection. In our SQL, we are checking if the parameter is null first - if it is we are basically saying `if (true === true)`, meaning don't filter anything. We don't need to check if `attributes.queryParams.manufactured` is actually a boolean; the scaffolding has already validated it. MySQL doesn't support booleans and instead stores such information as a 1 or 0, so we have to convert the boolean to a 1 or 0 when parameterizing our value. Our logic is ***if the key exists, pass 1 for true 0 for false, otherwise pass null***. Go ahead and run the API now and see how it does!
 
-One query parameter down - but what about our repeatable parameter? In SQL we know we would do something like `p.weight_unit_measure_code IN ('value1', 'value2')`. What we can't do is `p.weight_unit_measure_code IN (:values)`; unfortunately, the JDBC driver isn't going to understand an array. You might be tempted to write some data-weave which manually creates the list of values in the SQL, but the danger here is that we end up opening ourselves up to SQL injection. What do we need to do? Dynamically generate the parameter key names and the SQL.
+One query parameter down - but what about our repeatable parameter? In SQL we know we would do something like `p.weight_unit_measure_code IN ('value1', 'value2')`. What we can't do is `p.weight_unit_measure_code IN (:values)`; unfortunately, the JDBC driver isn't going to understand an array. You might be tempted to write some data-weave which manually creates the list of values in the SQL (ie: `IN ('lb', 'oz')`), but **the danger here is that we open ourselves to SQL injection**. What do we need to do? Dynamically generate the parameter key names and the SQL.
 
 Update your SQL block to contain the following; you must include the `#[` at the beginning and the `]` at the end as these convert the field value from static text to data-weave; I suggest using the copy code button.
 
@@ -284,7 +284,7 @@ SELECT
    AND p.weight_unit_measure_code IN (:weightUnitMeasureCode_0,:weightUnitMeasureCode_1)
 ```
 
-Great, so no we get a query string that is still parametrized, where each value gets its own indexed parameter key. In our example, we need our input parameters to look like this:
+Now we get a query string that is still parametrized, where each value gets its own indexed parameter key. In our example, we need our input parameters to look like this:
 
 ```json
 {
