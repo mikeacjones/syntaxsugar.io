@@ -293,7 +293,7 @@ Now we get a query string that is still parametrized, where each value gets its 
 }
 ```
 
-To produce a map like this, our data-weave is going to get a bit more complicated too.
+To produce a map like this, our Input Parameters data-weave is going to get a bit more complicated.
 
 Paste the following data-weave into your `Input Parameters` field
 
