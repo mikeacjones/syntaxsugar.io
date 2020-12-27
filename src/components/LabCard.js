@@ -15,7 +15,7 @@ export default ({ title, category, url, updated, summary }) => {
       <div className='LabCard-footer'>
         {category &&
           category.map((cat) => (
-            <Link to={`/labs/${createTagSlug(cat)}`} className='chip tag-link'>
+            <Link key={cat} to={`/labs/${createTagSlug(cat)}`} className='chip tag-link'>
               {cat}
             </Link>
           ))}

@@ -21,7 +21,7 @@ export default ({ data, pageContext }) => {
               .flatMap(({ frontmatter }) => frontmatter.tags)
               .filter((tag, index, self) => self.indexOf(tag) === index)
               .map((tag) => (
-                <Link to={`/tag/${createTagSlug(tag)}`} className='tag-link chip' activeClassName='active' partiallyActive={true}>
+                <Link key={tag} to={`/tag/${createTagSlug(tag)}`} className='tag-link chip' activeClassName='active' partiallyActive={true}>
                   {tag}
                 </Link>
               ))}

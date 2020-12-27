@@ -1,7 +1,7 @@
 const { createFilePath } = require(`gatsby-source-filesystem`)
 const path = require(`path`)
 const { paginate } = require(`gatsby-awesome-pagination`)
-const { createTagSlug } = require('./src/helpers')
+const { createTagSlug, powerSet } = require('./src/helpers')
 const { generateCodeLabs } = require('./codelabs-script')
 
 exports.onPreInit = async () => {
@@ -15,6 +15,7 @@ exports.createPages = ({ actions, graphql }) => {
   const TagView = path.resolve(`./src/templates/tag.js`)
   const LabsView = path.resolve(`./src/templates/labs.js`)
   const CategoryLabView = path.resolve(`./src/templates/labsCategory.js`)
+  const PostsByTags = path.resolve(`./src/templates/postsByTags.js`)
 
   return graphql(`
     {
@@ -110,21 +111,29 @@ exports.createPages = ({ actions, graphql }) => {
       },
     })
 
-    //Create paginated post lists, by tag
+    //create paginated post lists by combined tag
     const tags = posts
       .filter(({ node }) => node.frontmatter.tags && node.frontmatter.tags != null)
       .flatMap(({ node }) => node.frontmatter.tags)
       .filter((tag, index, self) => self.indexOf(tag) === index)
-    tags.forEach((tag) => {
-      const postsWithTag = posts.filter(({ node }) => node.frontmatter.tags && node.frontmatter.tags.indexOf(tag) !== -1)
+    const combinedTags = powerSet(tags).filter((set) => set.length > 0)
+    combinedTags.forEach((tagCombo) => {
+      const postsWithTag = posts.filter(({ node }) => node.frontmatter.tags && tagCombo.some((tag) => node.frontmatter.tags.includes(tag)))
+      const currentSlug = createTagSlug(tagCombo.sort().join('-'))
+      const tagSlugs = tags.reduce((map, tag) => {
+        const linkTags = (tagCombo.includes(tag) ? [...tagCombo.slice(0, tagCombo.indexOf(tag)), ...tagCombo.slice(tagCombo.indexOf(tag) + 1)] : [...tagCombo, tag]).sort()
+        map[tag] = linkTags.length === 0 ? '/' : `/tag/${createTagSlug(linkTags.join('-'))}`
+        return map
+      }, {})
       paginate({
         createPage,
         items: postsWithTag,
-        component: TagView,
+        component: PostsByTags,
         itemsPerPage: result.data.site.siteMetadata.postsPerPage,
-        pathPrefix: `/tag/${createTagSlug(tag)}`,
+        pathPrefix: `/tag/${currentSlug}`,
         context: {
-          tag,
+          tags: tagCombo,
+          tagSlugs,
           pubStates: process.env.NODE_ENV === 'development' ? [true, false] : [true],
         },
       })
@@ -138,7 +147,7 @@ exports.createPages = ({ actions, graphql }) => {
         context: {
           isDev: process.env.NODE_ENV === 'development',
           slug: node.fields.slug,
-          url: `/post${node.fields.slug}`
+          url: `/post${node.fields.slug}`,
         },
       })
     })
@@ -166,7 +175,6 @@ exports.onCreateNode = ({ node, actions, getNode }) => {
   const { createNodeField } = actions
   if (node.internal.type === `Mdx` || node.internal.type === `MarkdownRemark`) {
     const value = createFilePath({ node, getNode })
-    console.log(value)
     createNodeField({
       name: `slug`,
       node,

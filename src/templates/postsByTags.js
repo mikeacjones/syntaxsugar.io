@@ -4,12 +4,11 @@ import { Layout } from '../components/Layout'
 import PostCard from '../components/PostCard'
 import SEO from '../components/SEO'
 import { Link } from 'gatsby'
-import { createTagSlug } from '../helpers'
 
 export default ({ data, pageContext }) => {
   return (
     <Layout>
-      <SEO title={`${pageContext.tag} Posts`} />
+      <SEO title={`Posts`} />
       <div className='post-view-header'>
         <div className='post-view-title'>
           <h3>tags:</h3>
@@ -21,7 +20,7 @@ export default ({ data, pageContext }) => {
               .flatMap(({ frontmatter }) => frontmatter.tags)
               .filter((tag, index, self) => self.indexOf(tag) === index)
               .map((tag) => (
-                <Link to={`/tag/${createTagSlug(tag)}`} className='tag-link chip' activeClassName='active' partiallyActive={true}>
+                <Link key={tag} to={pageContext.tagSlugs[tag]} className={`tag-link chip${pageContext.tags.includes(tag) ? ' active' : ''}`}>
                   {tag}
                 </Link>
               ))}
@@ -44,10 +43,10 @@ export default ({ data, pageContext }) => {
 }
 
 export const query = graphql`
-  query tagQuery($pubStates: [Boolean]!, $skip: Int!, $limit: Int!, $tag: String!) {
+  query postsByTag($pubStates: [Boolean]!, $skip: Int!, $limit: Int!, $tags: [String]!) {
     allMdx(
       sort: { fields: [frontmatter___date], order: DESC }
-      filter: { fileAbsolutePath: { regex: "//posts//" }, frontmatter: { published: { in: $pubStates }, tags: { in: [$tag] } } }
+      filter: { fileAbsolutePath: { regex: "//posts//" }, frontmatter: { published: { in: $pubStates }, tags: { in: $tags } } }
       skip: $skip
       limit: $limit
     ) {
