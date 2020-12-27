@@ -22,7 +22,7 @@ const CategoryLabView = ({ data, pageContext }) => {
               .flatMap(({ node }) => node.childJson.category)
               .filter((cat, index, self) => self.indexOf(cat) === index)
               .map((cat) => (
-                <Link to={`/labs/${createTagSlug(cat)}`} className='tag-link chip' activeClassName='active' partiallyActive={true}>
+                <Link key={cat} to={`/labs/${createTagSlug(cat)}`} className='tag-link chip' activeClassName='active' partiallyActive={true}>
                   {cat}
                 </Link>
               ))}
