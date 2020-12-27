@@ -3,6 +3,7 @@ const { execSync } = require('child_process')
 const drive = google.drive('v3')
 
 const generateCodeLabs = async () => {
+  if (process.env.NODE_ENV === 'development') return //run 'yarn build' the first time you test locally to generate labs; after than skip while doing dev.
   const jwtClient = new google.auth.JWT(
     process.env.GOOG_SA_EMAIL,
     null,

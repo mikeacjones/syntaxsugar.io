@@ -5,7 +5,7 @@
   margin: 15px 20px 0 20px;
   cursor: pointer;
   position: relative;
-  
+
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
   border-radius: 0px;
   -webkit-transition: all 0.6s cubic-bezier(0.165, 0.84, 0.44, 1);
@@ -21,7 +21,7 @@
 }
 
 .post-card::after {
-  content: "";
+  content: '';
   border-radius: 0px;
   position: absolute;
   z-index: -1;
@@ -68,6 +68,11 @@
 .chip-link {
   text-decoration: none;
   color: inherit;
+}
+
+.chip.active {
+  background-color: #52307c;
+  color: #eddbf4;
 }
 
 .chip:hover {

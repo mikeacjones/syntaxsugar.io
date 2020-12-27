@@ -33,6 +33,7 @@
   padding: 0;
   margin: 0;
   word-wrap: break-word;
+  text-align: center;
 }
 
 .post-view-title h1 {
@@ -49,19 +50,17 @@
   text-align: center;
 }
 
-@media only screen 
-  and (max-device-width: 800px)
-  and (-webkit-min-device-pixel-ratio: 2) {
-    .post-view-title h1 {
-      font-size: 3em;
-      padding: 0;
-      margin: 0;
-    }
-    .post-view-date {
-      margin: 0;
-      font-size: 1rem;
-    }
-    .post-view-content {
-      padding: 10px;
-    }
+@media only screen and (max-device-width: 800px) and (-webkit-min-device-pixel-ratio: 2) {
+  .post-view-title h1 {
+    font-size: 3em;
+    padding: 0;
+    margin: 0;
+  }
+  .post-view-date {
+    margin: 0;
+    font-size: 1rem;
+  }
+  .post-view-content {
+    padding: 10px;
+  }
 }

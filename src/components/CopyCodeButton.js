@@ -1,13 +1,9 @@
 import React from 'react'
 import './CopyCodeButton.css'
 
-const CopyCodeButton = (props) => (
-  <button className='CopyCodeButton' {...props} />
-)
+const CopyCodeButton = (props) => <button className='CopyCodeButton' {...props} />
 
-const CodeLanguageStub = ({ language }) => (
-  <div className='CodeLanguageStub'>{language}</div>
-)
+const CodeLanguageStub = ({ language }) => <div className='CodeLanguageStub'>{language}</div>
 
 const copyToClipboard = (str) => {
   const el = document.createElement('textarea')
@@ -23,14 +19,6 @@ const copyToClipboard = (str) => {
 
 const Wrapper = (props) => <div className='codeWrapper' {...props} />
 
-const ConfettiWrapper = (props) => (
-  <div className='ConfettiWrapper' {...props} />
-)
+const ConfettiWrapper = (props) => <div className='ConfettiWrapper' {...props} />
 
-export {
-  CopyCodeButton,
-  copyToClipboard,
-  Wrapper,
-  ConfettiWrapper,
-  CodeLanguageStub,
-}
+export { CopyCodeButton, copyToClipboard, Wrapper, ConfettiWrapper, CodeLanguageStub }

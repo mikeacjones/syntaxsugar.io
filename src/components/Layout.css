@@ -10,7 +10,8 @@ a {
   color: inherit;
 }
 
-.post-link, .tag-link {
+.post-link,
+.tag-link {
   text-decoration: none;
   color: inherit;
 }
@@ -40,17 +41,22 @@ a {
 .paging-links {
   width: 100%;
   text-align: center;
-  margin-top: 16px;
+  margin-top: 30px;
 }
 
 .paging-links a {
   text-decoration: none;
   font-size: 1.2rem;
-  background-color: #3B415C;
+  background-color: #3b415c;
   color: #ffffd2;
   border-radius: 8px;
   padding: 8px;
   margin: 4px;
+}
+
+.paging-links a.disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
 }
 
 h1:hover .autolink-header.before,
@@ -134,7 +140,7 @@ blockquote {
 }
 
 #aboutMe_image {
-  width: 50%;
+  width: 70%;
   height: auto;
   margin-left: auto;
   margin-right: auto;
@@ -188,6 +194,29 @@ blockquote {
   padding: 6rem;
 }
 
+.LabCard {
+  width: 28%;
+  max-width: 28%;
+  margin-top: 2%;
+  white-space: pre-wrap;
+
+  color: #52307c;
+  background-color: #fff;
+  padding: 20px;
+  cursor: pointer;
+
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  border-radius: 0px;
+  -webkit-transition: all 0.6s cubic-bezier(0.165, 0.84, 0.44, 1);
+  transition: all 0.6s cubic-bezier(0.165, 0.84, 0.44, 1);
+
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+
+  position: relative;
+}
+
 @media only screen and (max-width: 1000px) and (-webkit-min-device-pixel-ratio: 2) {
   #side-nav-toggle-wrapper {
     display: block;
@@ -212,5 +241,11 @@ blockquote {
 
   .post-view-content {
     padding: 5px;
+  }
+
+  .LabCard {
+    margin: 15px 20px 0px;
+    width: 100%;
+    max-width: 100%;
   }
 }

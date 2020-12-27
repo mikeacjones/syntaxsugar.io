@@ -18,8 +18,12 @@ export default ({ data, pageContext }) => {
         <PostCard fields={fields} frontmatter={frontmatter} key={id} />
       ))}
       <div className='paging-links'>
-        {pageContext.previousPagePath && <Link to={pageContext.previousPagePath}>Newer Posts</Link>}
-        {pageContext.nextPagePath && <Link to={pageContext.nextPagePath}>Older Posts</Link>}
+        {(pageContext.nextPagePath || pageContext.previousPagePath) && (
+          <>
+            {pageContext.nextPagePath ? <Link to={pageContext.nextPagePath}>Older Posts</Link> : <Link className='disabled'>Older Posts</Link>}
+            {pageContext.previousPagePath ? <Link to={pageContext.previousPagePath}>Newer Posts</Link> : <Link className='disabled'>Newer Posts</Link>}
+          </>
+        )}
       </div>
     </Layout>
   )
