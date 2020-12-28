@@ -77,35 +77,17 @@ exports.createPages = ({ actions, graphql }) => {
       component: LabsView,
     })
 
-    //Create paginated lab pages, by category
-    const labCategories = labs.flatMap(({ category }) => category).filter((item, index, self) => self.indexOf(item) === index)
-    /*labCategories.forEach((labCategory) => {
-      const labsWithCategory = labs.filter((lab) => lab.category.indexOf(labCategory) !== -1)
-      paginate({
-        createPage,
-        items: labsWithCategory,
-        component: CategoryLabView,
-        itemsPerPage: result.data.site.siteMetadata.labsPerPage,
-        pathPrefix: `/labs/${createTagSlug(labCategory)}`,
-        context: {
-          labCategory,
-        },
-      })
-    })*/
-
     //Create paginated lab lists by combined tag
+    const labCategories = labs.flatMap(({ category }) => category).filter((item, index, self) => self.indexOf(item) === index)
     const combinedCategories = powerSet(labCategories).filter((set) => set.length > 0)
     combinedCategories.forEach((catCombo) => {
       const labsWithCategory = labs.filter((lab) => lab.category && catCombo.some((cat) => lab.category.includes(cat)))
-      console.log(JSON.stringify(labsWithCategory, null, 2))
       const currentSlug = createTagSlug(catCombo.sort().join('-'))
-      console.log(currentSlug)
       const catSlugs = labCategories.reduce((map, cat) => {
         const linkCats = (catCombo.includes(cat) ? [...catCombo.slice(0, catCombo.indexOf(cat)), ...catCombo.slice(catCombo.indexOf(cat) + 1)] : [...catCombo, cat]).sort()
         map[cat] = linkCats.length === 0 ? '/labs' : `/labs/${createTagSlug(linkCats.join('-'))}`
         return map
       }, {})
-      console.log(JSON.stringify(catSlugs, null, 0))
 
       paginate({
         createPage,
