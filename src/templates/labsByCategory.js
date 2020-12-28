@@ -4,7 +4,6 @@ import { Layout } from '../components/Layout'
 import SEO from '../components/SEO'
 import { Link } from 'gatsby'
 import LabCard from '../components/LabCard'
-import { createTagSlug } from '../helpers'
 import '../components/Labs.css'
 
 const CategoryLabView = ({ data, pageContext }) => {
@@ -21,8 +20,8 @@ const CategoryLabView = ({ data, pageContext }) => {
             {data.allCategories.edges
               .flatMap(({ node }) => node.childJson.category)
               .filter((cat, index, self) => self.indexOf(cat) === index)
-              .map((cat) => (
-                <Link key={cat} to={pageContext.catSlugs[cat]} className={`tag-link chip${pageContext.categories.includes(cat) ? ' active' : ''}`}>
+              .map((cat, index) => (
+                <Link key={index} to={pageContext.catSlugs[cat]} className={`tag-link chip${pageContext.categories.includes(cat) ? ' active' : ''}`}>
                   {cat}
                 </Link>
               ))}
@@ -30,8 +29,8 @@ const CategoryLabView = ({ data, pageContext }) => {
         </div>
       </div>
       <div className='LabCards'>
-        {data.allFile.edges.map(({ node }) => (
-          <LabCard {...node.childJson} key={node.url} />
+        {data.allFile.edges.map(({ node }, index) => (
+          <LabCard {...node.childJson} key={index} />
         ))}
         <div className='LabCard' style={{ visibility: 'hidden' }} />
         <div className='LabCard' style={{ visibility: 'hidden' }} />
