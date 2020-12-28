@@ -14,7 +14,8 @@ const components = {
       <img {...props} />
     </ZoomableImage>
   ),
-  p: (props) => <div {...props} className='div-paragraph' />
+  p: (props) => <div {...props} className='div-paragraph' />,
+  undefined: (props) => <div {...props} style={{ marginLeft: 'auto', marginRight: 'auto'}} />
 }
 
 export const wrapRootElement = ({ element }) => (
