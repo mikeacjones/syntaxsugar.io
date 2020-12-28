@@ -1,0 +1,460 @@
+
+<!doctype html>
+
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
+  <meta name="theme-color" content="#4F7DC9">
+  <meta charset="UTF-8">
+  <title>CICD with GitHub Actions</title>
+  <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+  <link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="stylesheet" href="https://storage.googleapis.com/codelab-elements/codelab-elements.css">
+  <style>
+    .success {
+      color: #1e8e3e;
+    }
+    .error {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+  <google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+  <google-codelab codelab-gaid=""
+                  id="cicd-github-actions"
+                  title="CICD with GitHub Actions"
+                  environment="web"
+                  feedback-link="https://github.com/googlecodelabs/your-first-pwapp/issues">
+    
+      <google-codelab-step label="Overview" duration="0">
+        <p class="image-container"><img style="width: 417.00px" src="img/b3b4beef21ee712.png"></p>
+<h2 is-upgraded>CI/CD is an important piece of achieving a development process that is fast and flexible while remaining reliable.</h2>
+<p><strong>Continuous Integration</strong>: This is the process of keeping code iterations as small as possible, and integrating them into the main codebase. By keeping our changes small, we can more quickly identify and fix new issues introduced into the codebase, as well as more quickly release stable updates. In this example, you will briefly touch on this process by automating unit testing via the MUnit plugin.</p>
+<p><strong>Continuous Delivery</strong>: This process ties back into continuous integration, and is the concept that our codebase should always remain deliverable. The main codebase should never enter a state which can not be deployed. As part of this process, we automate building and testing, typically via automatic deployment into QA and UAT environments. We will cover this by utilizing the <code>mule-maven-plugin</code> to automate deployment into our Sandbox environment.</p>
+<p><strong>Continuous Deployment</strong>: This is typically considered the next and final step in building out an automated pipeline; when a company is utilizing continuous deployment, the release management is tied into an automated process. While we will be taking a simplistic approach, we will touch on this today by creating a protected main branch, which requires that our build and test phases in Sandbox have passed before they can be merged into the master branch, and trigger a deployment to the Production environment.</p>
+<h2 is-upgraded>What you&#39;ll build</h2>
+<p>In this codelab, we will build a Mulesoft API, which you will commit to a new GitHub repository. We will then walk through setting up GitHub Actions to act as our CI platform. Your project will:</p>
+<ul>
+<li>Utilize a git repository for tracking code changes</li>
+<li>Automatically execute and validate MUnit test</li>
+<li>Automatically deploy the sandbox branch to CloudHub</li>
+<li>Utilize the <code>mule-maven-plugin</code> to automate this process, parameterizing various secrets through the GitHub secrets vault</li>
+</ul>
+<h2 class="checklist" is-upgraded>What you&#39;ll learn</h2>
+<ul class="checklist">
+<li>How to configure the mule-maven-plugin for deployment to CloudHub, and where to go for documentation covering deployment to other environments</li>
+<li>How to configure maven for communication with the Mulesoft Exchange and Nexus repository</li>
+<li>How to set up a basic MUnit test suite</li>
+<li>How to configure GitHub Actions workflow for maven (this process works very similarly to CircleCI - after going through this project, give configuring CircleCI a try as a self-challenge!)</li>
+</ul>
+<h2 is-upgraded>What you&#39;ll need</h2>
+<ul>
+<li>Anypoint platform account for which you have rights to deploy applications, and which you have Environment credentials to; suggest creating a new trial account when doing testing.</li>
+</ul>
+<p><a href="https://anypoint.mulesoft.com/login/signup" target="_blank"><paper-button class="colored" raised>Create Trial Account</paper-button></a></p>
+<ul>
+<li>GitHub account. Does not need to be a paid account, though you will need to set the repository to public if using a free account.</li>
+<li>Credentials to the MuleSoft nexus.</li>
+</ul>
+<p><a href="https://repository.mulesoft.org/nexus-ee/content/repositories/releases-ee/" target="_blank"><paper-button class="colored" raised>Test Nexus Access</paper-button></a></p>
+<aside class="warning"><p>Access to the Nexus repository is only available to customers with an active MuleSoft subscription. If your organization has an active subscription but does not have access to the Nexus, please open a ticket with support.</p>
+<p>You will <strong>NOT</strong> be able to complete this lab without access to the MuleSoft Nexus</p>
+</aside>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Create Mule Application" duration="0">
+        <p>In order to automate mule application testing and deployment, we first have to have an actual application to work with! We will be using the <strong>hello-world </strong>example in Mulesoft&#39;s exchange.</p>
+<aside class="warning"><p>Due to potential dependency and environment issues, do not use an existing application unless you are confident debugging maven.</p>
+</aside>
+<h3 is-upgraded>Import Project</h3>
+<ol type="1" start="1">
+<li>Open Anypoint Studio</li>
+<li>Set your workspace to <code>cicid-with-github</code></li>
+</ol>
+<p class="image-container"><img style="width: 624.00px" src="img/b5aebd0bcdbab0d0.png"></p>
+<ol type="1" start="3">
+<li>Click <code>Open an Example from Exchange</code> in the package explorer</li>
+</ol>
+<p class="image-container"><img style="width: 624.00px" src="img/ded650539c7fc7b0.png"></p>
+<ol type="1" start="4">
+<li>Click on <code>Provided by Mulesoft</code> on the left in the exchange window</li>
+</ol>
+<p class="image-container"><img style="width: 624.00px" src="img/850c582dd82e26fd.png"></p>
+<ol type="1" start="5">
+<li>Search for hello world and click on the example</li>
+</ol>
+<p class="image-container"><img style="width: 624.00px" src="img/9c5d036066cb07d1.png"></p>
+<ol type="1" start="6">
+<li>Click <code>Open</code> in the top right</li>
+</ol>
+<p class="image-container"><img style="width: 624.00px" src="img/9427c220e747a47d.png"></p>
+<ol type="1" start="7">
+<li>In package explorer, you should now see a project called <code>hello-world</code></li>
+</ol>
+<aside class="special"><p>If you are prompted to update the workspace, click <code>Perform Update</code></p>
+</aside>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Setup Source Control" duration="0">
+        <p>Next, we will create a GitHub repository to house our code, and to run our CI/CD workflow. Everything we will be doing with GitHub can be performed with a free account.</p>
+<p><a href="https://github.com/join" target="_blank"><paper-button class="colored" raised>Create GitHub Account</paper-button></a></p>
+<aside class="warning"><p>You will need the Git CLI installed in order to complete this section. If you are on macOS, you&#39;re good - the CLI comes pre-installed. If you are on Windows, you will need to install the CLI  yourself.</p>
+<p><a href="https://github.com/git-for-windows/git/releases/download/v2.29.2.windows.3/Git-2.29.2.3-64-bit.exe" target="_blank"><paper-button class="colored" raised><iron-icon icon="file-download"></iron-icon>Download Git for Windows</paper-button></a></p>
+</aside>
+<h2 is-upgraded><strong>Create GitHub Repository</strong></h2>
+<ol type="1" start="1">
+<li>Sign in to GitHub</li>
+<li>Click <code>New</code> to create a new repository</li>
+</ol>
+<p class="image-container"><img style="width: 343.82px" src="img/30f7020b3867ab1d.png"></p>
+<ol type="1" start="3">
+<li>Give your repository a name like <code>hello-world-mule-lab</code></li>
+</ol>
+<p class="image-container"><img style="width: 624.00px" src="img/d515e246c61580a.png"></p>
+<ol type="1" start="4">
+<li>On our new repo&#39;s landing page, copy the <code>git remote add origin </code><a href="https://github.com/%E2%80%A6" target="_blank"><code>https://github.com/...</code></a> command</li>
+</ol>
+<p class="image-container"><img style="width: 624.00px" src="img/fe12be8927a24f8d.png"></p>
+<ol type="1" start="5">
+<li>Open terminal/command prompt</li>
+<li>Change directory to <code>cicd-with-github/hello-world</code></li>
+<li>Run command <code>git init</code></li>
+<li>Paste the <code>git remote add origin ...</code> we copied earlier</li>
+</ol>
+<p class="image-container"><img style="width: 624.00px" src="img/ef732b647287212f.png"></p>
+<ol type="1" start="9">
+<li>Before we make our first commit, we want to setup our <code>.gitignore</code> file first. In the hello-world directory, create a file called <code>.gitignore</code> and paste the following:</li>
+</ol>
+<h3 is-upgraded><a href="https://github.com/mikeacjones/hello-world-mule-lab/blob/master/.gitignore" target="_blank"><strong>.gitignore</strong></a></h3>
+<pre><code># ------------------------------------------------------------------------------ #
+# Java defaults (https://github.com/github/gitignore/blob/master/Java.gitignore) #
+# ------------------------------------------------------------------------------ #
+*.class
+
+# Package Files #
+*.jar
+*.war
+*.ear
+
+# ------------------------------------------------------------------------------------------- #
+# Eclipse-specific (https://github.com/github/gitignore/blob/master/Global/Eclipse.gitignore) #
+# ------------------------------------------------------------------------------------------- #
+*.pydevproject
+.metadata
+bin/**
+tmp/**
+tmp/**/*
+*.tmp
+*.bak
+*.swp
+*~.nib
+local.properties
+.settings/
+.loadpath
+.project
+.classpath
+
+# External tool builders
+.externalToolBuilders/
+
+# Locally stored &#34;Eclipse launch configurations&#34;
+*.launch
+
+# CDT-specific
+.cproject
+
+# PDT-specific
+.buildpath
+
+# --------------- #
+# Studio-specific #
+# --------------- #
+target/
+.mule/**
+.mule/**/*
+.DS_Store
+velocity.log
+src/main/resources/config/*
+</code></pre>
+<ol type="1" start="10">
+<li>After saving the <code>.gitignore</code> file, run the command <code>git add .</code></li>
+<li>Run command <code>git commit -m "First commit"</code></li>
+<li>Run command <code>git push -u origin master</code></li>
+</ol>
+<p class="image-container"><img style="width: 624.00px" src="img/382bf69354c2cf72.png"></p>
+<ol type="1" start="13">
+<li>We can now check on GitHub, and should see the contents of <code>hello-world</code></li>
+</ol>
+<p class="image-container"><img style="width: 624.00px" src="img/f720d6f3c7a9018f.png"></p>
+<h2 is-upgraded><strong>CI Environment Variables / Secrets</strong></h2>
+<p>In order to deploy to CloudHub via an external CI platform, we need to setup some secrets to use as environment variables. For complete documentation on settings you can provide the plugin, see <a href="https://docs.mulesoft.com/mule-runtime/4.3/mmp-concept" target="_blank">https://docs.mulesoft.com/mule-runtime/4.3/mmp-concept</a></p>
+<p>You will need to add each of the environment variables below to your GitHub Repository&#39;s secrets. To add a repository secret:</p>
+<ol type="1" start="1">
+<li>While viewing your GitHub Repository, click settings</li>
+</ol>
+<p class="image-container"><img style="width: 624.00px" src="img/e166b00c242034c7.png"></p>
+<ol type="1" start="2">
+<li>Click on Secrets</li>
+</ol>
+<p class="image-container"><img style="width: 624.00px" src="img/5858b7c352cb2bd3.png"></p>
+<ol type="1" start="3">
+<li>Click New Repository Secret</li>
+</ol>
+<p class="image-container"><img style="width: 624.00px" src="img/e7e4bc49da17695f.png"></p>
+<ol type="1" start="4">
+<li>Fill in the name of the secret (use the same key names listed below) and the corresponding value. Click Add Secret</li>
+</ol>
+<p class="image-container"><img style="width: 254.06px" src="img/8833c0335679a52a.png"></p>
+<p>Add the following secrets to your repo:</p>
+<ul>
+<li>PLATFORM_USERNAME - your username for logging into <a href="https://anypoint.mulesoft.com" target="_blank">https://anypoint.mulesoft.com</a>; in a real-world environment, we would either use a specific service account with limited rights, or application specific credentials</li>
+<li>PLATFORM_PASSWORD - password for your anypoint account</li>
+<li>SANDBOX_CLIENT_ID - client ID for your CloudHub sandbox environment (to access this information, log into <a href="https://anypoint.mulesoft.com" target="_blank">https://anypoint.mulesoft.com</a> and navigate to Access Management -&gt; Environments and click on the Environment you intend to deploy to</li>
+<li>SANDBOX_CLIENT_SECRET - client secret for CloubHub sandbox environment</li>
+<li>NEXUS_USERNAME - username for your Nexus account (see Overview section for more information on Nexus). These credentials will be used to authenticate with the Enterprise maven repository hosted by Mulesoft.</li>
+<li>NEXUS_PASSWORD - password for your Nexus account</li>
+<li>BUS_GROUP_ID - business group ID you plan to deploy application to. </li>
+</ul>
+<aside class="warning"><p>If you are using a trial account deploying to the master organization (ie: there is no business group ID), you do not need to include the BUS_GROUP_ID</p>
+</aside>
+<p>When your done, your repository secrets should look like this:</p>
+<p class="image-container"><img style="width: 624.00px" src="img/fb2b86819aff6a54.png"></p>
+<h3 is-upgraded>Now that you&#39;ve added all of your secrets to the repository, we&#39;re ready to setup the repository for automated builds and deployments!</h3>
+<p>------</p>
+<h3 is-upgraded>To find your business group ID:</h3>
+<ol type="1" start="1">
+<li>Log into anypint.mulesoft.com</li>
+<li>Click on the business group in the top right corner</li>
+</ol>
+<p class="image-container"><img style="width: 478.50px" src="img/85231075364ba905.png"></p>
+<ol type="1" start="3">
+<li>Click on Business Groups</li>
+</ol>
+<p class="image-container"><img style="width: 387.19px" src="img/5bf9d67647a4f32d.png"></p>
+<ol type="1" start="4">
+<li>Click on the business group in the access management window</li>
+</ol>
+<p class="image-container"><img style="width: 413.50px" src="img/873b537f4713d83b.png"></p>
+<ol type="1" start="5">
+<li>Copy the Business Group ID</li>
+</ol>
+<p class="image-container"><img style="width: 417.70px" src="img/ac390b9e1024396f.png"></p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Setup Maven Plugin" duration="0">
+        <p>Mule applications are, at the heart of things, mavenized java applications. In order to automate the build and deployment process, Mulesoft provides the <code>mule-maven-plugin</code>. Whether you&#39;re hosting your applications on CloudHub, AWS, Azure, GCP, on-prem, a raspberry pi in your closet, etc.. you can use the <code>mule-maven-plugin</code> to automate your deployments via the Anypoint Control Plane. In this workshop, to keep things as simple as possible, we will be deploying our application to a single .1vcore worker in CloudHub. For information about deployment to other platforms, check the documentation: <a href="https://docs.mulesoft.com/mule-runtime/4.3/mmp-concept" target="_blank">https://docs.mulesoft.com/mule-runtime/4.3/mmp-concept</a></p>
+<p>Back to Anypoint Studio!</p>
+<ol type="1" start="1">
+<li>Open up the POM.xml</li>
+<li>Find the XML key <code>mule.maven.plugin.version</code> and update the version to the latest version <a href="https://docs.mulesoft.com/release-notes/mule-maven-plugin/mule-maven-plugin-release-notes" target="_blank">on the release page</a> to ensure we have the latest fixes. At the time of writing this, the latest version is <code>3.4.2</code>.</li>
+</ol>
+<h3 is-upgraded><a href="https://github.com/mikeacjones/hello-world-mule-lab/blob/master/pom.xml#L16-L19" target="_blank"><strong>pom.xml</strong></a></h3>
+<pre><code>&lt;properties&gt;
+        &lt;munit.version&gt;2.1.2&lt;/munit.version&gt;
+        &lt;mule.maven.plugin.version&gt;3.4.2&lt;/mule.maven.plugin.version&gt;
+&lt;/properties&gt;</code></pre>
+<ol type="1" start="3">
+<li>Add our <code>cloudHubDeployment</code> entry to the <code>mule-maven-plugin</code> entry in the <code>plugins</code> section of the pom.xml file.</li>
+</ol>
+<h3 is-upgraded><a href="https://github.com/mikeacjones/hello-world-mule-lab/blob/master/pom.xml#L29-L49" target="_blank"><strong>pom.xml</strong></a></h3>
+<pre><code>&lt;plugins&gt;
+  &lt;plugin&gt;
+    &lt;groupId&gt;org.mule.tools.maven&lt;/groupId&gt;
+    &lt;artifactId&gt;mule-maven-plugin&lt;/artifactId&gt;
+    &lt;version&gt;${mule.maven.plugin.version}&lt;/version&gt;
+    &lt;extensions&gt;true&lt;/extensions&gt;
+    &lt;configuration&gt;
+      &lt;classifier&gt;mule-application&lt;/classifier&gt;
+      &lt;cloudHubDeployment&gt;
+        &lt;muleVersion&gt;4.3.0&lt;/muleVersion&gt;
+        &lt;username&gt;${env.PLATFORM_USERNAME}&lt;/username&gt;
+        &lt;password&gt;${env.PLATFORM_PASSWORD}&lt;/password&gt;
+        &lt;applicationName&gt;hello-world-SOMETHING-UNIQUE&lt;/applicationName&gt;
+        &lt;environment&gt;Sandbox&lt;/environment&gt;
+        &lt;workers&gt;1&lt;/workers&gt;
+        &lt;workerType&gt;MICRO&lt;/workerType&gt;
+        &lt;objectStoreV2&gt;true&lt;/objectStoreV2&gt;
+        &lt;region&gt;us-east-2&lt;/region&gt;
+        &lt;businessGroupId&gt;${env.BUS_GROUP_ID}&lt;/businessGroupId&gt;
+      &lt;/cloudHubDeployment&gt;
+    &lt;/configuration&gt;
+  &lt;/plugin&gt;
+
+  ...
+
+&lt;/plugins&gt;</code></pre>
+<p>We&#39;re specifying how we want the application deployed to CloudHub. For the complete list of available keys, see <a href="https://docs.mulesoft.com/mule-runtime/4.3/deploy-to-cloudhub" target="_blank">https://docs.mulesoft.com/mule-runtime/4.3/deploy-to-cloudhub</a></p>
+<aside class="warning"><p>Because we are deploying to CloudHub, a multi-tenanted environment, our <code>applicationName</code> must be unique. Add something unique, eg: first initial last name.</p>
+</aside>
+<p>When authenticating with maven repositories, maven needs credentials (duh!). Typically, reusable credentials are stored in a shared <code>settings.xml</code> file located in your m2 folder. You can do the same thing with your CI platform; the majority of CI platforms (GitHub only offers these features for paid accounts) allow you to store shared organization credentials / configurations. As we&#39;re using a free GitHub repository, we&#39;ll go ahead and add a settings.xml file to our project.</p>
+<ol type="1" start="1">
+<li>Create a new XML file: <code>/cicd-with-github/hello-world/.maven/settings.xml</code></li>
+</ol>
+<p class="image-container"><img style="width: 624.00px" src="img/d7528c06bca45b48.png"></p>
+<ol type="1" start="2">
+<li>Open settings.xml and paste the following code:</li>
+</ol>
+<h3 is-upgraded><a href="https://github.com/mikeacjones/hello-world-mule-lab/blob/master/.maven/settings.xml" target="_blank"><strong>.maven/settings.xml</strong></a></h3>
+<pre><code>&lt;?xml version=&#34;1.0&#34; encoding=&#34;UTF-8&#34; standalone=&#34;no&#34;?&gt;
+&lt;settings&gt;
+  &lt;servers&gt;
+    &lt;server&gt;
+      &lt;id&gt;MuleRepository&lt;/id&gt;
+      &lt;username&gt;${env.NEXUS_USERNAME}&lt;/username&gt;
+      &lt;password&gt;${env.NEXUS_PASSWORD}&lt;/password&gt;
+    &lt;/server&gt;
+    &lt;server&gt;
+      &lt;id&gt;anypoint-exchange-v2&lt;/id&gt;
+      &lt;username&gt;${env.PLATFORM_USERNAME}&lt;/username&gt;
+      &lt;password&gt;${env.PLATFORM_PASSWORD}&lt;/password&gt;
+    &lt;/server&gt;
+  &lt;/servers&gt;
+  &lt;pluginGroups&gt;
+    &lt;pluginGroup&gt;org.mule.tools&lt;/pluginGroup&gt;
+  &lt;/pluginGroups&gt;
+  &lt;profiles&gt;
+    &lt;profile&gt;
+      &lt;id&gt;mule-extra-repos&lt;/id&gt;
+      &lt;activation&gt;
+        &lt;activeByDefault&gt;true&lt;/activeByDefault&gt;
+      &lt;/activation&gt;
+      &lt;repositories&gt;
+        &lt;repository&gt;
+          &lt;id&gt;mule-public&lt;/id&gt;
+          &lt;url&gt;https://repository.mulesoft.org/nexus/content/repositories/public&lt;/url&gt;
+        &lt;/repository&gt;
+      &lt;/repositories&gt;
+      &lt;pluginRepositories&gt;
+        &lt;pluginRepository&gt;
+          &lt;id&gt;mule-public&lt;/id&gt;
+          &lt;url&gt;https://repository.mulesoft.org/nexus/content/repositories/public&lt;/url&gt;
+        &lt;/pluginRepository&gt;
+      &lt;/pluginRepositories&gt;
+    &lt;/profile&gt;
+    &lt;profile&gt;
+      &lt;id&gt;Mule&lt;/id&gt;
+      &lt;activation&gt;
+        &lt;activeByDefault&gt;true&lt;/activeByDefault&gt;
+      &lt;/activation&gt;
+      &lt;repositories&gt;
+        &lt;repository&gt;
+          &lt;id&gt;MuleRepository&lt;/id&gt;
+          &lt;name&gt;MuleRepository&lt;/name&gt;
+          &lt;url&gt;https://repository.mulesoft.org/nexus-ee/content/repositories/releases-ee/&lt;/url&gt;
+          &lt;layout&gt;default&lt;/layout&gt;
+          &lt;releases&gt;
+            &lt;enabled&gt;true&lt;/enabled&gt;
+          &lt;/releases&gt;
+          &lt;snapshots&gt;
+            &lt;enabled&gt;true&lt;/enabled&gt;
+          &lt;/snapshots&gt;
+        &lt;/repository&gt;
+      &lt;/repositories&gt;
+    &lt;/profile&gt;
+  &lt;/profiles&gt;
+&lt;/settings&gt;
+</code></pre>
+<ol type="1" start="3">
+<li>Now that we&#39;ve made our changes, commit the changes and push to your repository.</li>
+</ol>
+<p class="image-container"><img style="width: 624.00px" src="img/d6bf52ce4bcbf89d.png"></p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Setup GitHub Actions Workflow" duration="0">
+        <p>We&#39;re in the home stretch now! Now that we&#39;ve created our repository, setup our secrets, and configured our application for automated deployment, we need to create the workflow. While we can do this just as easily from our local file system, for this lab we&#39;re going to use the GitHub web interface to create the workflow.</p>
+<aside class="warning"><p>Before proceeding with this section, make sure you have committed all of your local changes!</p>
+</aside>
+<ol type="1" start="1">
+<li>Navigate to your repository on GitHub</li>
+<li>Click on Actions</li>
+<li>Find the <strong>Publish Java Application with Maven</strong> entry in the <strong>Continuous integration workflows </strong>section (remember! Mule applications are mavenized java applications) and click Setup this workflow.</li>
+</ol>
+<p>Replace the default workflow code with the following:</p>
+<h3 is-upgraded><a href="https://github.com/mikeacjones/hello-world-mule-lab/blob/master/.github/workflows/maven-publish.yml" target="_blank"><strong>.github/workflows/maven-publish.yml</strong></a></h3>
+<pre><code>name: Sandbox - Build and Deploy
+
+on:
+  push:
+    branches: master 
+#normally you wouldn&#39;t be deploying master branch pushes to Sandbox,
+#but we&#39;re keeping things simple! 😁
+
+jobs:
+  buildAndDeploy:
+    runs-on: ubuntu-latest
+    steps:
+#first, we need to checkout our mule application&#39;s code
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      - name: Build and deploy artifact to sandbox
+#run the maven deploy lifecycle. The -B indicated a batch process,
+#which reduces the amount of logging the deployment does
+        run: mvn -B deploy -DmuleDeploy -s .maven/settings.xml
+#Pass in the secrets we need for deployment as environment variables
+        env:
+          NEXUS_USERNAME: $&#123;&#123; secrets.NEXUS_USERNAME }}
+          NEXUS_PASSWORD: $&#123;&#123; secrets.NEXUS_PASSWORD }}
+          PLATFORM_USERNAME: $&#123;&#123; secrets.PLATFORM_USERNAME }}
+          PLATFORM_PASSWORD: $&#123;&#123; secrets.PLATFORM_PASSWORD }}
+          SANDBOX_CLIENT_ID: $&#123;&#123; secrets.SANDBOX_CLIENT_ID }}
+          SANDBOX_CLIENT_SECRET: $&#123;&#123; secrets.SANDBOX_CLIENT_SECRET }}
+          BUS_GROUP_ID: $&#123;&#123; secrets.BUS_GROUP_ID }}</code></pre>
+<ol type="1" start="4">
+<li>Click Start Commit in the top right</li>
+</ol>
+<p class="image-container"><img style="width: 315.53px" src="img/bbfdc0f760d1a835.png"></p>
+<ol type="1" start="5">
+<li>As soon as you commit the file, you can go back to the Actions tab and you should see our workflow running!</li>
+</ol>
+<p class="image-container"><img style="width: 624.00px" src="img/37b3e4edaff339de.png"></p>
+<ol type="1" start="6">
+<li>The application has an MUnit test suite (<code>src/test/munit</code>) which will be automatically run:</li>
+</ol>
+<p class="image-container"><img style="width: 624.00px" src="img/739b4c64eb019037.png"></p>
+<ol type="1" start="7">
+<li>Once done building the application, the plugin will upload the artifact to CloudHub and then wait for the SLB to acknowledge the application has started up and is live.</li>
+</ol>
+<p class="image-container"><img style="width: 624.00px" src="img/92cf564d8845dc04.png"></p>
+<ol type="1" start="8">
+<li>While the application is starting, if you navigate to Runtime Manager, you can see our new application starting</li>
+</ol>
+<p class="image-container"><img style="width: 624.00px" src="img/dd303e73c58497ee.png"></p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Wrapping Up" duration="0">
+        <p>Today we created an automated deployment of a Mule Application using GitHub Actions. While our GitHub workflow and GitHub secrets are unique to GitHub, the concepts used are not. Whether your using Jenkins, Azure Pipelines, CircleCI, GitLab, etc, the process is largely the same:</p>
+<ol type="1" start="1">
+<li>Establish source control</li>
+<li>Build tests &amp; application</li>
+<li>Configure the maven application with the <code>mule-maven-plugin</code></li>
+<li>Parameterize sensitive information; do NOT store directly in source code</li>
+<li>In CI platform  pass in sensitive information from some form of vault</li>
+<li>Profit</li>
+</ol>
+<p>This was an extremely simplistic example, but Mule Applications are standard mavenized java applications. This means you can make your CI processes as complicated or simple as your use case dictated, eg: multibranch pipelines, secure vaults trigger builds via webhooks, SonarQube for quality gates, etc.</p>
+<p>If you had any issues with this lab, please feel free to open an issue: <a href="https://github.com/mikeacjones/hello-world-mule-lab/issues/new" target="_blank">https://github.com/mikeacjones/hello-world-mule-lab/issues/new</a></p>
+
+
+      </google-codelab-step>
+    
+  </google-codelab>
+
+  <script src="https://storage.googleapis.com/codelab-elements/native-shim.js"></script>
+  <script src="https://storage.googleapis.com/codelab-elements/custom-elements.min.js"></script>
+  <script src="https://storage.googleapis.com/codelab-elements/prettify.js"></script>
+  <script src="https://storage.googleapis.com/codelab-elements/codelab-elements.js"></script>
+  <script src="//support.google.com/inapp/api.js"></script>
+
+</body>
+</html>
