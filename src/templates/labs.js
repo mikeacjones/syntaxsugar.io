@@ -13,7 +13,7 @@ const LabView = ({ data, pageContext }) => {
       <SEO title='Guided Labs' description='Guided labs which walk you through a specific concept / task' />
       <div className='post-view-header'>
         <div className='post-view-title'>
-          <h3>Categories:</h3>
+          <h3>categories:</h3>
           <div className='category-tags'>
             <Link to='/labs' className='chip tag-link' activeClassName='active' partiallyActive={true}>
               All Labs

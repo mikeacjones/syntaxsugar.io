@@ -12,9 +12,9 @@ exports.createPages = ({ actions, graphql }) => {
   const { createPage } = actions
   const PostView = path.resolve(`src/components/PostView.js`)
   const IndexView = path.resolve(`./src/templates/index.js`)
-  const TagView = path.resolve(`./src/templates/tag.js`)
   const LabsView = path.resolve(`./src/templates/labs.js`)
   const CategoryLabView = path.resolve(`./src/templates/labsCategory.js`)
+  const LabsByCat = path.resolve(`./src/templates/labsByCategory.js`)
   const PostsByTags = path.resolve(`./src/templates/postsByTags.js`)
 
   return graphql(`
@@ -79,7 +79,7 @@ exports.createPages = ({ actions, graphql }) => {
 
     //Create paginated lab pages, by category
     const labCategories = labs.flatMap(({ category }) => category).filter((item, index, self) => self.indexOf(item) === index)
-    labCategories.forEach((labCategory) => {
+    /*labCategories.forEach((labCategory) => {
       const labsWithCategory = labs.filter((lab) => lab.category.indexOf(labCategory) !== -1)
       paginate({
         createPage,
@@ -90,6 +90,33 @@ exports.createPages = ({ actions, graphql }) => {
         context: {
           labCategory,
         },
+      })
+    })*/
+
+    //Create paginated lab lists by combined tag
+    const combinedCategories = powerSet(labCategories).filter((set) => set.length > 0)
+    combinedCategories.forEach((catCombo) => {
+      const labsWithCategory = labs.filter((lab) => lab.category && catCombo.some((cat) => lab.category.includes(cat)))
+      console.log(JSON.stringify(labsWithCategory, null, 2))
+      const currentSlug = createTagSlug(catCombo.sort().join('-'))
+      console.log(currentSlug)
+      const catSlugs = labCategories.reduce((map, cat) => {
+        const linkCats = (catCombo.includes(cat) ? [...catCombo.slice(0, catCombo.indexOf(cat)), ...catCombo.slice(catCombo.indexOf(cat) + 1)] : [...catCombo, cat]).sort()
+        map[cat] = linkCats.length === 0 ? '/labs' : `/labs/${createTagSlug(linkCats.join('-'))}`
+        return map
+      }, {})
+      console.log(JSON.stringify(catSlugs, null, 0))
+
+      paginate({
+        createPage,
+        items: labsWithCategory,
+        component: LabsByCat,
+        itemsPerPage: result.data.site.siteMetadata.labsPerPage,
+        pathPrefix: `/labs/${currentSlug}`,
+        context: {
+          categories: catCombo,
+          catSlugs
+        }
       })
     })
 

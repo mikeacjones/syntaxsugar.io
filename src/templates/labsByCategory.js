@@ -10,10 +10,10 @@ import '../components/Labs.css'
 const CategoryLabView = ({ data, pageContext }) => {
   return (
     <Layout>
-      <SEO title={`${pageContext.labCategory} Guided Labs`} description='Guided labs which walk you through a specific concept / task' />
+      <SEO title={`Guided Labs`} description='Guided labs which walk you through a specific concept / task' />
       <div className='post-view-header'>
         <div className='post-view-title'>
-          <h3>Categories:</h3>
+          <h3>categories:</h3>
           <div className='category-tags'>
             <Link to='/labs' className='tag-link chip' activeClassName='active'>
               All Labs
@@ -22,7 +22,7 @@ const CategoryLabView = ({ data, pageContext }) => {
               .flatMap(({ node }) => node.childJson.category)
               .filter((cat, index, self) => self.indexOf(cat) === index)
               .map((cat) => (
-                <Link key={cat} to={`/labs/${createTagSlug(cat)}`} className='tag-link chip' activeClassName='active' partiallyActive={true}>
+                <Link key={cat} to={pageContext.catSlugs[cat]} className={`tag-link chip${pageContext.categories.includes(cat) ? ' active' : ''}`}>
                   {cat}
                 </Link>
               ))}
