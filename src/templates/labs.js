@@ -21,8 +21,8 @@ const LabView = ({ data, pageContext }) => {
             {data.allCategories.edges
               .flatMap(({ node }) => node.childJson.category)
               .filter((cat, index, self) => self.indexOf(cat) === index)
-              .map((cat) => (
-                <Link key={cat} to={`/labs/${createTagSlug(cat)}`} className='tag-link chip' activeClassName='active' partiallyActive={true}>
+              .map((cat, index) => (
+                <Link key={index} to={`/labs/${createTagSlug(cat)}`} className='tag-link chip' activeClassName='active' partiallyActive={true}>
                   {cat}
                 </Link>
               ))}
@@ -30,8 +30,8 @@ const LabView = ({ data, pageContext }) => {
         </div>
       </div>
       <div className='LabCards'>
-        {data.allFile.edges.map(({ node }) => (
-          <LabCard {...node.childJson} key={node.url} />
+        {data.allFile.edges.map(({ node }, index) => (
+          <LabCard {...node.childJson} key={index} />
         ))}
         <div className='LabCard' style={{ visibility: 'hidden' }} />
         <div className='LabCard' style={{ visibility: 'hidden' }} />
