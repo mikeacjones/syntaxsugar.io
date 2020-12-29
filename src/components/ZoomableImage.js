@@ -7,7 +7,7 @@ export const ZoomableImage = (props) => {
     setEnlarged(!enlarged)
   }
   return (
-    <div role='button' className={enlarged ? 'ZoomableImage-enlarged' : 'ZoomableImage'} onClick={toggleEnlarge}>
+    <div role='button' className={`ZoomableImage${enlarged ? '-enlarged' : ''}`} onClick={toggleEnlarge}>
       {props.children}
     </div>
   )
