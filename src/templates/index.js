@@ -1,9 +1,9 @@
-import { graphql } from 'gatsby'
 import React from 'react'
-import { Layout } from '../components/Layout'
-import PostCard from '../components/PostCard'
-import SEO from '../components/SEO'
+import { graphql } from 'gatsby'
 import { Link } from 'gatsby'
+import { Layout } from '../components/Layout'
+import { SEO } from '../components/SEO'
+import { PostCard } from '../components/PostCard'
 import { createTagSlug } from '../helpers'
 
 export default ({ data, pageContext }) => {

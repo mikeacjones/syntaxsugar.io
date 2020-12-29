@@ -1,22 +1,16 @@
+const path = require('path')
 const { createFilePath } = require(`gatsby-source-filesystem`)
-const path = require(`path`)
 const { paginate } = require(`gatsby-awesome-pagination`)
-const { createTagSlug, powerSet } = require('./src/helpers')
+const { createTagSlug, powerSet } = require(`./src/helpers`)
 const { generateCodeLabs } = require('./codelabs-script')
 
 exports.onPreInit = async () => {
-  await generateCodeLabs()
+  if (process.env.NODE_ENV !== 'development') await generateCodeLabs()
 }
 
 exports.createPages = ({ actions, graphql }) => {
+  console.log('creatPages')
   const { createPage } = actions
-  const PostView = path.resolve(`src/components/PostView.js`)
-  const IndexView = path.resolve(`./src/templates/index.js`)
-  const LabsView = path.resolve(`./src/templates/labs.js`)
-  const CategoryLabView = path.resolve(`./src/templates/labsCategory.js`)
-  const LabsByCat = path.resolve(`./src/templates/labsByCategory.js`)
-  const PostsByTags = path.resolve(`./src/templates/postsByTags.js`)
-
   return graphql(`
     {
       allMdx(sort: { fields: frontmatter___date, order: DESC }, limit: 1000) {
@@ -64,41 +58,34 @@ exports.createPages = ({ actions, graphql }) => {
     if (result.errors) {
       throw result.errors
     }
+    const {
+      postsPerPage,
+      labsPerPage,
+      menuItems,
+    } = result.data.site.siteMetadata
 
-    //Create paginated lab pages
-    const labs = result.data.allFile.edges.map(({ node }) => {
-      return { path: node.absolutePath, category: node.childJson.category }
-    })
-    paginate({
-      createPage,
-      items: labs,
-      itemsPerPage: result.data.site.siteMetadata.labsPerPage,
-      pathPrefix: '/labs',
-      component: LabsView,
-    })
+    const postTemplate = path.resolve(`./src/templates/post.js`)
+    const indexTemplate = path.resolve(`./src/templates/index.js`)
+    const postsByTagsTemplate = path.resolve(`./src/templates/postsByTags.js`)
+    const labsTemplate = path.resolve(`./src/templates/labs.js`)
+    const labsByCategoryTemplate = path.resolve(
+      `./src/templates/labsByCategory.js`
+    )
 
-    //Create paginated lab lists by combined tag
-    const labCategories = labs.flatMap(({ category }) => category).filter((item, index, self) => self.indexOf(item) === index)
-    const combinedCategories = powerSet(labCategories).filter((set) => set.length > 0)
-    combinedCategories.forEach((catCombo) => {
-      const labsWithCategory = labs.filter((lab) => lab.category && catCombo.some((cat) => lab.category.includes(cat)))
-      const currentSlug = createTagSlug(catCombo.sort().join('-'))
-      const catSlugs = labCategories.reduce((map, cat) => {
-        const linkCats = (catCombo.includes(cat) ? [...catCombo.slice(0, catCombo.indexOf(cat)), ...catCombo.slice(catCombo.indexOf(cat) + 1)] : [...catCombo, cat]).sort()
-        map[cat] = linkCats.length === 0 ? '/labs' : `/labs/${createTagSlug(linkCats.join('-'))}`
-        return map
-      }, {})
-
-      paginate({
-        createPage,
-        items: labsWithCategory,
-        component: LabsByCat,
-        itemsPerPage: result.data.site.siteMetadata.labsPerPage,
-        pathPrefix: `/labs/${currentSlug}`,
+    //Create individual pages (side menu)
+    const pages = result.data.allMdx.edges.filter(
+      ({ node }) =>
+        node.internal.type === 'Mdx' &&
+        node.fileAbsolutePath.indexOf('/pages/') !== -1 &&
+        (node.frontmatter.published || process.env.NODE_ENV === 'development')
+    )
+    pages.forEach(({ node }) => {
+      createPage({
+        path: node.fields.slug,
+        component: postTemplate,
         context: {
-          categories: catCombo,
-          catSlugs
-        }
+          slug: node.fields.slug,
+        },
       })
     })
 
@@ -112,38 +99,55 @@ exports.createPages = ({ actions, graphql }) => {
     paginate({
       createPage,
       items: posts,
-      itemsPerPage: result.data.site.siteMetadata.postsPerPage,
+      itemsPerPage: postsPerPage,
       pathPrefix: '/',
-      component: IndexView,
+      component: indexTemplate,
       context: {
-        pubStates: process.env.NODE_ENV === 'development' ? [true, false] : [true],
+        pubStates:
+          process.env.NODE_ENV === 'development' ? [true, false] : [true],
       },
     })
 
     //create paginated post lists by combined tag
     const tags = posts
-      .filter(({ node }) => node.frontmatter.tags && node.frontmatter.tags != null)
+      .filter(
+        ({ node }) => node.frontmatter.tags && node.frontmatter.tags != null
+      )
       .flatMap(({ node }) => node.frontmatter.tags)
       .filter((tag, index, self) => self.indexOf(tag) === index)
     const combinedTags = powerSet(tags).filter((set) => set.length > 0)
     combinedTags.forEach((tagCombo) => {
-      const postsWithTag = posts.filter(({ node }) => node.frontmatter.tags && tagCombo.some((tag) => node.frontmatter.tags.includes(tag)))
+      const postsWithTag = posts.filter(
+        ({ node }) =>
+          node.frontmatter.tags &&
+          tagCombo.some((tag) => node.frontmatter.tags.includes(tag))
+      )
       const currentSlug = createTagSlug(tagCombo.sort().join('-'))
       const tagSlugs = tags.reduce((map, tag) => {
-        const linkTags = (tagCombo.includes(tag) ? [...tagCombo.slice(0, tagCombo.indexOf(tag)), ...tagCombo.slice(tagCombo.indexOf(tag) + 1)] : [...tagCombo, tag]).sort()
-        map[tag] = linkTags.length === 0 ? '/' : `/tag/${createTagSlug(linkTags.join('-'))}`
+        const linkTags = (tagCombo.includes(tag)
+          ? [
+              ...tagCombo.slice(0, tagCombo.indexOf(tag)),
+              ...tagCombo.slice(tagCombo.indexOf(tag) + 1),
+            ]
+          : [...tagCombo, tag]
+        ).sort()
+        map[tag] =
+          linkTags.length === 0
+            ? '/'
+            : `/tag/${createTagSlug(linkTags.join('-'))}`
         return map
       }, {})
       paginate({
         createPage,
         items: postsWithTag,
-        component: PostsByTags,
-        itemsPerPage: result.data.site.siteMetadata.postsPerPage,
+        component: postsByTagsTemplate,
+        itemsPerPage: postsPerPage,
         pathPrefix: `/tag/${currentSlug}`,
         context: {
           tags: tagCombo,
           tagSlugs,
-          pubStates: process.env.NODE_ENV === 'development' ? [true, false] : [true],
+          pubStates:
+            process.env.NODE_ENV === 'development' ? [true, false] : [true],
         },
       })
     })
@@ -152,28 +156,62 @@ exports.createPages = ({ actions, graphql }) => {
     posts.forEach(({ node }, index) => {
       createPage({
         path: `/post${node.fields.slug}`,
-        component: PostView,
+        component: postTemplate,
         context: {
-          isDev: process.env.NODE_ENV === 'development',
           slug: node.fields.slug,
-          url: `/post${node.fields.slug}`,
         },
       })
     })
 
-    //Create individual pages (side menu)
-    const pages = result.data.allMdx.edges.filter(
-      ({ node }) =>
-        node.internal.type === 'Mdx' &&
-        node.fileAbsolutePath.indexOf('/pages/') !== -1 &&
-        (node.frontmatter.published || process.env.NODE_ENV === 'development')
+    //Create paginated lab pages
+    const labs = result.data.allFile.edges.map(({ node }) => {
+      return { path: node.absolutePath, category: node.childJson.category }
+    })
+    paginate({
+      createPage,
+      items: labs,
+      itemsPerPage: result.data.site.siteMetadata.labsPerPage,
+      pathPrefix: '/labs',
+      component: labsTemplate,
+    })
+
+    //Create paginated lab lists by combined tag
+    const labCategories = labs
+      .flatMap(({ category }) => category)
+      .filter((item, index, self) => self.indexOf(item) === index)
+    const combinedCategories = powerSet(labCategories).filter(
+      (set) => set.length > 0
     )
-    pages.forEach(({ node }) => {
-      createPage({
-        path: node.fields.slug,
-        component: PostView,
+    combinedCategories.forEach((catCombo) => {
+      const labsWithCategory = labs.filter(
+        (lab) =>
+          lab.category && catCombo.some((cat) => lab.category.includes(cat))
+      )
+      const currentSlug = createTagSlug(catCombo.sort().join('-'))
+      const catSlugs = labCategories.reduce((map, cat) => {
+        const linkCats = (catCombo.includes(cat)
+          ? [
+              ...catCombo.slice(0, catCombo.indexOf(cat)),
+              ...catCombo.slice(catCombo.indexOf(cat) + 1),
+            ]
+          : [...catCombo, cat]
+        ).sort()
+        map[cat] =
+          linkCats.length === 0
+            ? '/labs'
+            : `/labs/${createTagSlug(linkCats.join('-'))}`
+        return map
+      }, {})
+
+      paginate({
+        createPage,
+        items: labsWithCategory,
+        component: labsByCategoryTemplate,
+        itemsPerPage: result.data.site.siteMetadata.labsPerPage,
+        pathPrefix: `/labs/${currentSlug}`,
         context: {
-          slug: node.fields.slug,
+          categories: catCombo,
+          catSlugs,
         },
       })
     })
@@ -182,7 +220,7 @@ exports.createPages = ({ actions, graphql }) => {
 
 exports.onCreateNode = ({ node, actions, getNode }) => {
   const { createNodeField } = actions
-  if (node.internal.type === `Mdx` || node.internal.type === `MarkdownRemark`) {
+  if (node.internal.type === `Mdx`) {
     const value = createFilePath({ node, getNode })
     createNodeField({
       name: `slug`,

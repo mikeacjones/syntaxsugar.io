@@ -3,7 +3,7 @@ import PropTypes from 'prop-types'
 import Helmet from 'react-helmet'
 import { useStaticQuery, graphql } from 'gatsby'
 
-const SEO = ({ description, lang, meta, keywords, title }) => {
+export const SEO = ({ description, lang, meta, keywords, title }) => {
   const data = useStaticQuery(graphql`
     query DefaultSEOQuery {
       site {
@@ -15,27 +15,22 @@ const SEO = ({ description, lang, meta, keywords, title }) => {
       }
     }
   `)
+  
   const {
     title: siteTitle,
     description: siteDescription,
-    author,
   } = data.site.siteMetadata
-  const metaTitle = title || siteTitle
   const metaDescription = description || siteDescription
 
   return (
-    <Helmet
-      htmlAttributes={{
-        lang,
-      }}
-    >
-      <title>{title ? `${title} :: ${siteTitle}` : siteTitle}</title>
+    <Helmet>
+      <title>{title ? `${title} - ${siteTitle}` : siteTitle}</title>
       <meta name='description' content={metaDescription} />
       <meta name='keywords' content={keywords.join(', ')} />
 
       <meta
         itemprop='name'
-        content={title ? `${title} :: ${siteTitle}` : siteTitle}
+        content={title ? `${title} - ${siteTitle}` : siteTitle}
       />
       <meta itemprop='description' content={metaDescription} />
       <meta itemprop='image' content='https://syntaxsugar.io/favicon.svg' />
@@ -44,7 +39,7 @@ const SEO = ({ description, lang, meta, keywords, title }) => {
       <meta property='og:type' content='website' />
       <meta
         property='og:title'
-        content={title ? `${title} :: ${siteTitle}` : siteTitle}
+        content={title ? `${title} - ${siteTitle}` : siteTitle}
       />
       <meta property='og:description' content={metaDescription} />
       <meta property='og:image' content='https://syntaxsugar.io/favicon.svg' />
@@ -52,7 +47,7 @@ const SEO = ({ description, lang, meta, keywords, title }) => {
       <meta name='twitter:card' content='summary_large_image' />
       <meta
         name='twitter:title'
-        content={title ? `${title} :: ${siteTitle}` : siteTitle}
+        content={title ? `${title} - ${siteTitle}` : siteTitle}
       />
       <meta name='twitter:description' content={metaDescription} />
       <meta name='twitter:image' content='https://syntaxsugar.io/favicon.svg' />
@@ -96,5 +91,3 @@ SEO.propTypes = {
   keywords: PropTypes.arrayOf(PropTypes.string),
   title: PropTypes.string,
 }
-
-export default SEO

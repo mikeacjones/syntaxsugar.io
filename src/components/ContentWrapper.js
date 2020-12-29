@@ -1,6 +1,5 @@
 import React from 'react'
-import './ContentWrapper.css'
 
-export default ({ children }) => {
+export const ContentWrapper = ({ children }) => {
   return <div id='content'>{children}</div>
 }

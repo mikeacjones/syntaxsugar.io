@@ -1,7 +1,7 @@
 import { MDXProvider } from '@mdx-js/react'
 import React from 'react'
-import CodeWrapper from './src/components/CodeWrapper'
-import ZoomableImage from './src/components/ZoomableImage'
+import { CodeWrapper } from './src/components/CodeWrapper'
+import { ZoomableImage } from './src/components/ZoomableImage'
 
 const components = {
   pre: (props) => (
@@ -11,11 +11,11 @@ const components = {
   ),
   img: (props) => (
     <ZoomableImage>
-      <img {...props} />
+      <img alt='' {...props} />
     </ZoomableImage>
   ),
   p: (props) => <div {...props} className='div-paragraph' />,
-  undefined: (props) => <div {...props} style={{ marginLeft: 'auto', marginRight: 'auto'}} />
+  iframe: (props) => <div className='iframe-wrapper'><iframe {...props} /></div>
 }
 
 export const wrapRootElement = ({ element }) => (

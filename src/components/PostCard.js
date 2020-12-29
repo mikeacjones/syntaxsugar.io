@@ -1,9 +1,10 @@
 import React from 'react'
 import { Link } from 'gatsby'
 import { createTagSlug } from '../helpers'
+
 import './PostCard.css'
 
-export default ({ fields, frontmatter }) => {
+export const PostCard = ({ fields, frontmatter }) => {
   const { title, date, shortDescription, tags } = frontmatter
   const { slug } = fields
   return (
