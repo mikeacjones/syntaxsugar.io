@@ -1,9 +1,10 @@
 import React from 'react'
 import { Link } from 'gatsby'
 import { createTagSlug } from '../helpers'
+
 import './LabCard.css'
 
-export default ({ title, category, url, updated, summary }) => {
+export const LabCard = ({ title, category, url, updated, summary }) => {
   return (
     <div className='LabCard'>
       <a href={`/lab-content/${url}`} className='LabCard-link' />

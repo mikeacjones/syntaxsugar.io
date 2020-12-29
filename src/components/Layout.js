@@ -1,7 +1,8 @@
 import React from 'react'
+import { SideBar } from './SideBar'
+import { ContentWrapper } from './ContentWrapper'
+
 import './Layout.css'
-import SideBar from './SideBar'
-import ContentWrapper from './ContentWrapper'
 
 export const Layout = ({ children }) => {
   return (

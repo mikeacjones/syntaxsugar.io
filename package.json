@@ -1,54 +1,51 @@
 {
-  "name": "gatsby-blog-example",
+  "name": "syntax-sugar",
+  "private": true,
+  "description": "A simple coding blog.",
   "version": "1.0.0",
-  "description": "Learning to build a gatsby blog from scratch",
-  "main": "index.js",
   "license": "MIT",
+  "scripts": {
+    "build": "gatsby build",
+    "develop": "gatsby develop",
+    "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,md}\"",
+    "start": "npm run develop",
+    "serve": "gatsby serve",
+    "clean": "gatsby clean",
+    "test": "echo \"Write tests! -> https://gatsby.dev/unit-testing\" && exit 1"
+  },
   "dependencies": {
     "@fortawesome/fontawesome-svg-core": "^1.2.32",
     "@fortawesome/free-brands-svg-icons": "^5.15.1",
-    "@fortawesome/free-regular-svg-icons": "^5.15.1",
     "@fortawesome/free-solid-svg-icons": "^5.15.1",
-    "@fortawesome/react-fontawesome": "^0.1.13",
+    "@fortawesome/react-fontawesome": "^0.1.14",
     "@mdx-js/mdx": "^1.6.22",
     "@mdx-js/react": "^1.6.22",
-    "babel-plugin-styled-components": "^1.12.0",
-    "fs": "^0.0.1-security",
-    "gatsby": "^2.29.1",
+    "gatsby": "^2.26.1",
     "gatsby-awesome-pagination": "^0.3.6",
     "gatsby-plugin-google-fonts": "^1.0.1",
-    "gatsby-plugin-mdx": "^1.7.0",
-    "gatsby-plugin-prefetch-google-fonts": "^1.4.3",
-    "gatsby-plugin-sharp": "^2.11.2",
-    "gatsby-plugin-styled-components": "^3.7.0",
+    "gatsby-plugin-mdx": "^1.7.1",
+    "gatsby-plugin-react-helmet": "^3.7.0",
     "gatsby-remark-autolink-headers": "^2.8.0",
-    "gatsby-remark-code-buttons": "^2.0.4",
     "gatsby-remark-copy-linked-files": "^2.7.0",
-    "gatsby-remark-embed-video": "^3.0.10",
+    "gatsby-remark-embedder": "^4.1.0",
     "gatsby-remark-external-links": "^0.0.4",
-    "gatsby-remark-images": "^3.8.1",
-    "gatsby-remark-interactive-gifs": "^1.0.4",
-    "gatsby-remark-prismjs": "^3.10.0",
     "gatsby-remark-vscode": "^3.2.0",
-    "gatsby-source-filesystem": "^2.8.0",
+    "gatsby-source-filesystem": "^2.8.1",
     "gatsby-transformer-json": "^2.8.0",
-    "gatsby-transformer-remark": "^2.13.0",
-    "gatsby-transformer-sharp": "^2.9.0",
-    "googleapis": "39",
-    "prism-react-renderer": "^1.1.1",
-    "prismjs": "^1.22.0",
-    "react": "^17.0.1",
-    "react-dom": "^17.0.1",
+    "googleapis": "^66.0.0",
+    "react": "^16.12.0",
+    "react-dom": "^16.12.0",
     "react-dom-confetti": "^0.2.0",
-    "react-helmet": "^6.1.0",
-    "react-live": "^2.2.3",
-    "shiki": "^0.2.7",
-    "styled-components": "^5.2.1"
+    "react-helmet": "^6.1.0"
   },
-  "scripts": {
-    "build": "gatsby build",
-    "dev": "gatsby clean && gatsby develop -o",
-    "format": "prettier --write \"src/**/*.js\"",
-    "test": "echo \"Write tests! -> https://gatsby.app/unit-testing\""
+  "devDependencies": {
+    "prettier": "2.2.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gatsbyjs/gatsby-starter-hello-world"
+  },
+  "bugs": {
+    "url": "https://github.com/gatsbyjs/gatsby/issues"
   }
 }

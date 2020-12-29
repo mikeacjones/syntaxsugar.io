@@ -1,11 +1,12 @@
-import { graphql } from 'gatsby'
 import React from 'react'
+import { graphql } from 'gatsby'
 import { Layout } from '../components/Layout'
-import SEO from '../components/SEO'
+import { SEO } from '../components/SEO'
 import { Link } from 'gatsby'
-import LabCard from '../components/LabCard'
+import { LabCard } from '../components/LabCard'
 import { createTagSlug } from '../helpers'
-import '../components/Labs.css'
+
+import './labs.css'
 
 const LabView = ({ data, pageContext }) => {
   return (
