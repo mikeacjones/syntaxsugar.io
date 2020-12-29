@@ -232,9 +232,9 @@ blockquote {
   background-color: #eddbf4;
   padding: 8px;
   border-radius: 10px;
-  margin-right: 5px;
   color: #000;
   transition: all 500ms ease;
+  margin: 4px;
   z-index: 15;
   user-select: none;
   -moz-user-select: none;
