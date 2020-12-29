@@ -9,7 +9,6 @@ exports.onPreInit = async () => {
 }
 
 exports.createPages = ({ actions, graphql }) => {
-  console.log('creatPages')
   const { createPage } = actions
   return graphql(`
     {
