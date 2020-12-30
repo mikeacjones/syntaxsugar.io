@@ -1,0 +1,28 @@
+.Chip {
+  font-size: 12px;
+  background-color: #eddbf4;
+  padding: 8px;
+  border-radius: 10px;
+  color: #000;
+  transition: all 500ms ease;
+  margin: 4px;
+  z-index: 15;
+  user-select: none;
+  -moz-user-select: none;
+  -webkit-user-drag: none;
+  -webkit-user-select: none;
+}
+
+.Chip-link {
+  text-decoration: none;
+  color: inherit;
+}
+
+.Chip.active {
+  background-color: #52307c;
+  color: #eddbf4;
+}
+
+.Chip:hover {
+  transform: scale(1.15);
+}

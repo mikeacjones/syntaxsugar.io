@@ -1,0 +1,18 @@
+#SocialIcons {
+  height: 60px;
+  font-size: 25px;
+  width: 100%;
+
+  display: flex;
+  justify-content: space-evenly;
+}
+
+#SocialIcons i {
+  cursor: pointer;
+  transition: all 500ms ease;
+}
+
+#SocialIcons i:hover {
+  color: #ffffff;
+  transform: scale(1.3);
+}

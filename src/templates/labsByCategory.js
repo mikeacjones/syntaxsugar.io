@@ -1,30 +1,34 @@
-import { graphql } from 'gatsby'
 import React from 'react'
-import { Layout } from '../components/Layout'
-import { SEO } from '../components/SEO'
-import { Link } from 'gatsby'
-import { LabCard } from '../components/LabCard'
+import { graphql, Link } from 'gatsby'
+import { Layout } from '../components/layout/Layout'
+import { SEO } from '../components/layout/SEO'
+import { LabCard } from '../components/cards/LabCard'
+import { Chip } from '../components/Chip'
 
 import './labs.css'
 
 const CategoryLabView = ({ data, pageContext }) => {
   return (
     <Layout>
-      <SEO title={`Guided Labs`} description='Guided labs which walk you through a specific concept / task' />
+      <SEO
+        title={`Guided Labs`}
+        description='Guided labs which walk you through a specific concept / task'
+      />
       <div className='post-view-header'>
         <div className='post-view-title'>
           <h3>categories:</h3>
           <div className='category-tags'>
-            <Link to='/labs' className='tag-link chip' activeClassName='active'>
-              All Labs
-            </Link>
+            <Chip path='/labs/' title='All Labs' />
             {data.allCategories.edges
               .flatMap(({ node }) => node.childJson.category)
               .filter((cat, index, self) => self.indexOf(cat) === index)
               .map((cat, index) => (
-                <Link key={index} to={pageContext.catSlugs[cat]} className={`tag-link chip${pageContext.categories.includes(cat) ? ' active' : ''}`}>
-                  {cat}
-                </Link>
+                <Chip
+                  path={pageContext.catSlugs[cat]}
+                  title={cat}
+                  active={pageContext.categories.includes(cat)}
+                  key={index}
+                />
               ))}
           </div>
         </div>
@@ -39,8 +43,16 @@ const CategoryLabView = ({ data, pageContext }) => {
       <div className='paging-links'>
         {(pageContext.nextPagePath || pageContext.previousPagePath) && (
           <>
-            {pageContext.previousPagePath ? <Link to={pageContext.previousPagePath}>Previous</Link> : <Link className='disabled'>Previous</Link>}
-            {pageContext.nextPagePath ? <Link to={pageContext.nextPagePath}>Next</Link> : <Link className='disabled'>Next</Link>}
+            {pageContext.previousPagePath ? (
+              <Link to={pageContext.previousPagePath}>Previous</Link>
+            ) : (
+              <Link className='disabled'>Previous</Link>
+            )}
+            {pageContext.nextPagePath ? (
+              <Link to={pageContext.nextPagePath}>Next</Link>
+            ) : (
+              <Link className='disabled'>Next</Link>
+            )}
           </>
         )}
       </div>
@@ -54,7 +66,10 @@ export const query = graphql`
   query labsByCategoryQuery($limit: Int!, $skip: Int!, $categories: [String]!) {
     allFile(
       sort: { fields: [childJson___title], order: DESC }
-      filter: { absolutePath: { regex: "/.+codelab.json$/" }, childJson: { category: { in: $categories } } }
+      filter: {
+        absolutePath: { regex: "/.+codelab.json$/" }
+        childJson: { category: { in: $categories } }
+      }
       limit: $limit
       skip: $skip
     ) {
@@ -71,7 +86,9 @@ export const query = graphql`
         }
       }
     }
-    allCategories: allFile(filter: { absolutePath: { regex: "/.+codelab.json$/" } }) {
+    allCategories: allFile(
+      filter: { absolutePath: { regex: "/.+codelab.json$/" } }
+    ) {
       edges {
         node {
           childJson {

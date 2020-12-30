@@ -1,4 +1,4 @@
-.post-card {
+.PostCard {
   color: #52307c;
   background-color: #fff;
   padding: 20px;
@@ -17,15 +17,15 @@
   -webkit-user-drag: none;
 }
 
-.post-card-description {
+.PostCard-description {
   color: #663a82;
 }
 
-.post-card:hover {
+.PostCard:hover {
   transform: scale(1.005, 1.005);
 }
 
-.post-card::after {
+.PostCard::after {
   content: '';
   border-radius: 0px;
   position: absolute;
@@ -40,21 +40,31 @@
   transition: all 0.6s cubic-bezier(0.165, 0.84, 0.44, 1);
 }
 
-.post-card:hover::after {
+.PostCard:hover::after {
   opacity: 1;
 }
 
-.post-card-title {
+.PostCard-title {
   font-size: 30px;
   font-weight: bold;
 }
 
-.post-card-header-date {
+.PostCard-date {
   font-weight: lighter;
 }
 
-.post-card-tags {
+.PostCard-tags {
   display: flex;
   flex-direction: row;
   margin-top: 10px;
+}
+
+.PostCard-link {
+  z-index: 10;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  -webkit-user-drag: none;
 }

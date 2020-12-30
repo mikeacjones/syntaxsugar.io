@@ -1,0 +1,27 @@
+.SideBarWrapper {
+  flex: 0 0 18rem;
+  z-index: 98;
+}
+
+#SideBar {
+  background-color: #3b415c;
+  color: #ffffd2;
+  position: fixed;
+  width: 18rem;
+  height: 100%;
+
+  display: flex;
+  flex-direction: column;
+}
+
+
+@media only screen and (max-width: 1000px) and (-webkit-min-device-pixel-ratio: 2) {
+  .SideBarWrapper {
+    flex: 0 0 0px;
+  }
+
+  #SideBar {
+    transition: all 500ms ease;
+    transform: translateX(-18rem);
+  }
+}

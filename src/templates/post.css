@@ -7,6 +7,11 @@
   font-size: 1em;
 }
 
+.post-view-content {
+  align-self: stretch;
+  padding: 6rem;
+}
+
 .post-view img {
   display: block;
   max-width: 100%;

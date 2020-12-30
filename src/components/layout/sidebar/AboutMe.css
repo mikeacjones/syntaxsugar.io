@@ -1,0 +1,35 @@
+#AboutMe {
+  margin-top: 100px;
+  flex: 1 1 auto;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+#AboutMe-ProfilePicture {
+  width: 70%;
+  height: auto;
+  margin-left: auto;
+  margin-right: auto;
+  transition: all 500ms ease;
+}
+
+#AboutMe-ProfilePicture:hover {
+  transform: scale(1.1);
+}
+
+#AboutMe-ProfilePicture img {
+  width: 100%;
+  user-select: none;
+  -webkit-user-drag: none;
+  -moz-user-select: none;
+  -webkit-user-select: none;
+}
+
+#AboutMe-MenuItems {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}

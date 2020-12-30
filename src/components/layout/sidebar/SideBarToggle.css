@@ -1,0 +1,42 @@
+
+#SideBarToggle {
+  background-color: #3b415c;
+  color: #ffffd2;
+  font-size: 2.5rem;
+  border-bottom: 1px solid #ffffd2;
+}
+
+#SideBarToggle-checkbox {
+  display: none;
+}
+
+#SideBarToggleWrapper {
+  display: none;
+  width: 100%;
+  flex: 0 0 50px;
+  z-index: 99;
+  position: fixed;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+}
+
+.toggle {
+  padding-left: 10px;
+  justify-self: center;
+  cursor: pointer;
+}
+
+#SideBarToggle {
+  width: 100%;
+}
+
+@media only screen and (max-width: 1000px) and (-webkit-min-device-pixel-ratio: 2) {
+  #SideBarToggleWrapper {
+    display: block;
+  }
+
+  #SideBarToggle-checkbox:checked + #SideBar {
+    transform: translateX(0);
+  }
+}
