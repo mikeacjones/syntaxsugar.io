@@ -1,6 +1,6 @@
-import { MDXProvider } from '@mdx-js/react'
 import React from 'react'
-import { CodeWrapper } from './src/components/CodeWrapper'
+import { MDXProvider } from '@mdx-js/react'
+import { CodeWrapper } from './src/components/code/CodeWrapper'
 import { ZoomableImage } from './src/components/ZoomableImage'
 
 const components = {

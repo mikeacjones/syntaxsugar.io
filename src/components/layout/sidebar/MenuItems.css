@@ -1,0 +1,29 @@
+#MenuItems {
+  list-style: none;
+  font-size: 1.2rem;
+}
+
+#MenuItems a {
+  text-decoration: none;
+}
+
+#MenuItems a li {
+  padding-right: 1rem;
+  margin-bottom: 1rem;
+  transition: border-width 500ms ease;
+}
+
+#MenuItems a li:after {
+  content: '';
+  display: block;
+  width: 0;
+  height: 1px;
+  background: #ffffd2;
+  transition: width 0.3s;
+}
+
+#MenuItems a.active li:after,
+#MenuItems a:hover li:after {
+  width: 100%;
+  padding-right: 1rem;
+}

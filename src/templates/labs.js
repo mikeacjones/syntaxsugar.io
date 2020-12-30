@@ -1,9 +1,9 @@
 import React from 'react'
-import { graphql } from 'gatsby'
-import { Layout } from '../components/Layout'
-import { SEO } from '../components/SEO'
-import { Link } from 'gatsby'
-import { LabCard } from '../components/LabCard'
+import { graphql, Link } from 'gatsby'
+import { Layout } from '../components/layout/Layout'
+import { SEO } from '../components/layout/SEO'
+import { LabCard } from '../components/cards/LabCard'
+import { Chip } from '../components/Chip'
 import { createTagSlug } from '../helpers'
 
 import './labs.css'
@@ -11,21 +11,24 @@ import './labs.css'
 const LabView = ({ data, pageContext }) => {
   return (
     <Layout>
-      <SEO title='Guided Labs' description='Guided labs which walk you through a specific concept / task' />
+      <SEO
+        title='Guided Labs'
+        description='Guided labs which walk you through a specific concept / task'
+      />
       <div className='post-view-header'>
         <div className='post-view-title'>
           <h3>categories:</h3>
           <div className='category-tags'>
-            <Link to='/labs' className='chip tag-link' activeClassName='active' partiallyActive={true}>
-              All Labs
-            </Link>
+            <Chip path='/labs/' title='All Labs' active />
             {data.allCategories.edges
               .flatMap(({ node }) => node.childJson.category)
               .filter((cat, index, self) => self.indexOf(cat) === index)
               .map((cat, index) => (
-                <Link key={index} to={`/labs/${createTagSlug(cat)}`} className='tag-link chip' activeClassName='active' partiallyActive={true}>
-                  {cat}
-                </Link>
+                <Chip
+                  path={`/labs/${createTagSlug(cat)}`}
+                  title={cat}
+                  key={index}
+                />
               ))}
           </div>
         </div>
@@ -40,8 +43,16 @@ const LabView = ({ data, pageContext }) => {
       <div className='paging-links'>
         {(pageContext.nextPagePath || pageContext.previousPagePath) && (
           <>
-            {pageContext.previousPagePath ? <Link to={pageContext.previousPagePath}>Previous</Link> : <Link className='disabled'>Previous</Link>}
-            {pageContext.nextPagePath ? <Link to={pageContext.nextPagePath}>Next</Link> : <Link className='disabled'>Next</Link>}
+            {pageContext.previousPagePath ? (
+              <Link to={pageContext.previousPagePath}>Previous</Link>
+            ) : (
+              <Link className='disabled'>Previous</Link>
+            )}
+            {pageContext.nextPagePath ? (
+              <Link to={pageContext.nextPagePath}>Next</Link>
+            ) : (
+              <Link className='disabled'>Next</Link>
+            )}
           </>
         )}
       </div>
@@ -53,7 +64,12 @@ export default LabView
 
 export const query = graphql`
   query labQuery($limit: Int!, $skip: Int!) {
-    allFile(sort: { fields: [childJson___title], order: DESC }, filter: { absolutePath: { regex: "/.+codelab.json$/" } }, limit: $limit, skip: $skip) {
+    allFile(
+      sort: { fields: [childJson___title], order: DESC }
+      filter: { absolutePath: { regex: "/.+codelab.json$/" } }
+      limit: $limit
+      skip: $skip
+    ) {
       edges {
         node {
           absolutePath
@@ -67,7 +83,9 @@ export const query = graphql`
         }
       }
     }
-    allCategories: allFile(filter: { absolutePath: { regex: "/.+codelab.json$/" } }) {
+    allCategories: allFile(
+      filter: { absolutePath: { regex: "/.+codelab.json$/" } }
+    ) {
       edges {
         node {
           childJson {
