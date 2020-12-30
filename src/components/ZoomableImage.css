@@ -1,12 +1,13 @@
 .ZoomableImage,
 .gatsby-resp-image-wrapper {
-  max-width: 98vw;
+  max-width: 98vw !important;
   width: 700px;
   overflow: hidden;
   cursor: pointer;
   margin-left: auto;
   margin-right: auto;
   border: 1px solid #3b415c;
+  box-shadow: none !important;
 }
 
 .ZoomableImage-enlarged {
@@ -25,5 +26,6 @@
 .ZoomableImage-enlarged img {
   width: 100%;
   height: auto;
-  position:unset !important;
+  position: unset !important;
+  box-shadow: none !important;
 }

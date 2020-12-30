@@ -74,6 +74,9 @@ module.exports = {
             options: {
               maxWidth: 1000,
               linkImagesToOriginal: false,
+              wrapperStyle: {
+                maxWidth: '98vw'
+              }
             },
           },
           `gatsby-remark-embedder`,
