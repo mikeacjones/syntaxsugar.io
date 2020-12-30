@@ -3,7 +3,7 @@ import './ZoomableImage.css'
 
 export const ZoomableImage = (props) => {
   const [enlarged, setEnlarged] = React.useState(false)
-  const toggleEnlarge = () => {
+  const toggleEnlarge = (e) => {
     setEnlarged(!enlarged)
   }
   return (
