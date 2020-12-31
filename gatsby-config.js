@@ -75,8 +75,8 @@ module.exports = {
               maxWidth: 1000,
               linkImagesToOriginal: false,
               wrapperStyle: {
-                maxWidth: '98vw'
-              }
+                maxWidth: '98vw',
+              },
             },
           },
           `gatsby-remark-embedder`,
@@ -85,6 +85,8 @@ module.exports = {
             resolve: `gatsby-remark-autolink-headers`,
             options: {
               className: `autolink-header`,
+              offsetY: 60,
+              isIconAfterHeader: true,
             },
           },
           {

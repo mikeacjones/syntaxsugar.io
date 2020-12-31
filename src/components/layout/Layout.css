@@ -24,12 +24,8 @@ a {
   flex-direction: column;
 }
 
-.autolink-header.before {
-  position: absolute;
-  top: 0;
-  left: 0;
-  transform: translateX(-100%);
-  padding-right: 4px;
+.autolink-header {
+  padding-left: 10px;
   display: none;
 }
 
@@ -107,5 +103,15 @@ blockquote {
 @media only screen and (max-width: 1000px) and (-webkit-min-device-pixel-ratio: 2) {
   .iframe-wrapper {
     width: 100%;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    margin-top: -60px;
+    padding-top: 60px;
   }
 }
