@@ -27,6 +27,7 @@ a {
 .autolink-header {
   padding-left: 10px;
   display: none;
+  pointer-events: none;
 }
 
 .paging-links {
@@ -50,12 +51,12 @@ a {
   cursor: not-allowed;
 }
 
-h1:hover .autolink-header.before,
-h2:hover .autolink-header.before,
-h3:hover .autolink-header.before,
-h4:hover .autolink-header.before,
-h5:hover .autolink-header.before,
-h6:hover .autolink-header.before {
+h1:hover .autolink-header.after,
+h2:hover .autolink-header.after,
+h3:hover .autolink-header.after,
+h4:hover .autolink-header.after,
+h5:hover .autolink-header.after,
+h6:hover .autolink-header.after {
   display: block;
 }
 
