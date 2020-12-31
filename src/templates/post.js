@@ -3,6 +3,8 @@ import { MDXRenderer } from 'gatsby-plugin-mdx'
 import { graphql } from 'gatsby'
 import { Layout } from '../components/layout/Layout'
 import { SEO } from '../components/layout/SEO'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faGithub } from '@fortawesome/free-brands-svg-icons'
 
 import './post.css'
 
@@ -24,6 +26,20 @@ export default ({ data, pageContext }) => {
                 Written on {frontmatter.date.substring(0, 10)}
               </div>
             )}
+            <a
+              href={`https://github.com/mikeacjones/syntaxsugar.io/issues/new?labels=post%20question&assignees=mikeacjones&title=${
+                frontmatter.title
+                  ? frontmatter.title
+                  : 'Question / Issue <-- Update the title'
+              }&body=I%20have%20a%20question/issue%20about:`}
+              referrer='noreferrer'
+              target='_blank'
+            >
+              <h3>
+                <FontAwesomeIcon icon={faGithub} alt='github' /> Ask Question /
+                Submit Issue
+              </h3>
+            </a>
           </div>
         </div>
         <div className='post-view-content'>
