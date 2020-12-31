@@ -141,7 +141,7 @@ output application/json
 }
 ```
 
-Next, the aggregation command takes a `pipeline`, and array of operations, as its input. So this becomes:
+Next, the aggregation command takes a `pipeline`, an array of operations, as its input. So this becomes:
 
 ```data-weave
 output application/json
@@ -152,7 +152,7 @@ output application/json
 }
 ```
 
-And finally you have to provide an empty cursor object which will be populated with the documents produced by the final stage of the aggregation:
+Finally, you have to provide an empty cursor object which will be populated with the documents produced by the final stage of the aggregation:
 
 ```data-weave
 output application/json
@@ -194,7 +194,7 @@ output application/json
 }
 ```
 
-As an example, if I run the query above with "KWZ Turquoise" set as my payload, the JSON returned would be:
+If I run the query above with "KWZ Turquoise" set as my payload, the JSON returned would be:
 
 ```json
 {
