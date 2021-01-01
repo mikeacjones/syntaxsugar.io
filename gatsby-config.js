@@ -73,9 +73,6 @@ module.exports = {
             resolve: `gatsby-remark-images`,
             options: {
               linkImagesToOriginal: false,
-              wrapperStyle: {
-                maxWidth: '98vw',
-              },
             },
           },
           `gatsby-remark-embedder`,
@@ -84,7 +81,6 @@ module.exports = {
             resolve: `gatsby-remark-autolink-headers`,
             options: {
               className: `autolink-header`,
-              offsetY: 60,
               isIconAfterHeader: true,
             },
           },
