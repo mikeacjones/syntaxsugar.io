@@ -1,7 +1,7 @@
 .ZoomableImage,
 .gatsby-resp-image-wrapper {
-  max-width: 98% !important; /*the gatsby-image-remark plugin doesn't let you leave maxWidth off, so setting this as important to override that inline style*/
-  width: 700px;
+  width: 98% !important; /*the gatsby-image-remark plugin doesn't let you leave maxWidth off, so setting this as important to override that inline style*/
+  max-width: 700px !important;
   overflow: hidden;
   cursor: pointer;
   margin-left: auto;
