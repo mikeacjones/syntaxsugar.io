@@ -1,7 +1,7 @@
 .ZoomableImage,
 .gatsby-resp-image-wrapper {
-  max-width: 98vw !important;
-  width: 700px;
+  width: 98% !important;
+  max-width: 700px;
   overflow: hidden;
   cursor: pointer;
   margin-left: auto;

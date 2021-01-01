@@ -8,6 +8,8 @@ import {
 import React from 'react'
 import Confetti from 'react-dom-confetti'
 
+import './CodeWrapper.css'
+
 
 export const CodeWrapper = (props) => {
   const [isCopied, setIsCopied] = React.useState(false)

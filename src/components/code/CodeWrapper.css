@@ -18,3 +18,18 @@
   user-select: none;
   opacity: 0.3;
 }
+
+code {
+  font-family: 'Ubuntu Mono', monospace;
+  font-size: 1em !important;
+}
+
+.grvsc-source {
+  display: inline-block;
+}
+
+span.grvsc-source > span {
+  display: inline-block;
+  word-break: break-all;
+  word-wrap: break-word;
+}
