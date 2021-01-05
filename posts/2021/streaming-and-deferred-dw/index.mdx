@@ -3,7 +3,7 @@ title: Streaming Data and Deferred Dataweave
 date: 2021-01-05
 tags: [mulesoft,dataweave,streaming,memory]
 shortDescription: Processing data in an Enterprise environment frequently involves very large files. In a traditional approach, processing these files can involve issues around memory and time as it involves first downloading the entire file, attempting to load the entire file into memory to work on, and then saving the whole file to output. Instead of taking this old-fashioned approach, we can utilized data streaming and deferred dataweave processing in order to streamline this process.
-published: false
+published: true
 ---
 Before we start talking about streaming and deferred dataweave, lets consider a traditional batch approach. In this example, we will be considering a process which downloads a large CSV (GB size range), transforms the data to JSON, and then upserts this information into Salesforce. The step by step process for that probably looks like this:
 
