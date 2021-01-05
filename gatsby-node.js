@@ -53,7 +53,7 @@ exports.createPages = ({ actions, graphql }) => {
         }
       }
     }
-  `).then((result) => {
+  `).then(result => {
     if (result.errors) {
       throw result.errors
     }
@@ -114,12 +114,12 @@ exports.createPages = ({ actions, graphql }) => {
       )
       .flatMap(({ node }) => node.frontmatter.tags)
       .filter((tag, index, self) => self.indexOf(tag) === index)
-    const combinedTags = powerSet(tags).filter((set) => set.length > 0)
-    combinedTags.forEach((tagCombo) => {
+    const combinedTags = powerSet(tags).filter(set => set.length > 0)
+    combinedTags.forEach(tagCombo => {
       const postsWithTag = posts.filter(
         ({ node }) =>
           node.frontmatter.tags &&
-          tagCombo.some((tag) => node.frontmatter.tags.includes(tag))
+          tagCombo.some(tag => node.frontmatter.tags.includes(tag))
       )
       const currentSlug = createTagSlug(tagCombo.sort().join('-'))
       const tagSlugs = tags.reduce((map, tag) => {
@@ -152,15 +152,21 @@ exports.createPages = ({ actions, graphql }) => {
     })
 
     //Create actual posts
-    posts.forEach(({ node }, index) => {
-      createPage({
-        path: `/post${node.fields.slug}`,
-        component: postTemplate,
-        context: {
-          slug: node.fields.slug,
-        },
+    result.data.allMdx.edges
+      .filter(
+        ({ node }) =>
+          node.internal.type === 'Mdx' &&
+          node.fileAbsolutePath.indexOf('/posts/') !== -1
+      )
+      .forEach(({ node }, index) => {
+        createPage({
+          path: `/post${node.fields.slug}`,
+          component: postTemplate,
+          context: {
+            slug: node.fields.slug,
+          },
+        })
       })
-    })
 
     //Create paginated lab pages
     const labs = result.data.allFile.edges.map(({ node }) => {
@@ -179,12 +185,11 @@ exports.createPages = ({ actions, graphql }) => {
       .flatMap(({ category }) => category)
       .filter((item, index, self) => self.indexOf(item) === index)
     const combinedCategories = powerSet(labCategories).filter(
-      (set) => set.length > 0
+      set => set.length > 0
     )
-    combinedCategories.forEach((catCombo) => {
+    combinedCategories.forEach(catCombo => {
       const labsWithCategory = labs.filter(
-        (lab) =>
-          lab.category && catCombo.some((cat) => lab.category.includes(cat))
+        lab => lab.category && catCombo.some(cat => lab.category.includes(cat))
       )
       const currentSlug = createTagSlug(catCombo.sort().join('-'))
       const catSlugs = labCategories.reduce((map, cat) => {
