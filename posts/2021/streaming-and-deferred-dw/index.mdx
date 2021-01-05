@@ -12,7 +12,7 @@ Before we start talking about streaming and deferred dataweave, lets consider a 
 3. Write in-memory object structure to JSON file
 4. Using batch API, upload  JSON file to Salesforce for upsert
 
-There are a lot of efficiencies with this approach! The first and biggest is that we are waiting until we've finished downloading the file to even start working on it. Given the potential size of these files, that can translate to a lot of wasted time! The next issue is that typically we try and transform the entire file in a single go, which can cause quite a few issues around memory - writing this data to file after transforming it in-memory is also inefficient because I/O operations tend to be slow, and depending on the size of the file and the environment that we are working in (such as CloudHub) we might potentially be running into issues around disk space.
+There are a lot of inefficiencies with this approach! The first and biggest is that we are waiting until we've finished downloading the file to even start working on it. Given the potential size of these files, that can translate to a lot of wasted time! The next issue is that typically we try and transform the entire file in a single go, which can cause quite a few issues around memory - writing this data to file after transforming it in-memory is also inefficient because I/O operations tend to be slow, and depending on the size of the file and the environment that we are working in (such as CloudHub) we might potentially be running into issues around disk space.
 
 Let's talk about a better way..
 
