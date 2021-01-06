@@ -18,6 +18,8 @@ Everything below is maintained in my Gist: https://gist.github.com/mikeacjones
 
 ## Recursively appending XML namespaces
 
+Gist: [https://gist.github.com/mikeacjones/dbe76e4f6f5e402e024ab57b8a2fc2b5](https://gist.github.com/mikeacjones/dbe76e4f6f5e402e024ab57b8a2fc2b5)
+
 ```data-weave
 %dw 2.0
 
@@ -85,6 +87,7 @@ var nsMap = lookup('get-namespace-map')
 
 ## Expanding XML Attributes to JSON
 
+Gist: [https://gist.github.com/mikeacjones/1c01721df3ca4558d76643a9401ab8dd](https://gist.github.com/mikeacjones/1c01721df3ca4558d76643a9401ab8dd)
 
 When converting XML to JSON automatically, you lose your attributes. 'Recipe' that converts XML to JSON while preserving attributes, if there are any:
 
@@ -213,6 +216,9 @@ Example output:
 ---
 
 ## Bitwise Math
+
+Gist: [https://gist.github.com/mikeacjones/b3c3719d38f2f075b95bd4960e2252b0](https://gist.github.com/mikeacjones/b3c3719d38f2f075b95bd4960e2252b0)
+
 Data-weave doesn't have built in operators for bitwise math. We could implement this in java.. but lets take a look at a simple implementation in data-weave that we can then reuse as a module later.
 
 ```data-weave
@@ -255,6 +261,8 @@ A lot easier to implement than you might think! All we have to do is convert it 
 ---
 
 ## Power-set
+
+Gist: [https://gist.github.com/mikeacjones/a683e29fe825347148e7541bce697937](https://gist.github.com/mikeacjones/a683e29fe825347148e7541bce697937)
 
 Need to get the power set? Well here you go! Making use of our previous Bitwise module along with some basic set theory we all learned at some point, we can do this:
 
