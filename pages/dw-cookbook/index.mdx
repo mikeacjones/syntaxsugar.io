@@ -7,6 +7,7 @@ published: true
 
 ## Recipes:
 * [Appending XML namespaces](#recursively-appending-xml-namespaces)
+* [Expanding XML Attributes to JSON](#expanding-xml-attributes-to-json)
 * [Bitwise math](#bitwise-math)
 * [Email validation](#rfc822-compliant-email-validation)
 * [Power sets](#powerset)
@@ -77,6 +78,135 @@ var nsMap = lookup('get-namespace-map')
           else null
         }
     }
+}
+```
+
+---
+
+## Expanding XML Attributes to JSON
+
+
+When converting XML to JSON automatically, you lose your attributes. 'Recipe' that converts XML to JSON while preserving attributes, if there are any:
+
+
+```data-weave
+%dw 2.0
+output application/json
+
+var expandXmlAttrs = (payload) ->
+    payload match {
+        case is Array -> payload map expandXmlAttrs($)
+        case is Object -> payload mapObject {
+            (($$): expandXmlAttrs($)) if ($$.@ == null),
+            (($$): {
+                value: expandXmlAttrs($),
+                ($.@)
+            }) if ($$.@ != null)
+        }
+        else -> payload
+    }
+
+---
+expandXmlAttrs(payload)
+```
+
+Example input:
+
+```xml
+<EDPPPersonSrch>
+   <SrchMsgRqHdr>
+    <jXchangeHdr>
+     <JxVer>2020</JxVer>
+     <AuditUsrId>jxchange</AuditUsrId>
+     <AuditWsId>ThirdParty</AuditWsId>
+     <ConsumerName>jxchange</ConsumerName>
+     <ConsumerProd>soatest</ConsumerProd>
+     <Ver_1/>
+     <jXLogTrackingId>456</jXLogTrackingId>
+     <Ver_2/>
+     <InstRtId JHANull="" Rstr="">123456780</InstRtId>
+     <InstEnv>Prod</InstEnv>
+     <Ver_3/>
+     <Ver_4/>
+     <Ver_5/>
+     <ValidConsmName>ImageCenter Admin</ValidConsmName>
+     <ValidConsmProd>ImageCenter</ValidConsmProd>
+     <Ver_6/>
+    </jXchangeHdr>
+    <MaxRec>2</MaxRec>
+    <Cursor>2</Cursor>
+    <Ver_1/>
+    <Ver_2/>
+    <Ver_3/>
+   </SrchMsgRqHdr>
+   <ProdCode JHANull="" Rstr="">jha-imagecenter</ProdCode>
+   <LastName JHANull="" Rstr="" SrchType="">Jones</LastName>
+   <AcctId JHANull="" Rstr="" SrchType="Positive">70023888848</AcctId>
+   <AcctType JHANull="" Rstr="">Savings</AcctType>
+   <Custom/>
+   <Ver_1/>
+  </EDPPPersonSrch>
+```
+
+Example output:
+
+```json
+{
+  "EDPPPersonSrch": {
+    "SrchMsgRqHdr": {
+      "jXchangeHdr": {
+        "JxVer": "2020",
+        "AuditUsrId": "jxchange",
+        "AuditWsId": "ThirdParty",
+        "ConsumerName": "jxchange",
+        "ConsumerProd": "soatest",
+        "Ver_1": null,
+        "jXLogTrackingId": "456",
+        "Ver_2": null,
+        "InstRtId": {
+          "value": "123456780",
+          "JHANull": "",
+          "Rstr": ""
+        },
+        "InstEnv": "Prod",
+        "Ver_3": null,
+        "Ver_4": null,
+        "Ver_5": null,
+        "ValidConsmName": "ImageCenter Admin",
+        "ValidConsmProd": "ImageCenter",
+        "Ver_6": null
+      },
+      "MaxRec": "2",
+      "Cursor": "2",
+      "Ver_1": null,
+      "Ver_2": null,
+      "Ver_3": null
+    },
+    "ProdCode": {
+      "value": "jha-imagecenter",
+      "JHANull": "",
+      "Rstr": ""
+    },
+    "LastName": {
+      "value": "Jones",
+      "JHANull": "",
+      "Rstr": "",
+      "SrchType": ""
+    },
+    "AcctId": {
+      "value": "70023888848",
+      "JHANull": "",
+      "Rstr": "",
+      "SrchType": "Positive"
+    },
+    "AcctType": {
+      "value": "Savings",
+      "JHANull": "",
+      "Rstr": ""
+    },
+    "Custom": null,
+    "Ver_1": null
+  }
 }
 ```
 
