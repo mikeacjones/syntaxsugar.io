@@ -3,7 +3,7 @@
   "format": "html",
   "prefix": "https://storage.googleapis.com",
   "mainga": "UA-49880327-14",
-  "updated": "2020-12-28T20:14:37Z",
+  "updated": "2021-01-07T16:53:29Z",
   "id": "async-notification-api-workshop",
   "duration": 0,
   "title": "Anypoint MQ Notification Demo",
@@ -12,7 +12,7 @@
   "source": "1KgwVFYMoM8i56Xqif1m0cVWw9KLYRiBRRHhYXFaH_wA",
   "theme": "anypoint-mq",
   "status": [
-    "draft"
+    "published"
   ],
   "category": [
     "Anypoint MQ",
