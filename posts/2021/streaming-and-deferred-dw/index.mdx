@@ -74,7 +74,9 @@ And converting it to a JSON structure like this:
    ![stream-response-settings.png](stream-response-settings.png)
    2. Paste the URL to the file into the REST request component, and make sure the request is set as a GET operation.
       - URL: `https://www.dropbox.com/s/w2knq9ds4wlmp4o/COVID-19_Case_Surveillance_Public_Use_Data.csv?dl=1`
-3. After the Request operation, add a Transform component and paste the following dataweave. By adding `deferred=true`, we tell the script to evaluate in a lazy way, meaning it won't process the transformation until the output is actually being consumed.
+   3. Finally, we need to tell dataweave that the input should be worked on as a stream. If we don't, dataweave will write the content to disk for any file that is over 1.5MB. We do this by setting the mime type on the request to `application/csv stream=true`. While the process will work without this piece, it will be considerably slower due to disk I/O operations.
+3. After the Request operation, add a Transform component and paste the following dataweave. By adding `deferred=true`, we tell the script to pass an output stream directly to the next message processor in the flow.
+
 ```data-weave
 %dw 2.0
 output application/json deferred=true
