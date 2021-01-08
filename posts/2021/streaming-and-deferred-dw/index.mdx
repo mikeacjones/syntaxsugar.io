@@ -68,12 +68,12 @@ And converting it to a JSON structure like this:
 
 1. Open up Anypoint Studio and create a new application called `large-csv-to-json`
 2. Add an HTTP Listener to the palette and create a default configuration. Set the endpoint to `/large-csv-test`
-2. I have the file hosted for you in Dropbox, so we're going to use a REST Request in order to download this file:
+2. We're going to use a REST Request in order to download this file:
    1. Drag a REST Request onto the palette 
    2. Now, in order to tell the Request that we want to treat the response as a stream, create a new Request configuration and check the box that says "Stream response"
    ![stream-response-settings.png](stream-response-settings.png)
    2. Paste the URL to the file into the REST request component, and make sure the request is set as a GET operation.
-      - URL: `https://www.dropbox.com/s/w2knq9ds4wlmp4o/COVID-19_Case_Surveillance_Public_Use_Data.csv?dl=1`
+      - URL: `http://large-csv-file.us-e2.cloudhub.io/CovidData.csv`
    3. Finally, we need to tell dataweave that the input should be worked on as a stream. If we don't, dataweave will write the content to disk for any file that is over 1.5MB. We do this by setting the mime type on the request to `application/csv; streaming=true`. While the process will work without this piece, it will be considerably slower due to disk I/O operations.
    ![set-streaming.png](set-streaming.png)
 3. After the Request operation, add a Transform component and paste the following dataweave. By adding `deferred=true`, we tell the script to pass an output stream directly to the next message processor in the flow.
