@@ -34,7 +34,7 @@
 <p><strong>Continuous Delivery</strong>: This process ties back into continuous integration, and is the concept that our codebase should always remain deliverable. The main codebase should never enter a state which can not be deployed. As part of this process, we automate building and testing, typically via automatic deployment into QA and UAT environments. We will cover this by utilizing the <code>mule-maven-plugin</code> to automate deployment into our Sandbox environment.</p>
 <p><strong>Continuous Deployment</strong>: This is typically considered the next and final step in building out an automated pipeline; when a company is utilizing continuous deployment, the release management is tied into an automated process. While we will be taking a simplistic approach, we will touch on this today by creating a protected main branch, which requires that our build and test phases in Sandbox have passed before they can be merged into the master branch, and trigger a deployment to the Production environment.</p>
 <h2 is-upgraded>What you&#39;ll build</h2>
-<p>In this codelab, we will build a Mulesoft API, which you will commit to a new GitHub repository. We will then walk through setting up GitHub Actions to act as our CI platform. Your project will:</p>
+<p>In this codelab, we will build a MuleSoft API, which you will commit to a new GitHub repository. We will then walk through setting up GitHub Actions to act as our CI platform. Your project will:</p>
 <ul>
 <li>Utilize a git repository for tracking code changes</li>
 <li>Automatically execute and validate MUnit test</li>
@@ -44,7 +44,7 @@
 <h2 class="checklist" is-upgraded>What you&#39;ll learn</h2>
 <ul class="checklist">
 <li>How to configure the mule-maven-plugin for deployment to CloudHub, and where to go for documentation covering deployment to other environments</li>
-<li>How to configure maven for communication with the Mulesoft Exchange and Nexus repository</li>
+<li>How to configure maven for communication with the MuleSoft Exchange and Nexus repository</li>
 <li>How to configure GitHub Actions workflow for maven (this process works very similarly to CircleCI - after going through this project, give configuring CircleCI a try as a self-challenge!)</li>
 </ul>
 <h2 is-upgraded>What you&#39;ll need</h2>
@@ -65,7 +65,7 @@
       </google-codelab-step>
     
       <google-codelab-step label="Create Mule Application" duration="0">
-        <p>In order to automate mule application testing and deployment, we first have to have an actual application to work with! We will be using the <strong>hello-world </strong>example in Mulesoft&#39;s exchange.</p>
+        <p>In order to automate mule application testing and deployment, we first have to have an actual application to work with! We will be using the <strong>hello-world </strong>example in MuleSoft&#39;s exchange.</p>
 <aside class="warning"><p>Due to potential dependency and environment issues, do not use an existing application unless you are confident debugging maven.</p>
 </aside>
 <h3 is-upgraded>Import Project</h3>
@@ -79,7 +79,7 @@
 </ol>
 <p class="image-container"><img style="width: 624.00px" src="img/ded650539c7fc7b0.png"></p>
 <ol type="1" start="4">
-<li>Click on <code>Provided by Mulesoft</code> on the left in the exchange window</li>
+<li>Click on <code>Provided by MuleSoft</code> on the left in the exchange window</li>
 </ol>
 <p class="image-container"><img style="width: 624.00px" src="img/850c582dd82e26fd.png"></p>
 <ol type="1" start="5">
@@ -215,7 +215,7 @@ src/main/resources/config/*
 <li>PLATFORM_PASSWORD - password for your anypoint account</li>
 <li>SANDBOX_CLIENT_ID - client ID for your CloudHub sandbox environment (to access this information, log into <a href="https://anypoint.mulesoft.com" target="_blank">https://anypoint.mulesoft.com</a> and navigate to Access Management -&gt; Environments and click on the Environment you intend to deploy to</li>
 <li>SANDBOX_CLIENT_SECRET - client secret for CloubHub sandbox environment</li>
-<li>NEXUS_USERNAME - username for your Nexus account (see Overview section for more information on Nexus). These credentials will be used to authenticate with the Enterprise maven repository hosted by Mulesoft.</li>
+<li>NEXUS_USERNAME - username for your Nexus account (see Overview section for more information on Nexus). These credentials will be used to authenticate with the Enterprise maven repository hosted by MuleSoft.</li>
 <li>NEXUS_PASSWORD - password for your Nexus account</li>
 <li>BUS_GROUP_ID - business group ID you plan to deploy application to. </li>
 </ul>
@@ -248,7 +248,7 @@ src/main/resources/config/*
       </google-codelab-step>
     
       <google-codelab-step label="Setup Maven Plugin" duration="0">
-        <p>Mule applications are, at the heart of things, mavenized java applications. In order to automate the build and deployment process, Mulesoft provides the <code>mule-maven-plugin</code>. Whether you&#39;re hosting your applications on CloudHub, AWS, Azure, GCP, on-prem, a raspberry pi in your closet, etc.. you can use the <code>mule-maven-plugin</code> to automate your deployments via the Anypoint Control Plane. In this workshop, to keep things as simple as possible, we will be deploying our application to a single .1vcore worker in CloudHub. For information about deployment to other platforms, check the documentation: <a href="https://docs.mulesoft.com/mule-runtime/4.3/mmp-concept" target="_blank">https://docs.mulesoft.com/mule-runtime/4.3/mmp-concept</a></p>
+        <p>Mule applications are, at the heart of things, mavenized java applications. In order to automate the build and deployment process, MuleSoft provides the <code>mule-maven-plugin</code>. Whether you&#39;re hosting your applications on CloudHub, AWS, Azure, GCP, on-prem, a raspberry pi in your closet, etc.. you can use the <code>mule-maven-plugin</code> to automate your deployments via the Anypoint Control Plane. In this workshop, to keep things as simple as possible, we will be deploying our application to a single .1vcore worker in CloudHub. For information about deployment to other platforms, check the documentation: <a href="https://docs.mulesoft.com/mule-runtime/4.3/mmp-concept" target="_blank">https://docs.mulesoft.com/mule-runtime/4.3/mmp-concept</a></p>
 <p>Back to Anypoint Studio!</p>
 <ol type="1" start="1">
 <li>Open up the POM.xml</li>
