@@ -13,11 +13,11 @@ Let's consider a managed file transfer architecture like this:
 
 With this approach, we now have a configurable file transfer agent (the MFT Task Processor) which utilizes an API for configuration; this flexible approach allows us to quickly build a process layer that we can control without touching code.
 
-The issue? In Mulesoft, when building applications, we typically have a single, static (possibly parametrized) connector configuration. A basic flow to download files from an SFTP server, and then upload any pending files to the same server, might look like this:
+The issue? In MuleSoft, when building applications, we typically have a single, static (possibly parametrized) connector configuration. A basic flow to download files from an SFTP server, and then upload any pending files to the same server, might look like this:
 
 ![sftp-with-scheduler.png](sftp-with-scheduler.png)
 
-So how do we go about iterating through our configuration and connecting to each SFTP server when the connector configuration needs to be a global element? Exactly the same way we pass any kind of parameters to Mulesoft! In the background, the connector has a configuration manager which will check if the connection already exists, and if it doesn't, will create it. This allows us to setup our flow like so:
+So how do we go about iterating through our configuration and connecting to each SFTP server when the connector configuration needs to be a global element? Exactly the same way we pass any kind of parameters to MuleSoft! In the background, the connector has a configuration manager which will check if the connection already exists, and if it doesn't, will create it. This allows us to setup our flow like so:
 
 ![mft-sftp-flows.png](mft-sftp-flows.png)
 
