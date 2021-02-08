@@ -33,7 +33,7 @@ Which, in SQL, is equivalent to
 SELECT * FROM inventory WHERE status IN ("A", "B")
 ```
 
-In the query above, the `$in` operator is a special MongoDB operation. When we run this query in the Mulesoft connector, we pass the query in as JSON, with the `$in` operator as a key:
+In the query above, the `$in` operator is a special MongoDB operation. When we run this query in the MuleSoft connector, we pass the query in as JSON, with the `$in` operator as a key:
 
 ```JSON
 {
@@ -101,7 +101,7 @@ Say we wanted to utilize [MongoDB Atlas Search](https://www.mongodb.com/atlas/se
 }
 ```
 
-For example, I built an API with Mulesoft which is leveraged by the Ink Bot running on r/pen_swap; [you can play with the API here](https://anypoint.mulesoft.com/exchange/portals/mulesoft-6908/13024f4f-f380-436f-9c65-6b35a849d17e/system-inks/minor/1.0/pages/home/). This bot allows users to leave a comment with a list of ink names, and the bot responds with a corresponding list of image links. The one thing you can count on is that no two users will type the name the same way, and that people will regularly have typos! Enter Atlas Search. In MQL, my query looks like this:
+For example, I built an API with MuleSoft which is leveraged by the Ink Bot running on r/pen_swap; [you can play with the API here](https://anypoint.mulesoft.com/exchange/portals/mulesoft-6908/13024f4f-f380-436f-9c65-6b35a849d17e/system-inks/minor/1.0/pages/home/). This bot allows users to leave a comment with a list of ink names, and the bot responds with a corresponding list of image links. The one thing you can count on is that no two users will type the name the same way, and that people will regularly have typos! Enter Atlas Search. In MQL, my query looks like this:
 
 ```mql
 $search: {
@@ -131,7 +131,7 @@ db.inks.aggregate([
 ])
 ```
 
-This gives me exactly what I need in Compass; to translate this to the Mulesoft connector we make use of the `Execute command` operation which allows us to run anything which might not have an operation wrapper. When using the operation `Execute command` we can't specify our collection, which we need to do (ie: `db.inks.aggregate(..)`). To make this work, you take the command you are running (in this case `aggregate`) and pass it in with a collection name like so:
+This gives me exactly what I need in Compass; to translate this to the MuleSoft connector we make use of the `Execute command` operation which allows us to run anything which might not have an operation wrapper. When using the operation `Execute command` we can't specify our collection, which we need to do (ie: `db.inks.aggregate(..)`). To make this work, you take the command you are running (in this case `aggregate`) and pass it in with a collection name like so:
 
 ```data-weave
 output application/json
@@ -243,4 +243,4 @@ From here I can now make use of my cursor in order to extract the objects that I
 
 # Wrap Up
 
-As you can see, we should be able to run any command / pipeline against MongoDB with the Mulesoft connector, we just have to translate them to an appropriate JSON payload using DataWeave! If you have any questions or issues, feel free to click the button at the [top of the page](#) and submit a `post question`!
+As you can see, we should be able to run any command / pipeline against MongoDB with the MuleSoft connector, we just have to translate them to an appropriate JSON payload using DataWeave! If you have any questions or issues, feel free to click the button at the [top of the page](#) and submit a `post question`!
