@@ -1,0 +1,164 @@
+
+<!doctype html>
+
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
+  <meta name="theme-color" content="#4F7DC9">
+  <meta charset="UTF-8">
+  <title>Connect to Azure SQL using Azure AD Authentication</title>
+  <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+  <link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="stylesheet" href="https://storage.googleapis.com/codelab-elements/codelab-elements.css">
+  <style>
+    .success {
+      color: #1e8e3e;
+    }
+    .error {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+  <google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+  <google-codelab codelab-gaid="{{labAnalytics}}"
+                  id="connect-to-azure-sql-using-azure-ad-authentication"
+                  title="Connect to Azure SQL using Azure AD Authentication"
+                  environment="web"
+                  feedback-link="{{feedbackUrl}}">
+    
+      <google-codelab-step label="Overview" duration="0">
+        <p>Connecting to an Azure hosted SQL instance using Azure AD authentication is a simple process, whether the Mule application is hosted in CloudHub or on-premise.</p>
+<h2 is-upgraded>What you&#39;ll build:</h2>
+<p>In this codelab, you will build a simple application that connects to an Azure hosted SQL instance using Azure AD for authentication. Given that you will need your own instance for this, I will simply be demonstrating how to establish connectivity.</p>
+<p class="image-container"><img style="width: 624.00px" src="img/4ecd71d8777fc731.png"></p>
+<h2 is-upgraded>What you&#39;ll need:</h2>
+<ol type="1" start="1">
+<li><a href="https://azure.microsoft.com/en-us/free/" target="_blank">Azure hosted SQL instance</a></li>
+<li><a href="https://docs.microsoft.com/en-us/azure/active-directory-domain-services/tutorial-create-instance" target="_blank">Azure AD</a></li>
+<li><a href="https://www.mulesoft.com/lp/dl/studio" target="_blank">Anypoint Studio</a></li>
+</ol>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Configure project dependencies" duration="5">
+        <h2 is-upgraded>Create a new project</h2>
+<p>Open Anypoint Studio (recommended version 7.8+) and create a new <strong>Mule Project</strong>. I would also recommend creating a new workspace for workshops. Set the project name to something meaningful, eg: <code>azure-sql-using-azure-ad-walkthrough</code></p>
+<p class="image-container"><img style="width: 624.00px" src="img/826e849d76ed1208.png"></p>
+<p class="image-container"><img style="width: 624.00px" src="img/af134cd01e788f5f.png"></p>
+<p class="image-container"><img style="width: 624.00px" src="img/17184cac699de08b.png"></p>
+<h2 is-upgraded>Add database connector</h2>
+<p>Click <code>Search in Exchange</code> in the Mule Palette <em>(note: while we could use the favorites, using Search in Exchange option ensures we pull the latest version of the connector)</em></p>
+<p class="image-container"><img style="width: 624.00px" src="img/53c84f01ebe7ecdb.png"></p>
+<p>In the new window, search for the latest database connector and add it to your project.</p>
+<p class="image-container"><img style="width: 624.00px" src="img/101595cfdf12ca8.png"></p>
+<h2 is-upgraded>Add driver dependencies</h2>
+<aside class="special"><p>For a complete POM.xml for reference see this GIST: <a href="https://gist.github.com/mikeacjones/38e669343389c7ab143451687f834e7d" target="_blank">https://gist.github.com/mikeacjones/38e669343389c7ab143451687f834e7d</a></p>
+</aside>
+<p>Open your POM.xml:</p>
+<p class="image-container"><img style="width: 624.00px" src="img/8124b1bd7dfb6662.png"></p>
+<p>Add these two dependencies; one is the Microsoft SQL JDBC driver and the other provides Azure AD authentication.</p>
+<aside class="warning"><p><strong>Note:</strong> Visit <a href="https://mvnrepository.com/repos/central" target="_blank">Maven Central</a> in order to find the latest versions. For updates around the Azure AD dependency, visit <a href="https://github.com/AzureAD/microsoft-authentication-library-for-java" target="_blank">this repository</a>.</p>
+</aside>
+<p><code>pom.xml</code></p>
+<pre><code>&lt;dependencies&gt;
+.
+.
+.
+   &lt;dependency&gt;
+      &lt;groupId&gt;com.microsoft.sqlserver&lt;/groupId&gt;
+      &lt;artifactId&gt;mssql-jdbc&lt;/artifactId&gt;
+      &lt;version&gt;9.2.1.jre8&lt;/version&gt;
+   &lt;/dependency&gt;
+   &lt;dependency&gt;
+      &lt;groupId&gt;com.microsoft.azure&lt;/groupId&gt;
+      &lt;artifactId&gt;msal4j&lt;/artifactId&gt;
+      &lt;version&gt;1.9.1&lt;/version&gt;
+   &lt;/dependency&gt;
+&lt;/dependencies&gt;</code></pre>
+<h2 is-upgraded>Update build plugin</h2>
+<p>In order for the application to access the drivers, the library needs to be set to shared. For more information about why this is necessary, see this documentation: <a href="https://docs.mulesoft.com/mule-runtime/4.3/about-classloading-isolation" target="_blank">https://docs.mulesoft.com/mule-runtime/4.3/about-classloading-isolation</a></p>
+<p><code>pom.xml</code></p>
+<pre><code>&lt;build&gt;
+   &lt;plugins&gt;
+      &lt;plugin&gt;
+         &lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
+         &lt;artifactId&gt;maven-clean-plugin&lt;/artifactId&gt;
+         &lt;version&gt;3.0.0&lt;/version&gt;
+      &lt;/plugin&gt;
+      &lt;plugin&gt;
+         &lt;groupId&gt;org.mule.tools.maven&lt;/groupId&gt;
+         &lt;artifactId&gt;mule-maven-plugin&lt;/artifactId&gt;
+         &lt;version&gt;${mule.maven.plugin.version}&lt;/version&gt;
+         &lt;extensions&gt;true&lt;/extensions&gt;
+         &lt;configuration&gt;
+            &lt;sharedLibraries&gt;
+               &lt;sharedLibrary&gt;
+                  &lt;groupId&gt;com.microsoft.sqlserver&lt;/groupId&gt;
+                  &lt;artifactId&gt;mssql-jdbc&lt;/artifactId&gt;
+               &lt;/sharedLibrary&gt;
+               &lt;sharedLibrary&gt;
+                  &lt;groupId&gt;com.microsoft.azure&lt;/groupId&gt;
+                  &lt;artifactId&gt;msal4j&lt;/artifactId&gt;
+               &lt;/sharedLibrary&gt;
+            &lt;/sharedLibraries&gt;
+         &lt;/configuration&gt;
+      &lt;/plugin&gt;
+   &lt;/plugins&gt;
+&lt;/build&gt;</code></pre>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Configure Database Connection" duration="5">
+        <h2 is-upgraded>Get from Azure (see connection string)</h2>
+<ul>
+<li><code>hostNameInCertificate</code>: While this is typically <code>*.database.windows.net</code>, this will be different when dealing with other resources, such as Azure Synapse</li>
+<li><code>host</code></li>
+<li><code>username</code></li>
+<li><code>password</code></li>
+<li><code>databaseName</code></li>
+<li><code>port</code></li>
+</ul>
+<h2 is-upgraded>Configure MuleSoft Application</h2>
+<p>Go to the Global Elements tab (recommend a separate Mule Configuration file for global elements)</p>
+<p class="image-container"><img style="width: 624.00px" src="img/11609cf04696fdfb.png"></p>
+<p>Click create</p>
+<p class="image-container"><img style="width: 624.00px" src="img/c48a13a6ff9731b0.png"></p>
+<p>Find the database connector and click &#34;OK&#34;</p>
+<p class="image-container"><img style="width: 624.00px" src="img/126b31d7312fa5ab.png"></p>
+<p>Change the database type dropdown to <code>Microsoft SQL Server Connection</code>. The driver should auto-populate as we&#39;ve already added the dependency.</p>
+<p class="image-container"><img style="width: 624.00px" src="img/7cfbd71e23fe0396.png"></p>
+<p>Add the standard database connection information.</p>
+<aside class="warning"><p><strong>Note: </strong>In a real-world application, it is extremely important that this information be parameterized for security. These values should not be bundled into the JAR or hard coded in the application.</p>
+</aside>
+<p class="image-container"><img style="width: 624.00px" src="img/86d6f514db80232e.png"></p>
+<p>And now for the magic; move to the <code>Advanced</code> tab and add the following inline connection properties:</p>
+<ul>
+<li><code>encrypt</code> = <code>true</code></li>
+<li><code>trustServerCertificate</code> = <code>false</code></li>
+<li><code>hostNameInCertificate</code> = <code>*.database.windows.net</code></li>
+<li><code>authentication</code> = <code>ActiveDirectoryPassword</code></li>
+</ul>
+<aside class="special"><p>For a list of authentication methods supported, see the full documentation here: <a href="https://docs.microsoft.com/en-us/sql/connect/jdbc/connecting-using-azure-active-directory-authentication?view=sql-server-ver15" target="_blank">https://docs.microsoft.com/en-us/sql/connect/jdbc/connecting-using-azure-active-directory-authentication?view=sql-server-ver15</a></p>
+</aside>
+<p class="image-container"><img style="width: 624.00px" src="img/6eee1c15ee11bc23.png"></p>
+<p>And finally click <code>Test Connection</code></p>
+<p class="image-container"><img style="width: 624.00px" src="img/efd1505a419a3a55.png"></p>
+<h2 is-upgraded>If everything was configured correctly, you should see a successful connection test! </h2>
+<p class="image-container"><img style="width: 624.00px" src="img/4ecd71d8777fc731.png"></p>
+
+
+      </google-codelab-step>
+    
+  </google-codelab>
+
+  <script src="https://storage.googleapis.com/codelab-elements/native-shim.js"></script>
+  <script src="https://storage.googleapis.com/codelab-elements/custom-elements.min.js"></script>
+  <script src="https://storage.googleapis.com/codelab-elements/prettify.js"></script>
+  <script src="https://storage.googleapis.com/codelab-elements/codelab-elements.js"></script>
+  <script src="//support.google.com/inapp/api.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,30 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2021-04-07T01:49:55Z",
+  "id": "connect-to-azure-sql-using-azure-ad-authentication",
+  "duration": 10,
+  "title": "Connect to Azure SQL using Azure AD Authentication",
+  "authors": "Michael Jones",
+  "summary": "This will walk you through setting up a project to connect to an Azure SQL instance using Azure AD authentication.",
+  "source": "1Gj1wpJKgK5dPbENJ7Y5vjcJ2dIabgyJ-9w7SLHcFqtY",
+  "theme": "database",
+  "status": [
+    "published"
+  ],
+  "category": [
+    "Database"
+  ],
+  "tags": [
+    "authentication",
+    "azure ad",
+    "azure sql",
+    "database",
+    "sql"
+  ],
+  "feedback": "{{feedbackUrl}}",
+  "ga": "{{labAnalytics}}",
+  "url": "connect-to-azure-sql-using-azure-ad-authentication"
+}
