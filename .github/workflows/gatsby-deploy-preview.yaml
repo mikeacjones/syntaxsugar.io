@@ -20,7 +20,7 @@ jobs:
           GOOG_SA_EMAIL: ${{ secrets.GOOG_SA_EMAIL }}
           GOOG_SA_KEY: ${{ secrets.GOOG_SA_KEY }}
           GOOG_FOLDER_ID: ${{ secrets.GOOG_FOLDER_ID }}
-          SHOW_PREVIEW: 'true'
+          SHOW_PREVIEW: 'yes'
       - name: Deploy 🚀
         uses: JamesIves/github-pages-deploy-action@4.1.4
         with:
