@@ -61,6 +61,7 @@ exports.createPages = ({ actions, graphql }) => {
       postsPerPage,
       labsPerPage,
       menuItems,
+      previewMode,
     } = result.data.site.siteMetadata
 
     const postTemplate = path.resolve(`./src/templates/post.js`)
@@ -103,7 +104,7 @@ exports.createPages = ({ actions, graphql }) => {
       component: indexTemplate,
       context: {
         pubStates:
-          process.env.NODE_ENV === 'development' ? [true, false] : [true],
+          previewMode ? [true, false] : [true],
       },
     })
 
@@ -146,7 +147,7 @@ exports.createPages = ({ actions, graphql }) => {
           tags: tagCombo,
           tagSlugs,
           pubStates:
-            process.env.NODE_ENV === 'development' ? [true, false] : [true],
+            previewMode ? [true, false] : [true],
         },
       })
     })

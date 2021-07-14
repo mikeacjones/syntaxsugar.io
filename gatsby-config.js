@@ -13,6 +13,7 @@ const siteMetadata = {
   postsPerPage: 10,
   labsPerPage: 20,
   isDev: process.env.NODE_ENV === 'development',
+  previewMode: process.env.SHOW_PREVIEW === 'true' || process.env.NODE_ENV === 'development',
 }
 
 module.exports = {
