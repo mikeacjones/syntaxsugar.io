@@ -3,11 +3,7 @@ name: Gatsby Publish - Preview
 on:
   workflow_dispatch:
   push:
-    branches-ignore: master
-    paths-ignore: 
-      - README.md
-      - .github/workflows/gatsby-deploy.yaml
-      - .github/workflows/gatsby-deploy-preview.yaml
+    branches-ignore: [master]
 
 jobs:
   build:
