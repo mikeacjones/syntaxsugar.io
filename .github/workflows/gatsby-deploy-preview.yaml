@@ -15,7 +15,7 @@ jobs:
         run: go get github.com/googlecodelabs/tools/claat
       - run: rm ./static/CNAME
       - run: yarn
-      - run: yarn build
+      - run: yarn build-preview
         env:
           GOOG_SA_EMAIL: ${{ secrets.GOOG_SA_EMAIL }}
           GOOG_SA_KEY: ${{ secrets.GOOG_SA_KEY }}

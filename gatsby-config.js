@@ -17,6 +17,7 @@ const siteMetadata = {
 
 module.exports = {
   siteMetadata: siteMetadata,
+  pathPrefix: 'syntax-sugar-preview',
   plugins: [
     {
       resolve: `gatsby-transformer-json`,
