@@ -3,7 +3,7 @@
   "format": "html",
   "prefix": "https://storage.googleapis.com",
   "mainga": "UA-49880327-14",
-  "updated": "2021-04-07T01:49:55Z",
+  "updated": "2021-06-03T17:05:07Z",
   "id": "connect-to-azure-sql-using-azure-ad-authentication",
   "duration": 10,
   "title": "Connect to Azure SQL using Azure AD Authentication",
@@ -15,12 +15,12 @@
     "published"
   ],
   "category": [
-    "Database"
+    "database"
   ],
   "tags": [
     "authentication",
-    "azure ad",
-    "azure sql",
+    "azuread",
+    "azuresql",
     "database",
     "sql"
   ],
