@@ -1,13 +1,9 @@
-name: Gatsby Publish
+name: Gatsby Publish - Preview
 
 on:
   workflow_dispatch:
   push:
-    branches: master
-    paths-ignore: 
-      - README.md
-      - .github/workflows/gatsby-deploy.yaml
-      - .github/workflows/gatsby-deploy-preview.yaml
+    branches-ignore: [master]
 
 jobs:
   build:
@@ -17,17 +13,19 @@ jobs:
       - uses: actions/setup-go@v2
       - name: Install claat tool
         run: go get github.com/googlecodelabs/tools/claat
-      - run: rm ./static/CNAME && echo syntaxsugar.io >> ./static/CNAME
+      - run: rm ./static/CNAME
       - run: yarn
-      - run: yarn build
+      - run: yarn build-preview
         env:
           GOOG_SA_EMAIL: ${{ secrets.GOOG_SA_EMAIL }}
           GOOG_SA_KEY: ${{ secrets.GOOG_SA_KEY }}
           GOOG_FOLDER_ID: ${{ secrets.GOOG_FOLDER_ID }}
+          SHOW_PREVIEW: 'yes'
       - name: Deploy 🚀
         uses: JamesIves/github-pages-deploy-action@4.1.4
         with:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.GIT_PAT }}
           BRANCH: gh-pages
           FOLDER: public
           CLEAN: true
+          repository-name: mikeacjones/syntax-sugar-preview

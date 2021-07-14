@@ -1,0 +1,50 @@
+---
+title: Dataweave Modules and How to Make Them
+date: 2021-07-14
+tags: [mulesoft,dataweave]
+shortDescription: As your integration processes with MuleSoft mature, you'll find yourself using the data-weave language more and more. More importantly, you'll find yourself creating multiple functions which you'll want to reuse throughout your organization; in this article I will present two different ways in which you can create reusable data-weave libraries which can be included from your central maven repository, how to setup module unit tests, and how to perform line-by-line data-weave debugging. 
+published: false
+---
+
+# Dataweave Modules
+
+## What are they?
+
+Dataweave modules provide reusable functions that aren't necessarily core to the runtime, like `isAlpha`, `takeWhile`, `countBy`, etc. DataWeave provides a large number of built in libraries to help with common tasks which we can import; for example, if you wanted to create a signed JWT for authentication, you would leverage the Binaries and Crypto modules:
+
+```data-weave{2,3}
+%dw 2.0
+import toBase64 from dw::core::Binaries
+import HMACBinary from dw::Crypto
+
+fun binaryJson(obj: Object) = write(obj, 'application/json', { indent: false }) as Binary
+fun base64URL(str: Binary) = toBase64(str) replace "+" with "-" replace "/" with "_" replace "=" with ""
+fun base64Obj(obj: Object) = base64URL(binaryJson(obj))
+fun JWT(header: Object, body: Object, key: String) : String = do {
+    var jwt = "$(base64Obj(header)).$(base64Obj(body))"
+    ---
+    "$(jwt).$(base64URL(HMACBinary(key as Binary, jwt as Binary, "HmacSHA256")))"
+}
+
+output application/json
+---
+JWT({
+    alg: 'HS256',
+    typ: 'JWT'
+}, {
+    iat: now() as Number { unit: 'milliseconds' },
+    sub: now() as Number { unit: 'milliseconds' },
+    name: 'Michael Jones'
+},
+'y(O>KUIIj}m\$og)')
+```
+
+> If you run this in https://dwlang.fun, you'll see that it produces a valid JWT that you can test on https://jwt.io.
+
+So DataWeave provides a lot of out-of-the-box modules we can leverage for common tasks. 
+
+Like the code above, we frequently run into situtations where a reusable function would be extremely useful.. but there isn't one! So what can we do? Well, just like the vast majority of languages, we can create and publish our own reusable modules; once published, we can include it as a maven depedency just like anything else. Reusable modules provide benefits beyond just standardization and reuse - we can actually put these modules into their own CI/CD pipelines, which allows us to introduce new, reusable features that are properly tested and documented!
+
+# Let's Build a JWT Module!
+
+A large number of APIs require that we generate a signed JWT in order to authenticate. MuleSoft does not currently have a built in function/connector for this process, so we'll leverage functionality that already exists within dataweave to build our own reusable library.

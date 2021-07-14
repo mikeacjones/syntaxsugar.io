@@ -13,10 +13,12 @@ const siteMetadata = {
   postsPerPage: 10,
   labsPerPage: 20,
   isDev: process.env.NODE_ENV === 'development',
+  previewMode: process.env.SHOW_PREVIEW || process.env.NODE_ENV === 'development',
 }
 
 module.exports = {
   siteMetadata: siteMetadata,
+  pathPrefix: 'syntax-sugar-preview',
   plugins: [
     {
       resolve: `gatsby-transformer-json`,
