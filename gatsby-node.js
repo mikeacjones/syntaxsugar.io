@@ -36,6 +36,7 @@ exports.createPages = ({ actions, graphql }) => {
         siteMetadata {
           postsPerPage
           labsPerPage
+          previewMode
           menuItems {
             path
             title
