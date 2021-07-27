@@ -10,7 +10,7 @@ published: false
 
 ## What are they?
 
-Dataweave modules provide reusable functions that aren't necessarily core to the runtime, like `isAlpha`, `takeWhile`, `countBy`, etc. DataWeave provides a large number of built in libraries to help with common tasks which we can import; for example, if you wanted to create a signed JWT for authentication, you would leverage the Binaries and Crypto modules:
+DataWeave modules provide reusable functions that aren't necessarily core to the runtime, like `isAlpha`, `takeWhile`, `countBy`, etc. DataWeave provides a large number of built in libraries to help with common tasks which we can import; for example, if you wanted to create a signed JWT for authentication, you would leverage the Binaries and Crypto modules:
 
 ```data-weave{2,3}
 %dw 2.0
@@ -47,4 +47,14 @@ Like the code above, we frequently run into situtations where a reusable functio
 
 # Let's Build a JWT Module!
 
-A large number of APIs require that we generate a signed JWT in order to authenticate. MuleSoft does not currently have a built in function/connector for this process, so we'll leverage functionality that already exists within dataweave to build our own reusable library.
+A large number of APIs require that we generate a signed JWT in order to authenticate. MuleSoft does not currently have a built in function/connector for this process, so we'll leverage functionality that already exists within DataWeave to build our own reusable library.
+
+## Development Environment Setup
+
+DataWeave modules are still Maven projects, so we can develop them in Anypoint Studio; however, using IntelliJ provides an extended tool set which makes for an improved developer experience.
+
+1. Install IntelliJ: If you don't already have IntelliJ installed, visit https://www.jetbrains.com/idea/ and download the Community edition.
+2. Add the DataWeave plugin, which provides tooling around DataWeave project types, line-by-line debugging, and more.
+
+![Animated GIF showing the installation of the DataWeave plugin, authored by MuleSoft](install-dataweave-plugin.gif)
+
