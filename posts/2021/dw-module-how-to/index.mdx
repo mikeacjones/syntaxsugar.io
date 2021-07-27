@@ -58,3 +58,8 @@ DataWeave modules are still Maven projects, so we can develop them in Anypoint S
 
 ![Animated GIF showing the installation of the DataWeave plugin, authored by MuleSoft](install-dataweave-plugin.gif)
 
+## Create the DataWeave Project
+
+In IntelliJ, create a new project using the "Weave Project" type. For your groupId and artifactId, keep in mind that you will be using this later in order to add the module as a dependency. In my case, I use `io.syntaxsugar.dw` as my groupId and `jwt-module` as my artifactId. For your version, we can use the default `1.0.0-SNAPSHOT`; the version number should conform to semantic versioning. Leave all of the defaults on the next page; for now, do not check the "Publish to Exchange" option as we will be adding these settings ourselves later.
+
+![Animated GIF walking through Weave Project creation](create-project.gif)
