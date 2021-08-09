@@ -2,10 +2,10 @@
 title: Streaming Data and Deferred Dataweave
 date: 2021-01-05
 tags: [mulesoft,dataweave,streaming,memory]
-shortDescription: Processing data in an Enterprise environment frequently involves very large files. In a traditional approach, processing these files can involve issues around memory and time as it involves first downloading the entire file, attempting to load the entire file into memory to work on, and then saving the whole file to output. Instead of taking this old-fashioned approach, we can utilized data streaming and deferred dataweave processing in order to streamline this process.
+shortDescription: Processing data in an Enterprise environment frequently involves very large files. In a traditional approach, processing these files can involve issues around memory and time as it involves first downloading the entire file, attempting to load the entire file into memory to work on, and then saving the whole file to output. Instead of taking this old-fashioned approach, we can utilized data streaming and deferred DataWeave processing in order to streamline this process.
 published: true
 ---
-Before we start talking about streaming and deferred dataweave, lets consider a traditional batch approach. In this example, we will be considering a process which downloads a large CSV (GB size range), transforms the data to JSON, and then upserts this information into Salesforce. The step by step process for that probably looks like this:
+Before we start talking about streaming and deferred DataWeave, lets consider a traditional batch approach. In this example, we will be considering a process which downloads a large CSV (GB size range), transforms the data to JSON, and then upserts this information into Salesforce. The step by step process for that probably looks like this:
 
 1. Download file from SFTP to local file system
 2. After downloading file, open file and start reading line by line and building an in-memory JSON object structure
@@ -74,9 +74,9 @@ And converting it to a JSON structure like this:
    ![stream-response-settings.png](stream-response-settings.png)
    2. Paste the URL to the file into the REST request component, and make sure the request is set as a GET operation.
       - URL: `http://large-csv-file.us-e2.cloudhub.io/CovidData.csv`
-   3. Finally, we need to tell dataweave that the input should be worked on as a stream. If we don't, dataweave will write the content to disk for any file that is over 1.5MB. We do this by setting the mime type on the request to `application/csv; streaming=true`. While the process will work without this piece, it will be considerably slower due to disk I/O operations.
+   3. Finally, we need to tell DataWeave that the input should be worked on as a stream. If we don't, DataWeave will write the content to disk for any file that is over 1.5MB. We do this by setting the mime type on the request to `application/csv; streaming=true`. While the process will work without this piece, it will be considerably slower due to disk I/O operations.
    ![set-streaming.png](set-streaming.png)
-3. After the Request operation, add a Transform component and paste the following dataweave. By adding `deferred=true`, we tell the script to pass an output stream directly to the next message processor in the flow.
+3. After the Request operation, add a Transform component and paste the following DataWeave. By adding `deferred=true`, we tell the script to pass an output stream directly to the next message processor in the flow.
 
 ```data-weave
 %dw 2.0

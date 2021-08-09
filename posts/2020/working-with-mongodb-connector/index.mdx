@@ -46,7 +46,7 @@ In the query above, the `$in` operator is a special MongoDB operation. When we r
 }
 ```
 
-If we wanted to run this same query in the MongoDB connector, we would use the `Find documents` operation with the following dataweave as our Query:
+If we wanted to run this same query in the MongoDB connector, we would use the `Find documents` operation with the following DataWeave as our Query:
 
 ```data-weave
 output application/json
@@ -61,7 +61,7 @@ output application/json
 }
 ```
 
-The `$` is a special character in dataweave which means we need to escape it, but that is all there is to it!
+The `$` is a special character in DataWeave which means we need to escape it, but that is all there is to it!
 
 ## MQL Objects
 
@@ -69,7 +69,7 @@ The same principle exists for specifics objects, such as the `ObjectId`. For exa
 
 ![data-structure](compass-structure.png)
 
-We can run this dataweave:
+We can run this DataWeave:
 
 ```data-weave
 output application/json
