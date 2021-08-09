@@ -46,18 +46,18 @@
         <h2 is-upgraded>Create a new project</h2>
 <p>Open Anypoint Studio (recommended version 7.8+) and create a new <strong>Mule Project</strong>. I would also recommend creating a new workspace for workshops. Set the project name to something meaningful, eg: <code>azure-sql-using-azure-ad-walkthrough</code></p>
 <p class="image-container"><img style="width: 624.00px" src="img/826e849d76ed1208.png"></p>
-<p class="image-container"><img style="width: 624.00px" src="img/af134cd01e788f5f.png"></p>
-<p class="image-container"><img style="width: 624.00px" src="img/17184cac699de08b.png"></p>
+<p class="image-container"><img style="width: 624.00px" src="img/be95daa2bd1408d4.png"></p>
+<p class="image-container"><img style="width: 624.00px" src="img/de46157d461712c9.png"></p>
 <h2 is-upgraded>Add database connector</h2>
 <p>Click <code>Search in Exchange</code> in the Mule Palette <em>(note: while we could use the favorites, using Search in Exchange option ensures we pull the latest version of the connector)</em></p>
-<p class="image-container"><img style="width: 624.00px" src="img/53c84f01ebe7ecdb.png"></p>
+<p class="image-container"><img style="width: 624.00px" src="img/1c6d80a95562302b.png"></p>
 <p>In the new window, search for the latest database connector and add it to your project.</p>
-<p class="image-container"><img style="width: 624.00px" src="img/101595cfdf12ca8.png"></p>
+<p class="image-container"><img style="width: 624.00px" src="img/4bd9391f447fe391.png"></p>
 <h2 is-upgraded>Add driver dependencies</h2>
 <aside class="special"><p>For a complete POM.xml for reference see this GIST: <a href="https://gist.github.com/mikeacjones/38e669343389c7ab143451687f834e7d" target="_blank">https://gist.github.com/mikeacjones/38e669343389c7ab143451687f834e7d</a></p>
 </aside>
 <p>Open your POM.xml:</p>
-<p class="image-container"><img style="width: 624.00px" src="img/8124b1bd7dfb6662.png"></p>
+<p class="image-container"><img style="width: 624.00px" src="img/621404d3e5ed9181.png"></p>
 <p>Add these two dependencies; one is the Microsoft SQL JDBC driver and the other provides Azure AD authentication.</p>
 <aside class="warning"><p><strong>Note:</strong> Visit <a href="https://mvnrepository.com/repos/central" target="_blank">Maven Central</a> in order to find the latest versions. For updates around the Azure AD dependency, visit <a href="https://github.com/AzureAD/microsoft-authentication-library-for-java" target="_blank">this repository</a>.</p>
 </aside>
@@ -123,17 +123,17 @@
 </ul>
 <h2 is-upgraded>Configure MuleSoft Application</h2>
 <p>Go to the Global Elements tab (recommend a separate Mule Configuration file for global elements)</p>
-<p class="image-container"><img style="width: 624.00px" src="img/11609cf04696fdfb.png"></p>
+<p class="image-container"><img style="width: 624.00px" src="img/c57979cb879a17bc.png"></p>
 <p>Click create</p>
-<p class="image-container"><img style="width: 624.00px" src="img/c48a13a6ff9731b0.png"></p>
+<p class="image-container"><img style="width: 624.00px" src="img/e301ac600e591393.png"></p>
 <p>Find the database connector and click &#34;OK&#34;</p>
-<p class="image-container"><img style="width: 624.00px" src="img/126b31d7312fa5ab.png"></p>
+<p class="image-container"><img style="width: 624.00px" src="img/c2219deb315158b9.png"></p>
 <p>Change the database type dropdown to <code>Microsoft SQL Server Connection</code>. The driver should auto-populate as we&#39;ve already added the dependency.</p>
-<p class="image-container"><img style="width: 624.00px" src="img/7cfbd71e23fe0396.png"></p>
+<p class="image-container"><img style="width: 624.00px" src="img/66410c44338e85a8.png"></p>
 <p>Add the standard database connection information.</p>
 <aside class="warning"><p><strong>Note: </strong>In a real-world application, it is extremely important that this information be parameterized for security. These values should not be bundled into the JAR or hard coded in the application.</p>
 </aside>
-<p class="image-container"><img style="width: 624.00px" src="img/86d6f514db80232e.png"></p>
+<p class="image-container"><img style="width: 624.00px" src="img/e02f057be1852f42.png"></p>
 <p>And now for the magic; move to the <code>Advanced</code> tab and add the following inline connection properties:</p>
 <ul>
 <li><code>encrypt</code> = <code>true</code></li>
@@ -143,9 +143,9 @@
 </ul>
 <aside class="special"><p>For a list of authentication methods supported, see the full documentation here: <a href="https://docs.microsoft.com/en-us/sql/connect/jdbc/connecting-using-azure-active-directory-authentication?view=sql-server-ver15" target="_blank">https://docs.microsoft.com/en-us/sql/connect/jdbc/connecting-using-azure-active-directory-authentication?view=sql-server-ver15</a></p>
 </aside>
-<p class="image-container"><img style="width: 624.00px" src="img/6eee1c15ee11bc23.png"></p>
+<p class="image-container"><img style="width: 624.00px" src="img/aacfece44ee59a51.png"></p>
 <p>And finally click <code>Test Connection</code></p>
-<p class="image-container"><img style="width: 624.00px" src="img/efd1505a419a3a55.png"></p>
+<p class="image-container"><img style="width: 624.00px" src="img/f91355aa1d0ca4cb.png"></p>
 <h2 is-upgraded>If everything was configured correctly, you should see a successful connection test! </h2>
 <p class="image-container"><img style="width: 624.00px" src="img/4ecd71d8777fc731.png"></p>
 
