@@ -42,16 +42,6 @@ exports.createPages = ({ actions, graphql }) => {
           }
         }
       }
-      allFile(filter: { absolutePath: { regex: "/.+codelab.json$/" } }) {
-        edges {
-          node {
-            absolutePath
-            childJson {
-              category
-            }
-          }
-        }
-      }
     }
   `).then(result => {
     if (result.errors) {
