@@ -28,9 +28,6 @@ export const MenuItems = () => {
               </Link>
             )
           })}
-        <Link to='/labs/' activeClassName='active' partiallyActive>
-          <li>Labs</li>
-        </Link>
       </ul>
     </div>
   )
