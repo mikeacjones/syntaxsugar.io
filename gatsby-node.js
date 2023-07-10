@@ -35,7 +35,6 @@ exports.createPages = ({ actions, graphql }) => {
       site {
         siteMetadata {
           postsPerPage
-          labsPerPage
           previewMode
           menuItems {
             path
@@ -68,10 +67,6 @@ exports.createPages = ({ actions, graphql }) => {
     const postTemplate = path.resolve(`./src/templates/post.js`)
     const indexTemplate = path.resolve(`./src/templates/index.js`)
     const postsByTagsTemplate = path.resolve(`./src/templates/postsByTags.js`)
-    const labsTemplate = path.resolve(`./src/templates/labs.js`)
-    const labsByCategoryTemplate = path.resolve(
-      `./src/templates/labsByCategory.js`
-    )
 
     //Create individual pages (side menu)
     const pages = result.data.allMdx.edges.filter(
@@ -169,58 +164,6 @@ exports.createPages = ({ actions, graphql }) => {
           },
         })
       })
-
-    //Create paginated lab pages
-    const labs = result.data.allFile.edges.map(({ node }) => {
-      return { path: node.absolutePath, category: node.childJson.category }
-    })
-    paginate({
-      createPage,
-      items: labs,
-      itemsPerPage: result.data.site.siteMetadata.labsPerPage,
-      pathPrefix: '/labs',
-      component: labsTemplate,
-    })
-
-    //Create paginated lab lists by combined tag
-    const labCategories = labs
-      .flatMap(({ category }) => category)
-      .filter((item, index, self) => self.indexOf(item) === index)
-    const combinedCategories = powerSet(labCategories).filter(
-      set => set.length > 0
-    )
-    combinedCategories.forEach(catCombo => {
-      const labsWithCategory = labs.filter(
-        lab => lab.category && catCombo.some(cat => lab.category.includes(cat))
-      )
-      const currentSlug = createTagSlug(catCombo.sort().join('-'))
-      const catSlugs = labCategories.reduce((map, cat) => {
-        const linkCats = (catCombo.includes(cat)
-          ? [
-              ...catCombo.slice(0, catCombo.indexOf(cat)),
-              ...catCombo.slice(catCombo.indexOf(cat) + 1),
-            ]
-          : [...catCombo, cat]
-        ).sort()
-        map[cat] =
-          linkCats.length === 0
-            ? '/labs'
-            : `/labs/${createTagSlug(linkCats.join('-'))}`
-        return map
-      }, {})
-
-      paginate({
-        createPage,
-        items: labsWithCategory,
-        component: labsByCategoryTemplate,
-        itemsPerPage: result.data.site.siteMetadata.labsPerPage,
-        pathPrefix: `/labs/${currentSlug}`,
-        context: {
-          categories: catCombo,
-          catSlugs,
-        },
-      })
-    })
   })
 }
 
