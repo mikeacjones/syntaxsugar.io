@@ -5,7 +5,7 @@ const { createTagSlug, powerSet } = require(`./src/helpers`)
 const { generateCodeLabs } = require('./codelabs-script')
 
 exports.onPreInit = async () => {
-  if (process.env.NODE_ENV !== 'development') await generateCodeLabs()
+  //if (process.env.NODE_ENV !== 'development') await generateCodeLabs()
 }
 
 exports.createPages = ({ actions, graphql }) => {
