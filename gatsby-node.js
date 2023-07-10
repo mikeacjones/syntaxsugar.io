@@ -2,10 +2,8 @@ const path = require('path')
 const { createFilePath } = require(`gatsby-source-filesystem`)
 const { paginate } = require(`gatsby-awesome-pagination`)
 const { createTagSlug, powerSet } = require(`./src/helpers`)
-const { generateCodeLabs } = require('./codelabs-script')
 
 exports.onPreInit = async () => {
-  //if (process.env.NODE_ENV !== 'development') await generateCodeLabs()
 }
 
 exports.createPages = ({ actions, graphql }) => {
@@ -49,7 +47,6 @@ exports.createPages = ({ actions, graphql }) => {
     }
     const {
       postsPerPage,
-      labsPerPage,
       menuItems,
       previewMode,
     } = result.data.site.siteMetadata
