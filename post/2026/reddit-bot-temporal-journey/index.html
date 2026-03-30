@@ -1,0 +1,359 @@
+<!DOCTYPE html><html lang="en"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="description" content="I spent 2 years building workarounds to keep a Reddit bot running reliably. This is the story of evolving from a fragile Python script, to a homegrown durability layer, to durable Temporal workflows; and what I learned about correctness under failure along the way."><title>Building a Reddit Bot on Temporal | Michael Jones</title><!-- Favicons --><link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="icon" type="image/x-icon" href="/favicon.ico"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="manifest" href="/site.webmanifest"><link rel="mask-icon" href="/safari-pinned-tab.svg" color="#52307c"><!-- Google Fonts --><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Titillium+Web:wght@300;400;600;700&family=Ubuntu+Mono:wght@400;700&display=swap" rel="stylesheet"><!-- Sitemap --><link rel="sitemap" href="/sitemap-index.xml"><link rel="stylesheet" href="/_astro/dw-cookbook.CMY3fXwD.css"></head> <body> <div id="Layout"> <div class="SideBarWrapper"> <div id="SideBarToggleWrapper"> <div id="SideBarToggle"> <label class="toggle" for="SideBarToggle-checkbox">&#9776;</label> </div> </div> <input type="checkbox" id="SideBarToggle-checkbox"> <nav id="SideBar"> <div id="AboutMe"> <div id="AboutMe-ProfilePicture"> <img src="/images/profilePicture.png" alt="Michael Jones"> </div> <h2 style="text-align: center;">Michael Jones</h2> <div id="AboutMe-MenuItems"> <ul id="MenuItems"> <a href="/" class> <li>Posts</li> </a> <a href="/dw-cookbook" class> <li>DW Cookbook</li> </a> </ul> </div> </div> <div id="SocialIcons"> <a href="https://github.com/mikeacjones" target="_blank" rel="noreferrer" aria-label="GitHub"> <svg viewBox="0 0 496 512" xmlns="http://www.w3.org/2000/svg"> <path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.8-14.1-112.8-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"></path> </svg> </a> <a href="https://www.linkedin.com/in/michael-jones-5a870678" target="_blank" rel="noreferrer" aria-label="LinkedIn"> <svg viewBox="0 0 448 512" xmlns="http://www.w3.org/2000/svg"> <path d="M416 32H31.9C14.3 32 0 46.5 0 64.3v383.4C0 465.5 14.3 480 31.9 480H416c17.6 0 32-14.5 32-32.3V64.3c0-17.8-14.4-32.3-32-32.3zM135.4 416H69V202.2h66.5V416zm-33.2-243c-21.3 0-38.5-17.3-38.5-38.5S80.9 96 102.2 96c21.2 0 38.5 17.3 38.5 38.5 0 21.3-17.2 38.5-38.5 38.5zm282.1 243h-66.4V312c0-24.8-.5-56.7-34.5-56.7-34.6 0-39.9 27-39.9 54.9V416h-66.4V202.2h63.7v29.2h.9c8.9-16.8 30.6-34.5 62.9-34.5 67.2 0 79.7 44.3 79.7 101.9V416z"></path> </svg> </a> <a href="https://stackoverflow.com/users/10890536/michael-jones" target="_blank" rel="noreferrer" aria-label="Stack Overflow"> <svg viewBox="0 0 384 512" xmlns="http://www.w3.org/2000/svg"> <path d="M290.7 311L95 269.7 86.8 309l195.7 41zm51-87L188.2 95.7l-25.5 30.8 153.5 128.3zm-31.2 39.7L129.2 179l-16.7 36.5L293.7 300zM262 32l-32 24 119.3 160.3 32-24zm20.5 328h-200v39.7h200zm39.7 80H42.7V320h-40v160h319.9V320h-40z"></path> </svg> </a> </div> </nav> </div> <script type="module">document.addEventListener("astro:page-load",()=>{const e=document.getElementById("SideBarToggle-checkbox"),t=document.querySelector(".toggle");t&&e&&t.addEventListener("click",n=>{n.preventDefault(),e.checked=!e.checked});const c=document.getElementById("ContentWrapper");c&&e&&c.addEventListener("click",()=>{e.checked&&(e.checked=!1)})});</script> <div id="Layout-ContentWrapper"> <div id="ContentWrapper">  <div class="post-view"> <div class="post-view-title"> <h1>Building a Reddit Bot on Temporal</h1> </div> <div class="post-view-date">March 29, 2026</div> <div class="post-view-tags"> <span class="Chip"> <a class="Chip-link" href="/tag/temporal">temporal</a> </span><span class="Chip"> <a class="Chip-link" href="/tag/python">python</a> </span><span class="Chip"> <a class="Chip-link" href="/tag/reddit">reddit</a> </span><span class="Chip"> <a class="Chip-link" href="/tag/durability">durability</a> </span><span class="Chip"> <a class="Chip-link" href="/tag/distributed-systems">distributed-systems</a> </span> </div> <div class="post-view-content"> <p><img src="/_astro/gandalf-no-memory.DFpqvCHL_vTObn.jpg" alt="Me opening my blog's codebase after 3 years" loading="lazy" decoding="async" fetchpriority="auto" width="500" height="607"></p>
+<p>Yeah.. it’s been a minute. Life, work, the usual suspects. But I recently ported my Reddit bot to Temporal,and I think the journey is worth sharing; especially if you’ve ever tried to keep a long-running process alive and <em>correct</em> in the real world.</p>
+<p>Let’s talk about building a Reddit bot that tracks trade confirmations, the many ways it broke, and how <a href="https://temporal.io" rel="noreferrer" target="_blank">Temporal</a> finally made it dependable.</p>
+<hr/>
+<h1 id="what-does-the-bot-do">What Does the Bot Do?</h1>
+<p>I moderate the bot for few trade subreddits; communities like r/pen_swap and r/YarnSwap where users buy, sell, and trade with each other. Reputation matters a lot in these communities, and users want to know they’re dealing with someone trustworthy. The way this works:</p>
+<ol>
+<li>The bot creates a <strong>monthly confirmation thread</strong> (pinned to the top of the subreddit)</li>
+<li><strong>User A</strong> posts something like “Traded with u/UserB”</li>
+<li><strong>User B</strong> replies with “Confirmed”</li>
+<li>The bot <strong>validates</strong> the confirmation (not self-confirming, not a duplicate, mentions are correct, etc)</li>
+<li>The bot <strong>increments both users’ flair</strong> with their updated trade counts</li>
+<li>The bot <strong>replies</strong> with the new counts</li>
+</ol>
+<p>Sounds straightforward, right? It really isn’t. The bot has to run 24/7, never miss a single confirmation, and never double-count a trade. If someone has 50 confirmed trades, that number needs to be accurate.</p>
+<hr/>
+<h1 id="phase-1-the-naive-script">Phase 1: The Naive Script</h1>
+<p>The first version was about what you’d expect: a single <code>bot.py</code>, roughly 450 lines, deployed on an EC2 instance.</p>
+<p><img src="/_astro/naive-arch.Uk16C9m-_19DKCs.svg" alt="Phase 1 Architecture" loading="lazy" decoding="async" fetchpriority="auto" width="1043" height="488"></p>
+<p>The core of it was PRAW’s <code>stream.comments()</code>, a blocking generator that yields new comments as they appear:</p>
+<pre class="astro-code material-theme-palenight" style="background-color:#292D3E;color:#babed8;overflow-x:auto;white-space:pre-wrap;word-wrap:break-word" tabindex="0" data-language="python"><code><span class="line"><span style="color:#89DDFF;font-style:italic">import</span><span style="color:#BABED8"> praw</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#BABED8">reddit </span><span style="color:#89DDFF">=</span><span style="color:#BABED8"> praw</span><span style="color:#89DDFF">.</span><span style="color:#82AAFF">Reddit</span><span style="color:#89DDFF">(</span><span style="color:#82AAFF">...</span><span style="color:#89DDFF">)</span></span>
+<span class="line"><span style="color:#BABED8">subreddit </span><span style="color:#89DDFF">=</span><span style="color:#BABED8"> reddit</span><span style="color:#89DDFF">.</span><span style="color:#82AAFF">subreddit</span><span style="color:#89DDFF">(</span><span style="color:#89DDFF">&quot;</span><span style="color:#C3E88D">pen_swap</span><span style="color:#89DDFF">&quot;</span><span style="color:#89DDFF">)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#89DDFF;font-style:italic">for</span><span style="color:#BABED8"> comment </span><span style="color:#89DDFF;font-style:italic">in</span><span style="color:#BABED8"> subreddit</span><span style="color:#89DDFF">.</span><span style="color:#F07178">stream</span><span style="color:#89DDFF">.</span><span style="color:#82AAFF">comments</span><span style="color:#89DDFF">():</span></span>
+<span class="line"><span style="color:#89DDFF;font-style:italic">    if</span><span style="color:#82AAFF"> is_confirmation</span><span style="color:#89DDFF">(</span><span style="color:#82AAFF">comment</span><span style="color:#89DDFF">):</span></span>
+<span class="line"><span style="color:#82AAFF">        validate_and_process</span><span style="color:#89DDFF">(</span><span style="color:#82AAFF">comment</span><span style="color:#89DDFF">)</span></span></code></pre>
+<p>Simple! And it worked great… as long as nothing ever went wrong.</p>
+<p>The processing logic was similarly straightforward:</p>
+<pre class="astro-code material-theme-palenight" style="background-color:#292D3E;color:#babed8;overflow-x:auto;white-space:pre-wrap;word-wrap:break-word" tabindex="0" data-language="python"><code><span class="line"><span style="color:#C792EA">def</span><span style="color:#82AAFF"> increment_flair</span><span style="color:#89DDFF">(</span><span style="color:#BABED8;font-style:italic">subreddit</span><span style="color:#89DDFF">,</span><span style="color:#BABED8;font-style:italic"> user</span><span style="color:#89DDFF">):</span></span>
+<span class="line"><span style="color:#BABED8">    current_flair </span><span style="color:#89DDFF">=</span><span style="color:#82AAFF"> next</span><span style="color:#89DDFF">(</span><span style="color:#82AAFF">subreddit</span><span style="color:#89DDFF">.</span><span style="color:#82AAFF">flair</span><span style="color:#89DDFF">(</span><span style="color:#82AAFF">user</span><span style="color:#89DDFF">))</span></span>
+<span class="line"><span style="color:#BABED8">    current_count </span><span style="color:#89DDFF">=</span><span style="color:#82AAFF"> parse_count</span><span style="color:#89DDFF">(</span><span style="color:#82AAFF">current_flair</span><span style="color:#89DDFF">)</span></span>
+<span class="line"><span style="color:#BABED8">    new_count </span><span style="color:#89DDFF">=</span><span style="color:#BABED8"> current_count </span><span style="color:#89DDFF">+</span><span style="color:#F78C6C"> 1</span></span>
+<span class="line"><span style="color:#BABED8">    subreddit</span><span style="color:#89DDFF">.</span><span style="color:#F07178">flair</span><span style="color:#89DDFF">.</span><span style="color:#82AAFF">set</span><span style="color:#89DDFF">(</span><span style="color:#82AAFF">user</span><span style="color:#89DDFF">,</span><span style="color:#BABED8;font-style:italic"> flair_text</span><span style="color:#89DDFF">=</span><span style="color:#82AAFF">format_flair</span><span style="color:#89DDFF">(</span><span style="color:#82AAFF">new_count</span><span style="color:#89DDFF">))</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C792EA">def</span><span style="color:#82AAFF"> process_confirmation</span><span style="color:#89DDFF">(</span><span style="color:#BABED8;font-style:italic">comment</span><span style="color:#89DDFF">):</span></span>
+<span class="line"><span style="color:#BABED8">    parent </span><span style="color:#89DDFF">=</span><span style="color:#BABED8"> comment</span><span style="color:#89DDFF">.</span><span style="color:#82AAFF">parent</span><span style="color:#89DDFF">()</span></span>
+<span class="line"><span style="color:#BABED8">    user_a </span><span style="color:#89DDFF">=</span><span style="color:#BABED8"> parent</span><span style="color:#89DDFF">.</span><span style="color:#F07178">author</span></span>
+<span class="line"><span style="color:#BABED8">    user_b </span><span style="color:#89DDFF">=</span><span style="color:#BABED8"> comment</span><span style="color:#89DDFF">.</span><span style="color:#F07178">author</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#82AAFF">    increment_flair</span><span style="color:#89DDFF">(</span><span style="color:#82AAFF">subreddit</span><span style="color:#89DDFF">,</span><span style="color:#82AAFF"> user_a</span><span style="color:#89DDFF">)</span></span>
+<span class="line"><span style="color:#82AAFF">    increment_flair</span><span style="color:#89DDFF">(</span><span style="color:#82AAFF">subreddit</span><span style="color:#89DDFF">,</span><span style="color:#82AAFF"> user_b</span><span style="color:#89DDFF">)</span></span>
+<span class="line"><span style="color:#BABED8">    comment</span><span style="color:#89DDFF">.</span><span style="color:#82AAFF">save</span><span style="color:#89DDFF">()</span><span style="color:#676E95;font-style:italic">  # mark as processed</span></span>
+<span class="line"><span style="color:#BABED8">    comment</span><span style="color:#89DDFF">.</span><span style="color:#82AAFF">reply</span><span style="color:#89DDFF">(</span><span style="color:#C792EA">f</span><span style="color:#C3E88D">&quot;Trade confirmed! ...&quot;</span><span style="color:#89DDFF">)</span></span></code></pre>
+<hr/>
+<h1 id="everything-that-went-wrong">Everything That Went Wrong</h1>
+<p><img src="/_astro/failure-points.D6tDLl1N_19DKCs.svg" alt="Failure Points" loading="lazy" decoding="async" fetchpriority="auto" width="1662" height="294"></p>
+<p>Let me walk through the fun ways this broke in the real world..</p>
+<h2 id="reddit-api-outages">Reddit API Outages</h2>
+<p>Reddit’s API goes down. Regularly. When it does, PRAW’s <code>stream.comments()</code> doesn’t always fail cleanly. Sometimes the internal listing generator just… stops yielding items. Silently. The bot looks like it’s running, but it’s processing nothing.</p>
+<p>Even worse, PRAW lazy-loads Reddit objects. When you access <code>comment.author</code>, it doesn’t have that data yet; it makes an API call right then. So you can get a comment object just fine, start processing it, and then have it blow up mid-operation when it tries to fetch the parent comment’s author during an API blip. This is before you even consider the steps where we do things like set the flair count.</p>
+<h2 id="the-double-increment-problem">The Double-Increment Problem</h2>
+<p>Remember that <code>process_confirmation</code> function? Here’s what happens when the bot crashes after incrementing flair but <em>before</em> calling <code>comment.save()</code>:</p>
+<ol>
+<li>Bot reads User A’s flair: <strong>5</strong></li>
+<li>Bot sets User A’s flair to <strong>6</strong> ✅</li>
+<li>Bot reads User B’s flair: <strong>10</strong></li>
+<li>**💥 Bot / confirmation function crashes ** (Reddit API outage, process killed, whatever)</li>
+<li>Bot restarts, sees the comment isn’t saved, reprocesses it</li>
+<li>Bot reads User A’s flair: <strong>6</strong> (already incremented!)</li>
+<li>Bot sets User A’s flair to <strong>7</strong> ❌ Double count!</li>
+</ol>
+<p>The root issue: <code>increment_flair</code> is <strong>not idempotent</strong>, and the “I processed this” marker (<code>comment.save()</code>) happens <em>after</em> the state mutation. The only real solution to this would be to roll my own state machine, and who wants to do that for a hobby project?</p>
+<hr/>
+<h1 id="phase-2-my-homegrown-durability-layer">Phase 2: My Homegrown Durability Layer</h1>
+<p>After getting burned enough times, I built <a href="https://github.com/mikeacjones/praw-bot-wrapper" rel="noreferrer" target="_blank">praw-bot-wrapper</a>; a custom library that wraps PRAW’s streams with error recovery:</p>
+<p><img src="/_astro/praw-wrapper-arch.BmI0b6QR_19DKCs.svg" alt="praw-bot-wrapper Architecture" loading="lazy" decoding="async" fetchpriority="auto" width="1389" height="548"></p>
+<pre class="astro-code material-theme-palenight" style="background-color:#292D3E;color:#babed8;overflow-x:auto;white-space:pre-wrap;word-wrap:break-word" tabindex="0" data-language="python"><code><span class="line"><span style="color:#89DDFF;font-style:italic">from</span><span style="color:#BABED8"> praw_bot_wrapper </span><span style="color:#89DDFF;font-style:italic">import</span><span style="color:#BABED8"> Bot</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#BABED8">bot </span><span style="color:#89DDFF">=</span><span style="color:#82AAFF"> Bot</span><span style="color:#89DDFF">(</span><span style="color:#82AAFF">reddit</span><span style="color:#89DDFF">)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#89DDFF">@</span><span style="color:#82AAFF">bot</span><span style="color:#89DDFF">.</span><span style="color:#82AAFF">stream_handler</span><span style="color:#89DDFF">(</span><span style="color:#82AAFF">bot</span><span style="color:#89DDFF">.</span><span style="color:#82AAFF">subreddit</span><span style="color:#89DDFF">(</span><span style="color:#82AAFF">SUBREDDIT_NAME</span><span style="color:#89DDFF">).</span><span style="color:#F07178">stream</span><span style="color:#89DDFF">.</span><span style="color:#F07178">comments</span><span style="color:#89DDFF">)</span></span>
+<span class="line"><span style="color:#C792EA">def</span><span style="color:#82AAFF"> handle_comment</span><span style="color:#89DDFF">(</span><span style="color:#BABED8;font-style:italic">comment</span><span style="color:#89DDFF">):</span></span>
+<span class="line"><span style="color:#89DDFF;font-style:italic">    if</span><span style="color:#82AAFF"> is_confirmation</span><span style="color:#89DDFF">(</span><span style="color:#82AAFF">comment</span><span style="color:#89DDFF">):</span></span>
+<span class="line"><span style="color:#82AAFF">        process_confirmation</span><span style="color:#89DDFF">(</span><span style="color:#82AAFF">comment</span><span style="color:#89DDFF">)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#89DDFF">@</span><span style="color:#82AAFF">bot</span><span style="color:#89DDFF">.</span><span style="color:#82AAFF">outage_recovery_handler</span><span style="color:#89DDFF">(</span><span style="color:#BABED8;font-style:italic">outage_threshold</span><span style="color:#89DDFF">=</span><span style="color:#F78C6C">10</span><span style="color:#89DDFF">)</span></span>
+<span class="line"><span style="color:#C792EA">def</span><span style="color:#82AAFF"> on_recovery</span><span style="color:#89DDFF">(</span><span style="color:#BABED8;font-style:italic">error_count</span><span style="color:#89DDFF">):</span></span>
+<span class="line"><span style="color:#82AAFF">    notify_mods</span><span style="color:#89DDFF">(</span><span style="color:#89DDFF">&quot;</span><span style="color:#C3E88D">Bot recovered from outage</span><span style="color:#89DDFF">&quot;</span><span style="color:#89DDFF">)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#BABED8">bot</span><span style="color:#89DDFF">.</span><span style="color:#82AAFF">run</span><span style="color:#89DDFF">()</span><span style="color:#676E95;font-style:italic">  # infinite loop with error recovery</span></span></code></pre>
+<p>Under the hood, it wrapped everything in a <code>while True</code> loop that caught PRAW exceptions, reset the stream generators, applied exponential backoff, and used a <code>BoundedSet(301)</code> for deduplication separate from PRAW. When the error count exceeded a threshold and then recovered, it fired notification handlers.</p>
+<p>It did what I needed: <strong>keep the bot alive through Reddit API blips</strong>. Roughly <strong>42% of my codebase</strong> was now error handling and durability logic rather than actual confirmation logic.. this kind of sucks. And it <em>still</em> didn’t solve the hard problems:</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Problem</th><th>Fixed?</th></tr></thead><tbody><tr><td>Survives API blips</td><td>✅ Yes</td></tr><tr><td>Dedup on restart</td><td>❌ No, <code>BoundedSet</code> is in-memory</td></tr><tr><td>Persistent checkpoint</td><td>❌ No</td></tr><tr><td>Multi-step retry</td><td>❌ No</td></tr><tr><td>Zero-downtime deploy</td><td>❌ No</td></tr><tr><td>Double-increment safe</td><td>❌ No</td></tr></tbody></table>
+<p>The wrapper kept the bot alive, but it couldn’t make it <strong>correct</strong>. A crash at the wrong moment still meant double-counted trades or missed confirmations. The 301-item dedup window was a ticking time bomb; a long enough Reddit outage and the window slides past unprocessed items.</p>
+<p>I was spending most of time / code building for reliability rather than building the actual bot logic. I wanted to add features like a local LLM to handle when a user didn’t reply exactly <code>confirmed</code>, and a detection mechanism for suspicious activity; for example, At one point I added a look-back flow which checked that the users actually posted a WTB/WTS post and interacted. But keeping things running and reliable with these extra pieces proved to not be worth the effort, so I dropped them.</p>
+<hr/>
+<h1 id="phase-3-enter-temporal">Phase 3: Enter Temporal</h1>
+<p>I’d heared about <a href="https://temporal.io" rel="noreferrer" target="_blank">Temporal</a>. Durable execution, automatic retries, workflow state that survives crashes. It sounded almost too good to be true, but I was tired of fighting the durability problem myself, so I decided to give it a shot.</p>
+<p><strong>Fair warning:</strong> this was my first Temporal project. In point of fact, this was my “lets learn about Temporal” for my interview project 😎 I’m still learning the patterns, still figuring out the best way to structure things. What I’m sharing here is what worked for me, not necessarily best practices. But even as a beginner, the difference is dramatic.</p>
+<p>I replaced my bot with a set of <strong>durable workflows</strong>:</p>
+<p><img src="/_astro/temporal-arch.Cjiowaeg_19DKCs.svg" alt="Temporal Architecture" loading="lazy" decoding="async" fetchpriority="auto" width="1674" height="637"></p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Workflow</th><th>What It Does</th></tr></thead><tbody><tr><td><code>CommentPollingWorkflow</code></td><td>Long-running workflow that polls for new comments. Uses continue-as-new to avoid unbounded event history.</td></tr><tr><td><code>ProcessConfirmationWorkflow</code></td><td>One per confirmation. The comment ID <em>is</em> the workflow ID, making it physically impossible to process the same comment twice.</td></tr><tr><td><code>FlairCoordinatorWorkflow</code></td><td>A singleton that serializes all flair updates. More on this below; it was the key insight.</td></tr><tr><td><code>MonthlyPostWorkflow</code></td><td>Creates the monthly confirmation thread. Just a Temporal schedule now, no crontab.</td></tr><tr><td><code>LockSubmissionsWorkflow</code></td><td>Locks old threads. Also a schedule.</td></tr></tbody></table>
+<p>Here’s what the polling workflow looks like in practice:</p>
+<pre class="astro-code material-theme-palenight" style="background-color:#292D3E;color:#babed8;overflow-x:auto;white-space:pre-wrap;word-wrap:break-word" tabindex="0" data-language="python"><code><span class="line"><span style="color:#89DDFF">@</span><span style="color:#82AAFF">workflow</span><span style="color:#89DDFF">.</span><span style="color:#82AAFF">defn</span></span>
+<span class="line"><span style="color:#C792EA">class</span><span style="color:#FFCB6B"> CommentPollingWorkflow</span><span style="color:#89DDFF">:</span></span>
+<span class="line"><span style="color:#89DDFF">    @</span><span style="color:#82AAFF">workflow</span><span style="color:#89DDFF">.</span><span style="color:#82AAFF">run</span></span>
+<span class="line"><span style="color:#C792EA">    async</span><span style="color:#C792EA"> def</span><span style="color:#82AAFF"> run</span><span style="color:#89DDFF">(</span><span style="color:#F07178;font-style:italic">self</span><span style="color:#89DDFF">,</span><span style="color:#BABED8;font-style:italic"> state</span><span style="color:#89DDFF">:</span><span style="color:#BABED8"> PollingState</span><span style="color:#89DDFF">)</span><span style="color:#89DDFF"> -&gt;</span><span style="color:#89DDFF"> None:</span></span>
+<span class="line"><span style="color:#89DDFF;font-style:italic">        while</span><span style="color:#89DDFF"> True:</span></span>
+<span class="line"><span style="color:#676E95;font-style:italic">            # Fetch new comments (this is an activity, automatically retried)</span></span>
+<span class="line"><span style="color:#BABED8">            result </span><span style="color:#89DDFF">=</span><span style="color:#89DDFF;font-style:italic"> await</span><span style="color:#BABED8"> workflow</span><span style="color:#89DDFF">.</span><span style="color:#82AAFF">execute_activity</span><span style="color:#89DDFF">(</span></span>
+<span class="line"><span style="color:#82AAFF">                fetch_new_comments</span><span style="color:#89DDFF">,</span></span>
+<span class="line"><span style="color:#82AAFF">                state</span><span style="color:#89DDFF">.</span><span style="color:#F07178">seen_ids</span><span style="color:#89DDFF">,</span></span>
+<span class="line"><span style="color:#BABED8;font-style:italic">                start_to_close_timeout</span><span style="color:#89DDFF">=</span><span style="color:#82AAFF">timedelta</span><span style="color:#89DDFF">(</span><span style="color:#BABED8;font-style:italic">minutes</span><span style="color:#89DDFF">=</span><span style="color:#F78C6C">2</span><span style="color:#89DDFF">),</span></span>
+<span class="line"><span style="color:#BABED8;font-style:italic">                retry_policy</span><span style="color:#89DDFF">=</span><span style="color:#82AAFF">REDDIT_RETRY_POLICY</span><span style="color:#89DDFF">,</span></span>
+<span class="line"><span style="color:#89DDFF">            )</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#676E95;font-style:italic">            # Start a child workflow for each confirmed comment</span></span>
+<span class="line"><span style="color:#89DDFF;font-style:italic">            for</span><span style="color:#BABED8"> comment </span><span style="color:#89DDFF;font-style:italic">in</span><span style="color:#BABED8"> result</span><span style="color:#89DDFF">.</span><span style="color:#F07178">confirmed_comments</span><span style="color:#89DDFF">:</span></span>
+<span class="line"><span style="color:#89DDFF;font-style:italic">                await</span><span style="color:#BABED8"> workflow</span><span style="color:#89DDFF">.</span><span style="color:#82AAFF">execute_activity</span><span style="color:#89DDFF">(</span></span>
+<span class="line"><span style="color:#82AAFF">                    start_confirmation_workflow</span><span style="color:#89DDFF">,</span></span>
+<span class="line"><span style="color:#82AAFF">                    comment</span><span style="color:#89DDFF">,</span></span>
+<span class="line"><span style="color:#89DDFF">                )</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#BABED8">            state</span><span style="color:#89DDFF">.</span><span style="color:#F07178">seen_ids</span><span style="color:#89DDFF"> =</span><span style="color:#BABED8"> result</span><span style="color:#89DDFF">.</span><span style="color:#F07178">updated_seen_ids</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#676E95;font-style:italic">            # Continue-as-new when Temporal suggests it</span></span>
+<span class="line"><span style="color:#89DDFF;font-style:italic">            if</span><span style="color:#BABED8"> workflow</span><span style="color:#89DDFF">.</span><span style="color:#82AAFF">info</span><span style="color:#89DDFF">().</span><span style="color:#82AAFF">is_continue_as_new_suggested</span><span style="color:#89DDFF">():</span></span>
+<span class="line"><span style="color:#BABED8">                workflow</span><span style="color:#89DDFF">.</span><span style="color:#82AAFF">continue_as_new</span><span style="color:#89DDFF">(</span><span style="color:#82AAFF">state</span><span style="color:#89DDFF">)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#89DDFF;font-style:italic">            await</span><span style="color:#BABED8"> asyncio</span><span style="color:#89DDFF">.</span><span style="color:#82AAFF">sleep</span><span style="color:#89DDFF">(</span><span style="color:#82AAFF">state</span><span style="color:#89DDFF">.</span><span style="color:#F07178">poll_delay</span><span style="color:#89DDFF">)</span></span></code></pre>
+<p>And the confirmation processing:</p>
+<pre class="astro-code material-theme-palenight" style="background-color:#292D3E;color:#babed8;overflow-x:auto;white-space:pre-wrap;word-wrap:break-word" tabindex="0" data-language="python"><code><span class="line"><span style="color:#89DDFF">@</span><span style="color:#82AAFF">workflow</span><span style="color:#89DDFF">.</span><span style="color:#82AAFF">defn</span></span>
+<span class="line"><span style="color:#C792EA">class</span><span style="color:#FFCB6B"> ProcessConfirmationWorkflow</span><span style="color:#89DDFF">:</span></span>
+<span class="line"><span style="color:#89DDFF">    @</span><span style="color:#82AAFF">workflow</span><span style="color:#89DDFF">.</span><span style="color:#82AAFF">run</span></span>
+<span class="line"><span style="color:#C792EA">    async</span><span style="color:#C792EA"> def</span><span style="color:#82AAFF"> run</span><span style="color:#89DDFF">(</span><span style="color:#F07178;font-style:italic">self</span><span style="color:#89DDFF">,</span><span style="color:#BABED8;font-style:italic"> comment_data</span><span style="color:#89DDFF">:</span><span style="color:#BABED8"> CommentData</span><span style="color:#89DDFF">)</span><span style="color:#89DDFF"> -&gt;</span><span style="color:#FFCB6B"> dict</span><span style="color:#89DDFF">:</span></span>
+<span class="line"><span style="color:#676E95;font-style:italic">        # Validate the confirmation</span></span>
+<span class="line"><span style="color:#BABED8">        validation </span><span style="color:#89DDFF">=</span><span style="color:#89DDFF;font-style:italic"> await</span><span style="color:#BABED8"> workflow</span><span style="color:#89DDFF">.</span><span style="color:#82AAFF">execute_activity</span><span style="color:#89DDFF">(</span></span>
+<span class="line"><span style="color:#82AAFF">            validate_confirmation</span><span style="color:#89DDFF">,</span></span>
+<span class="line"><span style="color:#82AAFF">            comment_data</span><span style="color:#89DDFF">,</span></span>
+<span class="line"><span style="color:#BABED8;font-style:italic">            start_to_close_timeout</span><span style="color:#89DDFF">=</span><span style="color:#82AAFF">timedelta</span><span style="color:#89DDFF">(</span><span style="color:#BABED8;font-style:italic">seconds</span><span style="color:#89DDFF">=</span><span style="color:#F78C6C">30</span><span style="color:#89DDFF">),</span></span>
+<span class="line"><span style="color:#BABED8;font-style:italic">            retry_policy</span><span style="color:#89DDFF">=</span><span style="color:#82AAFF">REDDIT_RETRY_POLICY</span><span style="color:#89DDFF">,</span></span>
+<span class="line"><span style="color:#89DDFF">        )</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#89DDFF;font-style:italic">        if</span><span style="color:#89DDFF"> not</span><span style="color:#BABED8"> validation</span><span style="color:#89DDFF">.</span><span style="color:#F07178">is_valid</span><span style="color:#89DDFF">:</span></span>
+<span class="line"><span style="color:#89DDFF;font-style:italic">            return</span><span style="color:#89DDFF"> {</span><span style="color:#89DDFF">&quot;</span><span style="color:#C3E88D">status</span><span style="color:#89DDFF">&quot;</span><span style="color:#89DDFF">:</span><span style="color:#89DDFF"> &quot;</span><span style="color:#C3E88D">rejected</span><span style="color:#89DDFF">&quot;</span><span style="color:#89DDFF">,</span><span style="color:#89DDFF"> &quot;</span><span style="color:#C3E88D">reason</span><span style="color:#89DDFF">&quot;</span><span style="color:#89DDFF">:</span><span style="color:#BABED8"> validation</span><span style="color:#89DDFF">.</span><span style="color:#F07178">reason</span><span style="color:#89DDFF">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#676E95;font-style:italic">        # Request flair increment via the coordinator</span></span>
+<span class="line"><span style="color:#BABED8">        result_a </span><span style="color:#89DDFF">=</span><span style="color:#89DDFF;font-style:italic"> await</span><span style="color:#BABED8"> workflow</span><span style="color:#89DDFF">.</span><span style="color:#82AAFF">execute_activity</span><span style="color:#89DDFF">(</span></span>
+<span class="line"><span style="color:#82AAFF">            request_flair_increment</span><span style="color:#89DDFF">,</span></span>
+<span class="line"><span style="color:#82AAFF">            FlairIncrementRequest</span><span style="color:#89DDFF">(</span><span style="color:#BABED8;font-style:italic">user</span><span style="color:#89DDFF">=</span><span style="color:#82AAFF">comment_data</span><span style="color:#89DDFF">.</span><span style="color:#F07178">parent_author</span><span style="color:#89DDFF">,</span><span style="color:#82AAFF"> ...</span><span style="color:#89DDFF">),</span></span>
+<span class="line"><span style="color:#89DDFF">        )</span></span>
+<span class="line"><span style="color:#BABED8">        result_b </span><span style="color:#89DDFF">=</span><span style="color:#89DDFF;font-style:italic"> await</span><span style="color:#BABED8"> workflow</span><span style="color:#89DDFF">.</span><span style="color:#82AAFF">execute_activity</span><span style="color:#89DDFF">(</span></span>
+<span class="line"><span style="color:#82AAFF">            request_flair_increment</span><span style="color:#89DDFF">,</span></span>
+<span class="line"><span style="color:#82AAFF">            FlairIncrementRequest</span><span style="color:#89DDFF">(</span><span style="color:#BABED8;font-style:italic">user</span><span style="color:#89DDFF">=</span><span style="color:#82AAFF">comment_data</span><span style="color:#89DDFF">.</span><span style="color:#F07178">author</span><span style="color:#89DDFF">,</span><span style="color:#82AAFF"> ...</span><span style="color:#89DDFF">),</span></span>
+<span class="line"><span style="color:#89DDFF">        )</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#676E95;font-style:italic">        # Reply to the comment</span></span>
+<span class="line"><span style="color:#89DDFF;font-style:italic">        await</span><span style="color:#BABED8"> workflow</span><span style="color:#89DDFF">.</span><span style="color:#82AAFF">execute_activity</span><span style="color:#89DDFF">(</span></span>
+<span class="line"><span style="color:#82AAFF">            reply_to_comment</span><span style="color:#89DDFF">,</span><span style="color:#82AAFF"> comment_data</span><span style="color:#89DDFF">,</span><span style="color:#82AAFF"> result_a</span><span style="color:#89DDFF">,</span><span style="color:#82AAFF"> result_b</span><span style="color:#89DDFF">,</span></span>
+<span class="line"><span style="color:#89DDFF">        )</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#89DDFF;font-style:italic">        return</span><span style="color:#89DDFF"> {</span><span style="color:#89DDFF">&quot;</span><span style="color:#C3E88D">status</span><span style="color:#89DDFF">&quot;</span><span style="color:#89DDFF">:</span><span style="color:#89DDFF"> &quot;</span><span style="color:#C3E88D">confirmed</span><span style="color:#89DDFF">&quot;</span><span style="color:#89DDFF">}</span></span></code></pre>
+<p>The key thing to notice: each step is an <strong>activity</strong> with its own retry policy. If the Reddit API fails during <code>validate_confirmation</code>, Temporal retries it automatically. If the worker crashes between <code>request_flair_increment</code> and <code>reply_to_comment</code>, the workflow picks up <em>exactly where it left off</em> when the worker comes back. No lost state.</p>
+<p>And because each confirmation workflow is started with the comment ID as the workflow ID, Temporal enforces uniqueness at the platform level. Even if the poller sends the same comment twice, the second attempt is rejected. <strong>Idempotency for free.</strong></p>
+<p>Also suuuuper cool? When a bug happens because of those weird API semantics in Reddit (no seriously, the documentation is useless), I can just replay the event locally while debugging and see where my code went wrong.</p>
+<h2 id="what-temporal-gave-me-immediately">What Temporal Gave Me Immediately</h2>
+<ul>
+<li><strong>Durability:</strong> worker crashes? Workflow resumes exactly where it was - because of the way event replay works, my in-memory state even gets rebuilt. No more thinking about the need for external state persistence.</li>
+<li><strong>Idempotency:</strong> comment ID as workflow ID means no double processing.</li>
+<li><strong>Visibility:</strong> the Temporal UI shows every workflow, every activity attempt, every failure. No more guessing what happened at 3 AM. The ability to replay a confirmation flow with that data that caused the failure? Priceless.</li>
+<li><strong>Scheduling:</strong> monthly post creation and thread locking are just Temporal schedules. Deleted the crontab.</li>
+</ul>
+<p><img src="/_astro/temporal-ui.CBVY2sDo_Z1cHX7J.png" alt="Temporal UI showing running workflows" loading="lazy" decoding="async" fetchpriority="auto" width="3248" height="2004"></p>
+<p>That screenshot is the actual bot running. You can see the polling workflows running, flair coordinators active, and individual confirmations completing. All visible at a glance.</p>
+<hr/>
+<h1 id="the-hardest-bug-flair-double-increment">The Hardest Bug: Flair Double-Increment</h1>
+<p>This bug plagued me through both Phase 1 and Phase 2. The core issue: <code>increment_flair</code> reads the current count, adds 1, and writes it back. If anything goes wrong and the operation retries, it reads the <em>already-incremented</em> value and increments again.</p>
+<p><img src="/_astro/flair-coordinator.IgG39WYj_19DKCs.svg" alt="Flair Coordinator Sequence" loading="lazy" decoding="async" fetchpriority="auto" width="900" height="528"></p>
+<p>The solution was the <strong>FlairCoordinatorWorkflow</strong>, a durable singleton that serializes all flair updates. It uses Temporal’s <code>update</code> mechanism so that confirmation workflows can request flair increments and wait for the result.</p>
+<pre class="astro-code material-theme-palenight" style="background-color:#292D3E;color:#babed8;overflow-x:auto;white-space:pre-wrap;word-wrap:break-word" tabindex="0" data-language="python"><code><span class="line"><span style="color:#89DDFF">@</span><span style="color:#82AAFF">workflow</span><span style="color:#89DDFF">.</span><span style="color:#82AAFF">defn</span></span>
+<span class="line"><span style="color:#C792EA">class</span><span style="color:#FFCB6B"> FlairCoordinatorWorkflow</span><span style="color:#89DDFF">:</span></span>
+<span class="line"><span style="color:#C792EA">    def</span><span style="color:#82AAFF"> __init__</span><span style="color:#89DDFF">(</span><span style="color:#F07178;font-style:italic">self</span><span style="color:#89DDFF">):</span></span>
+<span class="line"><span style="color:#BABED8">        self</span><span style="color:#89DDFF">.</span><span style="color:#F07178">_results</span><span style="color:#89DDFF">:</span><span style="color:#BABED8"> dict</span><span style="color:#89DDFF">[</span><span style="color:#FFCB6B">str</span><span style="color:#89DDFF">,</span><span style="color:#BABED8"> FlairIncrementResult</span><span style="color:#89DDFF">]</span><span style="color:#89DDFF"> =</span><span style="color:#89DDFF"> {}</span></span>
+<span class="line"><span style="color:#BABED8">        self</span><span style="color:#89DDFF">.</span><span style="color:#F07178">_flair_cache</span><span style="color:#89DDFF">:</span><span style="color:#BABED8"> OrderedDict</span><span style="color:#89DDFF">[</span><span style="color:#FFCB6B">str</span><span style="color:#89DDFF">,</span><span style="color:#FFCB6B"> int</span><span style="color:#89DDFF">]</span><span style="color:#89DDFF"> =</span><span style="color:#82AAFF"> OrderedDict</span><span style="color:#89DDFF">()</span></span>
+<span class="line"><span style="color:#BABED8">        self</span><span style="color:#89DDFF">.</span><span style="color:#F07178">_users_in_progress</span><span style="color:#89DDFF">:</span><span style="color:#BABED8"> set</span><span style="color:#89DDFF">[</span><span style="color:#FFCB6B">str</span><span style="color:#89DDFF">]</span><span style="color:#89DDFF"> =</span><span style="color:#FFCB6B"> set</span><span style="color:#89DDFF">()</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#89DDFF">    @</span><span style="color:#82AAFF">workflow</span><span style="color:#89DDFF">.</span><span style="color:#82AAFF">update</span></span>
+<span class="line"><span style="color:#C792EA">    async</span><span style="color:#C792EA"> def</span><span style="color:#82AAFF"> increment_flair</span><span style="color:#89DDFF">(</span><span style="color:#F07178;font-style:italic">self</span><span style="color:#89DDFF">,</span><span style="color:#BABED8;font-style:italic"> request</span><span style="color:#89DDFF">:</span><span style="color:#BABED8"> FlairIncrementRequest</span><span style="color:#89DDFF">)</span><span style="color:#89DDFF"> -&gt;</span><span style="color:#BABED8"> FlairIncrementResult</span><span style="color:#89DDFF">:</span></span>
+<span class="line"><span style="color:#676E95;font-style:italic">        # Dedup by request ID; if we&#39;ve seen this request, return cached result</span></span>
+<span class="line"><span style="color:#89DDFF;font-style:italic">        if</span><span style="color:#BABED8"> request</span><span style="color:#89DDFF">.</span><span style="color:#F07178">request_id</span><span style="color:#89DDFF"> in</span><span style="color:#BABED8"> self</span><span style="color:#89DDFF">.</span><span style="color:#F07178">_results</span><span style="color:#89DDFF">:</span></span>
+<span class="line"><span style="color:#89DDFF;font-style:italic">            return</span><span style="color:#BABED8"> self</span><span style="color:#89DDFF">.</span><span style="color:#F07178">_results</span><span style="color:#89DDFF">[</span><span style="color:#F07178">request</span><span style="color:#89DDFF">.</span><span style="color:#F07178">request_id</span><span style="color:#89DDFF">]</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#676E95;font-style:italic">        # Serialize per user; wait if this user is already being updated</span></span>
+<span class="line"><span style="color:#89DDFF;font-style:italic">        while</span><span style="color:#BABED8"> request</span><span style="color:#89DDFF">.</span><span style="color:#F07178">username</span><span style="color:#89DDFF"> in</span><span style="color:#BABED8"> self</span><span style="color:#89DDFF">.</span><span style="color:#F07178">_users_in_progress</span><span style="color:#89DDFF">:</span></span>
+<span class="line"><span style="color:#89DDFF;font-style:italic">            await</span><span style="color:#BABED8"> workflow</span><span style="color:#89DDFF">.</span><span style="color:#82AAFF">wait_condition</span><span style="color:#89DDFF">(</span></span>
+<span class="line"><span style="color:#C792EA">                lambda</span><span style="color:#89DDFF">:</span><span style="color:#82AAFF"> request</span><span style="color:#89DDFF">.</span><span style="color:#F07178">username</span><span style="color:#89DDFF;font-style:italic"> not</span><span style="color:#89DDFF;font-style:italic"> in</span><span style="color:#BABED8"> self</span><span style="color:#89DDFF">.</span><span style="color:#F07178">_users_in_progress</span></span>
+<span class="line"><span style="color:#89DDFF">            )</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#BABED8">        self</span><span style="color:#89DDFF">.</span><span style="color:#F07178">_users_in_progress</span><span style="color:#89DDFF">.</span><span style="color:#82AAFF">add</span><span style="color:#89DDFF">(</span><span style="color:#82AAFF">request</span><span style="color:#89DDFF">.</span><span style="color:#F07178">username</span><span style="color:#89DDFF">)</span></span>
+<span class="line"><span style="color:#89DDFF;font-style:italic">        try</span><span style="color:#89DDFF">:</span></span>
+<span class="line"><span style="color:#676E95;font-style:italic">            # Use cached count if available (Reddit&#39;s API is eventually consistent)</span></span>
+<span class="line"><span style="color:#BABED8">            current </span><span style="color:#89DDFF">=</span><span style="color:#BABED8"> self</span><span style="color:#89DDFF">.</span><span style="color:#F07178">_flair_cache</span><span style="color:#89DDFF">.</span><span style="color:#82AAFF">get</span><span style="color:#89DDFF">(</span><span style="color:#82AAFF">request</span><span style="color:#89DDFF">.</span><span style="color:#F07178">username</span><span style="color:#89DDFF">)</span></span>
+<span class="line"><span style="color:#89DDFF;font-style:italic">            if</span><span style="color:#BABED8"> current </span><span style="color:#89DDFF">is</span><span style="color:#89DDFF"> None:</span></span>
+<span class="line"><span style="color:#BABED8">                current </span><span style="color:#89DDFF">=</span><span style="color:#89DDFF;font-style:italic"> await</span><span style="color:#BABED8"> workflow</span><span style="color:#89DDFF">.</span><span style="color:#82AAFF">execute_activity</span><span style="color:#89DDFF">(</span></span>
+<span class="line"><span style="color:#82AAFF">                    get_user_flair</span><span style="color:#89DDFF">,</span><span style="color:#82AAFF"> request</span><span style="color:#89DDFF">.</span><span style="color:#F07178">username</span><span style="color:#89DDFF">,</span><span style="color:#82AAFF"> ...</span></span>
+<span class="line"><span style="color:#89DDFF">                )</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#BABED8">            new_count </span><span style="color:#89DDFF">=</span><span style="color:#BABED8"> current </span><span style="color:#89DDFF">+</span><span style="color:#F78C6C"> 1</span></span>
+<span class="line"><span style="color:#89DDFF;font-style:italic">            await</span><span style="color:#BABED8"> workflow</span><span style="color:#89DDFF">.</span><span style="color:#82AAFF">execute_activity</span><span style="color:#89DDFF">(</span></span>
+<span class="line"><span style="color:#82AAFF">                set_user_flair</span><span style="color:#89DDFF">,</span><span style="color:#82AAFF"> request</span><span style="color:#89DDFF">.</span><span style="color:#F07178">username</span><span style="color:#89DDFF">,</span><span style="color:#82AAFF"> new_count</span><span style="color:#89DDFF">,</span><span style="color:#82AAFF"> ...</span></span>
+<span class="line"><span style="color:#89DDFF">            )</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#BABED8">            self</span><span style="color:#89DDFF">.</span><span style="color:#F07178">_flair_cache</span><span style="color:#89DDFF">[</span><span style="color:#F07178">request</span><span style="color:#89DDFF">.</span><span style="color:#F07178">username</span><span style="color:#89DDFF">]</span><span style="color:#89DDFF"> =</span><span style="color:#BABED8"> new_count</span></span>
+<span class="line"><span style="color:#BABED8">            result </span><span style="color:#89DDFF">=</span><span style="color:#82AAFF"> FlairIncrementResult</span><span style="color:#89DDFF">(</span><span style="color:#BABED8;font-style:italic">new_count</span><span style="color:#89DDFF">=</span><span style="color:#82AAFF">new_count</span><span style="color:#89DDFF">)</span></span>
+<span class="line"><span style="color:#BABED8">            self</span><span style="color:#89DDFF">.</span><span style="color:#F07178">_results</span><span style="color:#89DDFF">[</span><span style="color:#F07178">request</span><span style="color:#89DDFF">.</span><span style="color:#F07178">request_id</span><span style="color:#89DDFF">]</span><span style="color:#89DDFF"> =</span><span style="color:#BABED8"> result</span></span>
+<span class="line"><span style="color:#89DDFF;font-style:italic">            return</span><span style="color:#BABED8"> result</span></span>
+<span class="line"><span style="color:#89DDFF;font-style:italic">        finally</span><span style="color:#89DDFF">:</span></span>
+<span class="line"><span style="color:#BABED8">            self</span><span style="color:#89DDFF">.</span><span style="color:#F07178">_users_in_progress</span><span style="color:#89DDFF">.</span><span style="color:#82AAFF">discard</span><span style="color:#89DDFF">(</span><span style="color:#82AAFF">request</span><span style="color:#89DDFF">.</span><span style="color:#F07178">username</span><span style="color:#89DDFF">)</span></span></code></pre>
+<p>Three layers of protection:</p>
+<ol>
+<li><strong>Request-ID deduplication:</strong> each increment request has a unique ID. If the coordinator sees the same ID again (due to a retry), it returns the cached result. This cached result is purely in-memory, and even if the worker crashes, is automatically rebuilt during replay (you know.. I think I get why Temporal calls their conference Replay! 🧐)</li>
+<li><strong>Per-user serialization:</strong> two simultaneous confirmations for the same user? The second one waits until the first finishes. No race conditions - which, by the way, I had never actually experienced before swapping to Temporal because my previous process was just so much slower. Read below…</li>
+<li><strong>LRU cache over stale reads:</strong> Reddit’s flair API is eventually consistent. If you read a flair right after writing it, you might get the old value. The coordinator maintains its own cache of last-known counts, so it doesn’t need to trust Reddit’s reads.</li>
+</ol>
+<p>This is the kind of problem that Temporal makes <em>solvable</em>. You need a durable singleton with in-memory state that survives restarts, serialized access per entity, and request-level deduplication. Try building that with just try/except and a BoundedSet.</p>
+<hr/>
+<h1 id="deploying-with-rainbow-deployments">Deploying with Rainbow Deployments</h1>
+<p>The final piece of the puzzle: deployments. In the old world, deploying a code change meant restarting the bot, which meant losing all in-flight state. With Temporal’s worker versioning and the <a href="https://github.com/temporalio/temporal-worker-controller" rel="noreferrer" target="_blank">Temporal Worker Controller</a> on k3s, I now have zero-downtime deployments:</p>
+<p><img src="/_astro/rainbow-deploy.BzSmsQ-O_19DKCs.svg" alt="Rainbow Deployment Architecture" loading="lazy" decoding="async" fetchpriority="auto" width="1296" height="420"></p>
+<p>The flow:</p>
+<ol>
+<li>Push code to GitHub</li>
+<li>Self-hosted GitHub Actions runner builds a new Docker image (tagged with the git SHA)</li>
+<li>Helm upgrade deploys a new <code>TemporalWorkerDeployment</code></li>
+<li>The Worker Controller routes <strong>new work</strong> to the new version</li>
+<li><strong>Old workers finish their in-flight workflows</strong>, so nothing gets dropped</li>
+<li>Long-running workflows (polling, flair coordinator) detect the version change and <code>continue_as_new</code> onto the new version</li>
+</ol>
+<pre class="astro-code material-theme-palenight" style="background-color:#292D3E;color:#babed8;overflow-x:auto;white-space:pre-wrap;word-wrap:break-word" tabindex="0" data-language="python"><code><span class="line"><span style="color:#676E95;font-style:italic"># In the polling workflow, checks if a new version has been deployed</span></span>
+<span class="line"><span style="color:#89DDFF;font-style:italic">if</span><span style="color:#BABED8"> workflow</span><span style="color:#89DDFF">.</span><span style="color:#82AAFF">info</span><span style="color:#89DDFF">().</span><span style="color:#82AAFF">is_target_worker_deployment_version_changed</span><span style="color:#89DDFF">():</span></span>
+<span class="line"><span style="color:#BABED8">    workflow</span><span style="color:#89DDFF">.</span><span style="color:#82AAFF">continue_as_new</span><span style="color:#89DDFF">(</span><span style="color:#82AAFF">state</span><span style="color:#89DDFF">)</span></span></code></pre>
+<p>Code change to production in minutes. No manual intervention. No dropped confirmations.</p>
+<p>And ok so maybe this isn’t true rainbow deployments because I’m not processing at a volume that ever sees more than two deployment slots at a time, but it is just very cool how easy it was to add this, and calling it a rainbow deployment feels fancy. And now I don’t have to think about code patching due to non-deterministic changes.</p>
+<p><img src="/_astro/rainbow-giphy.B9A4al8J_1xfwkW.gif" alt="Reading rainbow gif" loading="lazy" decoding="async" fetchpriority="auto" width="480" height="270"></p>
+<hr/>
+<h1 id="still-learning">Still Learning</h1>
+<p>I want to be transparent: <strong>I’m still a Temporal beginner.</strong> This was my “getting started” project, and I’m sure there are patterns I’m not using optimally. A few things I learned the hard way:</p>
+<ul>
+<li><strong>Continue-as-new is important for long-running workflows.</strong> My first version of the polling workflow didn’t use it, and the event history grew unbounded. Now I use <code>workflow.info().is_continue_as_new_suggested()</code> to let Temporal tell me when it’s time.</li>
+<li><strong>Split your reads and writes into separate activities.</strong> My original <code>increment_flair</code> combined both, which made retries dangerous. Splitting them apart and routing through the coordinator was the key insight. Idemopotence is important y’all!</li>
+<li><strong>Design for idempotency from the start.</strong> Using the comment ID as the workflow ID was obvious in retrospect, but I didn’t think of it immediately. The more you can push uniqueness constraints into Temporal’s infrastructure, the less you have to handle yourself.</li>
+</ul>
+<p>There’s plenty more I want to explore: better observability with Prometheus and Grafana (I’ve started on this), more sophisticated retry strategies, and potentially adding in some longer running human-in-the-loop flows when the bot flags suspicious activity. But even at this early stage, the difference is night and day.</p>
+<hr/>
+<h1 id="wrap-up">Wrap Up</h1>
+<p>Here’s the before and after:</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th></th><th>Before Temporal</th><th>After Temporal</th></tr></thead><tbody><tr><td><strong>Architecture</strong></td><td>Single <code>bot.py</code></td><td>5 workflows, 12 activities</td></tr><tr><td><strong>Error handling</strong></td><td>~42% of codebase, didn’t work perfectly</td><td>~15%, Temporal handles the rest</td></tr><tr><td><strong>Score accuracy</strong></td><td>Double-counts on crash</td><td>Guaranteed exactly-once</td></tr><tr><td><strong>Missed trades</strong></td><td>After long outages</td><td>Never</td></tr><tr><td><strong>Deployments</strong></td><td>SSH + restart</td><td>Zero-downtime, automated</td></tr><tr><td><strong>Recovery</strong></td><td>Manual restart</td><td>Automatic</td></tr><tr><td><strong>Observability</strong></td><td>Pushover alert on crash</td><td>Full workflow visibility</td></tr></tbody></table>
+<p>I spent 2 years building workarounds for problems that Temporal solves out of the box. The homegrown wrapper kept the bot alive, but Temporal made it <strong>correct</strong>. And that’s the difference that matters; users on these trade subreddits are trusting the bot with their reputation. “It mostly works” isn’t a great approach.</p>
+<p>If you’re running any kind of long-lived process that needs to survive the real world, like API outages, crashes, deployments, et al; I’d strongly recommend giving Temporal a look. Even as a beginner, the ramp-up was worth it.</p>
+<p>The bot’s source code is on <a href="https://github.com/mikeacjones/reddit-trade-confirmation-bot" rel="noreferrer" target="_blank">GitHub</a> if you want to dig into the details.</p> </div> </div> <script type="module" src="/_astro/CodeBlock.astro_astro_type_script_index_0_lang.DZ0ROl0P.js"></script> <script type="module">function o(){const a=document.querySelector(".post-view-content");if(!a)return;a.querySelectorAll("img").forEach(e=>{e.dataset.zoomable!=="true"&&(e.dataset.zoomable="true",e.style.cursor="pointer",e.addEventListener("click",()=>{const t=document.createElement("div");t.className="zoomable-overlay";const n=document.createElement("img");n.src=e.src,n.alt=e.alt,t.appendChild(n),document.body.appendChild(t),t.addEventListener("click",()=>{t.remove()}),document.addEventListener("keydown",function d(r){r.key==="Escape"&&(t.remove(),document.removeEventListener("keydown",d))})}))})}document.readyState==="loading"?document.addEventListener("DOMContentLoaded",o):o();document.addEventListener("astro:page-load",o);</script>  </div> </div> </div> </body></html>
