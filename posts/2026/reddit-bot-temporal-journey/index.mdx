@@ -178,9 +178,12 @@ class CommentPollingWorkflow:
 
             # Start a child workflow for each confirmed comment
             for comment in result.confirmed_comments:
-                await workflow.execute_activity(
-                    start_confirmation_workflow,
-                    comment,
+                await workflow.start_child_workflow(
+                    ProcessConfirmationWorkflow.run,
+                    comment_data,
+                    id=f"process-{comment_data.id}",
+                    parent_close_policy=ParentClosePolicy.ABANDON,
+                    id_reuse_policy=WorkflowIDReusePolicy.ALLOW_DUPLICATE_FAILED_ONLY
                 )
 
             state.seen_ids = result.updated_seen_ids
