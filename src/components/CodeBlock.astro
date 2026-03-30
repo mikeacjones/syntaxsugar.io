@@ -1,0 +1,85 @@
+---
+// This component injects a client-side script that wraps Shiki code blocks
+// with a copy button, language stub, and confetti on copy.
+---
+
+<script>
+  import confetti from 'canvas-confetti';
+
+  function wrapCodeBlocks() {
+    const codeBlocks = document.querySelectorAll('pre.astro-code');
+
+    codeBlocks.forEach((pre) => {
+      // Skip if already wrapped
+      if (pre.parentElement?.classList.contains('code-wrapper')) return;
+
+      // Get language from the data-language attribute Shiki sets
+      const lang = (pre as HTMLElement).dataset.language || '';
+
+      // Create wrapper
+      const wrapper = document.createElement('div');
+      wrapper.className = 'code-wrapper';
+
+      // Language stub
+      if (lang) {
+        const stub = document.createElement('span');
+        stub.className = 'code-language-stub';
+        stub.textContent = lang;
+        wrapper.appendChild(stub);
+      }
+
+      // Copy button
+      const btn = document.createElement('button');
+      btn.className = 'copy-code-button';
+      btn.textContent = 'Copy';
+      btn.setAttribute('type', 'button');
+
+      // Confetti canvas placeholder
+      const confettiTarget = document.createElement('span');
+      confettiTarget.className = 'confetti-wrapper';
+      wrapper.appendChild(confettiTarget);
+
+      btn.addEventListener('click', async () => {
+        const code = pre.querySelector('code');
+        const text = code ? code.textContent || '' : pre.textContent || '';
+        try {
+          await navigator.clipboard.writeText(text);
+          btn.textContent = 'Copied!';
+          setTimeout(() => { btn.textContent = 'Copy'; }, 2000);
+
+          // Fire confetti from button position
+          const rect = btn.getBoundingClientRect();
+          const x = (rect.left + rect.width / 2) / window.innerWidth;
+          const y = (rect.top + rect.height / 2) / window.innerHeight;
+          confetti({
+            particleCount: 60,
+            spread: 50,
+            origin: { x, y },
+            colors: ['#52307c', '#eddbf4', '#ffffd2', '#3b415c'],
+            scalar: 0.8,
+            gravity: 1.2,
+            ticks: 100,
+          });
+        } catch {
+          btn.textContent = 'Failed';
+          setTimeout(() => { btn.textContent = 'Copy'; }, 2000);
+        }
+      });
+
+      wrapper.appendChild(btn);
+
+      // Wrap the pre element
+      pre.parentNode!.insertBefore(wrapper, pre);
+      wrapper.appendChild(pre);
+    });
+  }
+
+  // Run on initial load
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', wrapCodeBlocks);
+  } else {
+    wrapCodeBlocks();
+  }
+  // Also run on Astro page transitions if using View Transitions
+  document.addEventListener('astro:page-load', wrapCodeBlocks);
+</script>
