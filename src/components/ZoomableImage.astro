@@ -1,0 +1,50 @@
+---
+// This component injects a client-side script that makes images in
+// .post-view-content clickable to enlarge in an overlay.
+---
+
+<script>
+  function initZoomableImages() {
+    const container = document.querySelector('.post-view-content');
+    if (!container) return;
+
+    const images = container.querySelectorAll('img');
+
+    images.forEach((img) => {
+      // Skip if already initialized
+      if (img.dataset.zoomable === 'true') return;
+      img.dataset.zoomable = 'true';
+      img.style.cursor = 'pointer';
+
+      img.addEventListener('click', () => {
+        const overlay = document.createElement('div');
+        overlay.className = 'zoomable-overlay';
+
+        const enlargedImg = document.createElement('img');
+        enlargedImg.src = img.src;
+        enlargedImg.alt = img.alt;
+
+        overlay.appendChild(enlargedImg);
+        document.body.appendChild(overlay);
+
+        overlay.addEventListener('click', () => {
+          overlay.remove();
+        });
+
+        document.addEventListener('keydown', function handler(e) {
+          if (e.key === 'Escape') {
+            overlay.remove();
+            document.removeEventListener('keydown', handler);
+          }
+        });
+      });
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initZoomableImages);
+  } else {
+    initZoomableImages();
+  }
+  document.addEventListener('astro:page-load', initZoomableImages);
+</script>

@@ -1,0 +1,45 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Chip from '../../components/Chip.astro';
+import CodeBlock from '../../components/CodeBlock.astro';
+import ZoomableImage from '../../components/ZoomableImage.astro';
+import { getCollection, render } from 'astro:content';
+
+export async function getStaticPaths() {
+  const posts = await getCollection('blog');
+  return posts.map((post) => {
+    // post.id is like "2023/bola/index" or "2020/getting-started-with-dw/index"
+    const slug = post.id.replace(/\/index$/, '');
+    return {
+      params: { slug },
+      props: { post },
+    };
+  });
+}
+
+const { post } = Astro.props;
+const { Content } = await render(post);
+
+const formattedDate = post.data.date.toLocaleDateString('en-US', {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+});
+---
+
+<BaseLayout title={post.data.title} description={post.data.shortDescription}>
+  <div class="post-view">
+    <div class="post-view-title">
+      <h1>{post.data.title}</h1>
+    </div>
+    <div class="post-view-date">{formattedDate}</div>
+    <div class="post-view-tags">
+      {post.data.tags.map((tag: string) => <Chip tag={tag} />)}
+    </div>
+    <div class="post-view-content">
+      <Content />
+    </div>
+  </div>
+  <CodeBlock />
+  <ZoomableImage />
+</BaseLayout>

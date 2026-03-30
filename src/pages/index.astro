@@ -1,0 +1,55 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PostCard from '../components/PostCard.astro';
+import { getCollection } from 'astro:content';
+
+const POSTS_PER_PAGE = 10;
+
+// Get page number from query string (default to 1)
+const page = Number(Astro.url.searchParams.get('page') || '1');
+
+const allPosts = await getCollection('blog', ({ data }) => {
+  return data.published === true;
+});
+
+// Sort by date descending
+allPosts.sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
+
+const totalPages = Math.ceil(allPosts.length / POSTS_PER_PAGE);
+const startIndex = (page - 1) * POSTS_PER_PAGE;
+const posts = allPosts.slice(startIndex, startIndex + POSTS_PER_PAGE);
+
+function getPostUrl(post: typeof allPosts[0]): string {
+  // post.id is like "2023/bola/index" or "2020/getting-started-with-dw/index"
+  // We want /post/{year}/{slug}/
+  const parts = post.id.replace(/\/index$/, '').split('/');
+  const year = parts[0];
+  const slug = parts.slice(1).join('/');
+  return `/post/${year}/${slug}/`;
+}
+---
+
+<BaseLayout>
+  {posts.map((post) => (
+    <PostCard
+      title={post.data.title}
+      date={post.data.date}
+      shortDescription={post.data.shortDescription}
+      tags={post.data.tags}
+      url={getPostUrl(post)}
+    />
+  ))}
+
+  <div class="paging-links">
+    {page > 1 ? (
+      <a href={page === 2 ? '/' : `/?page=${page - 1}`}>&larr; Newer</a>
+    ) : (
+      <a class="disabled">&larr; Newer</a>
+    )}
+    {page < totalPages ? (
+      <a href={`/?page=${page + 1}`}>Older &rarr;</a>
+    ) : (
+      <a class="disabled">Older &rarr;</a>
+    )}
+  </div>
+</BaseLayout>

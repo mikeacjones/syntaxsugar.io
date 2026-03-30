@@ -1,0 +1,21 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import CodeBlock from '../components/CodeBlock.astro';
+import ZoomableImage from '../components/ZoomableImage.astro';
+
+// Import and render the original MDX page
+const { Content } = await import('../../pages/dw-cookbook/index.mdx');
+---
+
+<BaseLayout title="Dataweave Cookbook" description="Dataweave functions / cookbook I find myself using frequently">
+  <div class="post-view">
+    <div class="post-view-title">
+      <h1>Dataweave Cookbook</h1>
+    </div>
+    <div class="post-view-content">
+      <Content />
+    </div>
+  </div>
+  <CodeBlock />
+  <ZoomableImage />
+</BaseLayout>

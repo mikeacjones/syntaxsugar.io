@@ -1,0 +1,63 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PostCard from '../../components/PostCard.astro';
+import Chip from '../../components/Chip.astro';
+import { getCollection } from 'astro:content';
+
+export async function getStaticPaths() {
+  const allPosts = await getCollection('blog', ({ data }) => data.published === true);
+
+  // Collect all unique tags
+  const tags = [...new Set(allPosts.flatMap((post) => post.data.tags))];
+
+  return tags.map((tag) => {
+    const tagSlug = tag.replace(/(\s|_|-)+/g, '-').toLowerCase();
+    return {
+      params: { tag: tagSlug },
+      props: { tag, allTags: tags },
+    };
+  });
+}
+
+const { tag, allTags } = Astro.props;
+const tagSlug = tag.replace(/(\s|_|-)+/g, '-').toLowerCase();
+
+const allPosts = await getCollection('blog', ({ data }) => {
+  return data.published === true && data.tags.includes(tag);
+});
+
+// Sort by date descending
+allPosts.sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
+
+function getPostUrl(post: typeof allPosts[0]): string {
+  const parts = post.id.replace(/\/index$/, '').split('/');
+  const year = parts[0];
+  const slug = parts.slice(1).join('/');
+  return `/post/${year}/${slug}/`;
+}
+---
+
+<BaseLayout title={`Posts tagged "${tag}"`}>
+  <div style="padding: 20px;">
+    <h2 style="color: #52307c; margin-bottom: 10px;">Posts tagged: {tag}</h2>
+    <div style="display: flex; flex-wrap: wrap; margin-bottom: 20px;">
+      {allTags.map((t: string) => (
+        <Chip tag={t} active={t === tag} />
+      ))}
+    </div>
+  </div>
+
+  {allPosts.map((post) => (
+    <PostCard
+      title={post.data.title}
+      date={post.data.date}
+      shortDescription={post.data.shortDescription}
+      tags={post.data.tags}
+      url={getPostUrl(post)}
+    />
+  ))}
+
+  <div class="paging-links">
+    <a href="/">&larr; All Posts</a>
+  </div>
+</BaseLayout>

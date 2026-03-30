@@ -1,0 +1,29 @@
+---
+import Chip from './Chip.astro';
+
+interface Props {
+  title: string;
+  date: Date;
+  shortDescription: string;
+  tags: string[];
+  url: string;
+}
+
+const { title, date, shortDescription, tags, url } = Astro.props;
+
+const formattedDate = date.toLocaleDateString('en-US', {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+});
+---
+
+<div class="PostCard">
+  <a href={url} class="PostCard-link" aria-label={title}></a>
+  <div class="PostCard-title">{title}</div>
+  <div class="PostCard-date">{formattedDate}</div>
+  <div class="PostCard-description">{shortDescription}</div>
+  <div class="PostCard-tags">
+    {tags.map((tag) => <Chip tag={tag} />)}
+  </div>
+</div>
