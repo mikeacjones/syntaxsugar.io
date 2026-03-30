@@ -138,7 +138,7 @@ It did what I needed: **keep the bot alive through Reddit API blips**. Roughly *
 
 The wrapper kept the bot alive, but it couldn't make it **correct**. A crash at the wrong moment still meant double-counted trades or missed confirmations. The 301-item dedup window was a ticking time bomb; a long enough Reddit outage and the window slides past unprocessed items.
 
-I was spending most of time / code building for reliability rather than building the actual bot logic. I wanted to add features like a local LLM to handle when a user didn't reply exactly `confirmed`, and a detection mechanism for suspicious activity; for example, At one point I added a look-back flow which checked that the users actually posted a WTB/WTS post and interacted. But keeping things running and reliable with these extra pieces proved to not be worth the effort, so I dropped them.
+I was spending most of time / code building for reliability rather than building the actual bot logic. I wanted to add features like a local LLM to handle when a user didn't reply exactly `confirmed`, and a detection mechanism for suspicious activity. As an example, at one point I added a look-back flow which checked that the users actually posted a WTB/WTS post and interacted. But keeping things running and reliable with these extra pieces proved to not be worth the effort, so I dropped them.
 
 ---
 
