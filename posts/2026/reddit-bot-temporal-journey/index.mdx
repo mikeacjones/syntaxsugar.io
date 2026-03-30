@@ -327,9 +327,21 @@ The flow:
 
 ```python
 # In the polling workflow, checks if a new version has been deployed
-if workflow.info().is_target_worker_deployment_version_changed():
-    workflow.continue_as_new(state)
+await workflow.wait_condition(
+    lambda: (
+        workflow.info().is_continue_as_new_suggested()
+        or workflow.info().is_target_worker_deployment_version_changed()
+    )
+)
+self._draining = True #used to bounce back any attempts to schedule new flair jobs while we're draining - very very small race condition window
+await workflow.wait_condition(workflow.all_handlers_finished)
+
+workflow.continue_as_new(
+    args=[dict(self._last_known_count)],
+    initial_versioning_behavior=workflow.ContinueAsNewVersioningBehavior.AUTO_UPGRADE,
+)
 ```
+> Note: This is when I learned a lot more about the very cool way the durable Temporal event loop works; keep in mind that when my workflow is idle (no tasks at all) it is completely evicted from memory, so an await like this won't immediately trigger the swap over. As soon as a new task comes in though, it will finish the in-flight handlers, see the new version, and bounce over. I'm considering adding a signal to make this faster but honestly? It does what it needs to for my use case.
 
 Code change to production in minutes. No manual intervention. No dropped confirmations.
 
