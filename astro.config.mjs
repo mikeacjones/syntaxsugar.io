@@ -5,6 +5,7 @@ import rehypeExternalLinks from 'rehype-external-links';
 import { readFileSync } from 'fs';
 import { parse as parsePlist } from 'fast-plist';
 import { bundledLanguages } from 'shiki';
+import { transformerNotationDiff } from '@shikijs/transformers';
 import remarkCleanLang from './src/plugins/remark-clean-lang.mjs';
 
 // Load custom TextMate grammars from vendor VSIX extracts
@@ -40,6 +41,7 @@ export default defineConfig({
       theme: 'material-theme-palenight',
       wrap: true,
       langs: [...Object.keys(bundledLanguages), dataWeaveLang, ramlLang],
+      transformers: [transformerNotationDiff()],
     },
     remarkPlugins: [remarkCleanLang],
     rehypePlugins: [

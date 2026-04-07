@@ -20,6 +20,9 @@ const currentPath = Astro.url.pathname;
           <a href="/" class={currentPath === '/' || currentPath.startsWith('/page/') ? 'active' : ''}>
             <li>Posts</li>
           </a>
+          <a href="/labs" class={currentPath === '/labs' || currentPath === '/labs/' || currentPath.startsWith('/lab/') ? 'active' : ''}>
+            <li>Labs</li>
+          </a>
           <a href="/dw-cookbook" class={currentPath === '/dw-cookbook' || currentPath === '/dw-cookbook/' ? 'active' : ''}>
             <li>DW Cookbook</li>
           </a>
