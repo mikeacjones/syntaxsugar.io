@@ -7,7 +7,7 @@
   import confetti from 'canvas-confetti';
 
   function wrapCodeBlocks() {
-    const codeBlocks = document.querySelectorAll('pre.astro-code');
+    const codeBlocks = document.querySelectorAll('pre.astro-code, pre.shiki');
 
     codeBlocks.forEach((pre) => {
       // Skip if already wrapped

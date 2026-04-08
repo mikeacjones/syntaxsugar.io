@@ -1,0 +1,62 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import LabCard from '../components/LabCard.astro';
+import Chip from '../components/Chip.astro';
+import { getCollection } from 'astro:content';
+
+const mdxLabs = await getCollection('labs', ({ data }) => data.published === true);
+const claatLabs = await getCollection('claatLabs', ({ data }) => data.published === true);
+
+const allLabs = [
+  ...mdxLabs.map((lab) => {
+    const parts = lab.id.replace(/\/index$/, '').split('/');
+    return {
+      title: lab.data.title,
+      date: lab.data.date,
+      shortDescription: lab.data.shortDescription,
+      categories: lab.data.categories,
+      duration: lab.data.duration,
+      url: `/lab/${parts[0]}/${parts.slice(1).join('/')}/`,
+    };
+  }),
+  ...claatLabs.map((lab) => ({
+    title: lab.data.title,
+    date: lab.data.date,
+    shortDescription: lab.data.shortDescription,
+    categories: lab.data.categories,
+    duration: lab.data.duration,
+    url: lab.data.url,
+  })),
+];
+
+allLabs.sort((a, b) => b.date.getTime() - a.date.getTime());
+const allCategories = [...new Set(allLabs.flatMap((lab) => lab.categories))];
+---
+
+<BaseLayout title="Labs" description="Guided labs and hands-on tutorials">
+  <div class="labs-header">
+    <h1>Labs</h1>
+    <p>Guided, hands-on tutorials that walk you through a specific concept or task.</p>
+  </div>
+
+  <h3 class="category-tags-label">categories:</h3>
+  <div class="category-tags">
+    <Chip tag="All Labs" href="/labs" active />
+    {allCategories.map((cat) => (
+      <Chip tag={cat} href={`/labs?category=${cat.replace(/(\s|_|-)+/g, '-').toLowerCase()}`} />
+    ))}
+  </div>
+
+  <div class="LabCards">
+    {allLabs.map((lab) => (
+      <LabCard
+        title={lab.title}
+        date={lab.date}
+        shortDescription={lab.shortDescription}
+        categories={lab.categories}
+        url={lab.url}
+        duration={lab.duration}
+      />
+    ))}
+  </div>
+</BaseLayout>

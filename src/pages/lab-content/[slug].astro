@@ -1,0 +1,181 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Chip from '../../components/Chip.astro';
+import CodeBlock from '../../components/CodeBlock.astro';
+import ZoomableImage from '../../components/ZoomableImage.astro';
+import { getCollection } from 'astro:content';
+import { parseClaatHtml } from '../../helpers/parse-claat';
+import { resolve } from 'node:path';
+
+const LAB_CONTENT_DIR = resolve('public/lab-content');
+
+export async function getStaticPaths() {
+  const claatLabs = await getCollection('claatLabs');
+  return claatLabs.map((lab) => ({
+    params: { slug: lab.id },
+    props: { lab },
+  }));
+}
+
+const { lab } = Astro.props;
+const parsed = await parseClaatHtml(lab.id, LAB_CONTENT_DIR);
+
+const formattedDate = lab.data.date.toLocaleDateString('en-US', {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+});
+---
+
+<BaseLayout title={lab.data.title} description={lab.data.shortDescription}>
+  <div class="post-view">
+    <div class="post-view-title">
+      <h1>{lab.data.title}</h1>
+    </div>
+    <div class="post-view-date">
+      {formattedDate}
+      {lab.data.duration && <span> &middot; {lab.data.duration}</span>}
+    </div>
+    <div class="post-view-tags">
+      {lab.data.categories.map((cat: string) => (
+        <Chip tag={cat} href={`/labs?category=${cat.replace(/(\s|_|-)+/g, '-').toLowerCase()}`} />
+      ))}
+    </div>
+
+    {parsed && (
+      <div class="codelab-wrapper">
+        <nav class="codelab-steps-nav">
+          {parsed.steps.map((step, i) => (
+            <button
+              class:list={['codelab-step-link', { active: i === 0 }]}
+              data-step={i}
+            >
+              <span class="codelab-step-number">{i + 1}</span>
+              <span class="codelab-step-label">{step.label}</span>
+            </button>
+          ))}
+        </nav>
+
+        <div class="codelab-content">
+          {parsed.steps.map((step, i) => (
+            <section
+              id={`step-${i}`}
+              class:list={['codelab-step', { active: i === 0 }]}
+              data-step-index={i}
+            >
+              <div class="codelab-step-nav codelab-step-nav-top">
+                {i > 0 && (
+                  <button class="codelab-nav-btn codelab-prev" data-target={i - 1}>
+                    &larr; Previous
+                  </button>
+                )}
+                {i < parsed.steps.length - 1 ? (
+                  <button class="codelab-nav-btn codelab-next" data-target={i + 1}>
+                    Next &rarr;
+                  </button>
+                ) : (
+                  <a href="/labs" class="codelab-nav-btn codelab-next">
+                    Done &check;
+                  </a>
+                )}
+              </div>
+              <h2 class="codelab-step-title">
+                <span class="codelab-step-badge">{i + 1} / {parsed.steps.length}</span>
+                {step.label}
+                {step.duration > 0 && (
+                  <span class="codelab-step-duration">{step.duration} min</span>
+                )}
+              </h2>
+              <div class="codelab-step-content post-view-content" set:html={step.content} />
+              <div class="codelab-step-nav">
+                {i > 0 && (
+                  <button class="codelab-nav-btn codelab-prev" data-target={i - 1}>
+                    &larr; Previous
+                  </button>
+                )}
+                {i < parsed.steps.length - 1 ? (
+                  <button class="codelab-nav-btn codelab-next" data-target={i + 1}>
+                    Next &rarr;
+                  </button>
+                ) : (
+                  <a href="/labs" class="codelab-nav-btn codelab-next">
+                    Done &check;
+                  </a>
+                )}
+              </div>
+            </section>
+          ))}
+        </div>
+      </div>
+    )}
+  </div>
+  <CodeBlock />
+</BaseLayout>
+
+<script is:inline>
+  // Initialize zoomable images for ALL codelab steps
+  (function() {
+    var images = document.querySelectorAll('.codelab-step-content img');
+    images.forEach(function(img) {
+      if (img.dataset.zoomable === 'true') return;
+      img.dataset.zoomable = 'true';
+      img.style.cursor = 'pointer';
+      img.addEventListener('click', function() {
+        var overlay = document.createElement('div');
+        overlay.className = 'zoomable-overlay';
+        var enlarged = document.createElement('img');
+        enlarged.src = img.src;
+        enlarged.alt = img.alt || '';
+        overlay.appendChild(enlarged);
+        document.body.appendChild(overlay);
+        overlay.addEventListener('click', function() { overlay.remove(); });
+        document.addEventListener('keydown', function handler(e) {
+          if (e.key === 'Escape') { overlay.remove(); document.removeEventListener('keydown', handler); }
+        });
+      });
+    });
+  })();
+</script>
+
+<script is:inline>
+  (function() {
+    var steps = document.querySelectorAll('.codelab-step');
+    var navLinks = document.querySelectorAll('.codelab-step-link');
+    if (steps.length === 0) return;
+
+    function goToStep(index) {
+      for (var i = 0; i < steps.length; i++) {
+        if (i === index) {
+          steps[i].classList.add('active');
+        } else {
+          steps[i].classList.remove('active');
+        }
+      }
+      for (var j = 0; j < navLinks.length; j++) {
+        if (j === index) {
+          navLinks[j].classList.add('active');
+        } else {
+          navLinks[j].classList.remove('active');
+        }
+      }
+      document.querySelector('.codelab-wrapper').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    for (var i = 0; i < navLinks.length; i++) {
+      (function(link) {
+        link.addEventListener('click', function() {
+          goToStep(parseInt(link.getAttribute('data-step'), 10));
+        });
+      })(navLinks[i]);
+    }
+
+    var btns = document.querySelectorAll('.codelab-nav-btn[data-target]');
+    for (var i = 0; i < btns.length; i++) {
+      (function(btn) {
+        btn.addEventListener('click', function() {
+          goToStep(parseInt(btn.getAttribute('data-target'), 10));
+        });
+      })(btns[i]);
+    }
+  })();
+</script>

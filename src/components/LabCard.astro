@@ -1,0 +1,37 @@
+---
+import Chip from './Chip.astro';
+
+interface Props {
+  title: string;
+  date: Date;
+  shortDescription: string;
+  categories: string[];
+  url: string;
+  duration?: string;
+}
+
+const { title, date, shortDescription, categories, url, duration } = Astro.props;
+
+const formattedDate = date.toLocaleDateString('en-US', {
+  year: 'numeric',
+  month: 'short',
+  day: 'numeric',
+});
+---
+
+<div class="LabCard">
+  <a href={url} class="LabCard-link" aria-label={title}></a>
+  <div class="LabCard-header">
+    <div class="LabCard-meta">
+      <span class="LabCard-date">{formattedDate}</span>
+      {duration && <span class="LabCard-duration">{duration}</span>}
+    </div>
+    <div class="LabCard-title">{title}</div>
+  </div>
+  <div class="LabCard-body">{shortDescription}</div>
+  <div class="LabCard-footer">
+    {categories.map((cat) => (
+      <Chip tag={cat} href={`/labs?category=${cat.replace(/(\s|_|-)+/g, '-').toLowerCase()}`} />
+    ))}
+  </div>
+</div>
