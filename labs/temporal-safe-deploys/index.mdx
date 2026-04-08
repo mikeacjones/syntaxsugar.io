@@ -279,10 +279,9 @@ You should see `temporalworkerdeployments.temporal.io` and `temporalconnections.
 Let's add versioning to the worker. Open `src/worker.py` and add the deployment config. First, the new imports:
 
 ```python
-from temporalio.worker.deployment_config import (  # [!code ++]
-    WorkerDeploymentConfig,                         # [!code ++]
-    WorkerDeploymentVersion,                        # [!code ++]
-)                                                   # [!code ++]
+from temporalio.common import VersioningBehavior, WorkerDeploymentVersion  # [!code ++]
+from temporalio.worker import Worker, WorkerDeploymentConfig               # [!code ++]
+from temporalio.worker import Worker                                       # [!code --]
 ```
 
 Then add these constants and the `deployment_config` parameter to the `Worker` constructor:
@@ -303,32 +302,51 @@ worker = Worker(
         synthesize_findings,
         fact_check,
     ],
-    deployment_config=WorkerDeploymentConfig(       # [!code ++]
-        version=WorkerDeploymentVersion(            # [!code ++]
-            deployment_name=DEPLOYMENT_NAME,        # [!code ++]
-            build_id=BUILD_ID,                      # [!code ++]
-        ),                                          # [!code ++]
-        use_worker_versioning=True,                 # [!code ++]
-    ),                                              # [!code ++]
+    deployment_config=WorkerDeploymentConfig(            # [!code ++]
+        version=WorkerDeploymentVersion(                 # [!code ++]
+            deployment_name=DEPLOYMENT_NAME,             # [!code ++]
+            build_id=BUILD_ID,                           # [!code ++]
+        ),                                               # [!code ++]
+        use_worker_versioning=True,                      # [!code ++]
+        default_versioning_behavior=VersioningBehavior.PINNED,  # [!code ++]
+    ),                                                   # [!code ++]
 )
 ```
 
 The Worker Controller injects `TEMPORAL_DEPLOYMENT_NAME` and `TEMPORAL_WORKER_BUILD_ID` as environment variables when running inside Kubernetes. The `"local-dev"` fallbacks are for running outside the cluster.
 
-### Pin the Workflow
+Notice the `default_versioning_behavior=VersioningBehavior.PINNED` on the config. This sets the default for all workflows registered on this worker. `PINNED` means: once a workflow starts on a particular build ID, all of its tasks get routed exclusively to workers running that same build. The code never changes underneath a running workflow.
 
-Now tell Temporal that `ResearchWorkflow` should stay on whatever version started it. Add the import and update the decorator:
+You can also set the behavior per-workflow with `@workflow.defn(versioning_behavior=VersioningBehavior.PINNED)` if you need different behaviors for different workflow types. But for most cases, the worker-level default is cleaner.
 
-```python
-from temporalio.workflow import VersioningBehavior               # [!code ++]
+### The TemporalWorkerDeployment Chart
 
-@workflow.defn(versioning_behavior=VersioningBehavior.PINNED)    # [!code ++]
-@workflow.defn                                                   # [!code --]
-class ResearchWorkflow:
-    # ... rest of the code stays the same
+Take a look at `charts/worker/templates/temporal-worker-deployment.yaml` to see what the Worker Controller manages:
+
+```yaml
+apiVersion: temporal.io/v1alpha1
+kind: TemporalWorkerDeployment
+metadata:
+  name: research-agent
+spec:
+  replicas: 1
+  workerOptions:
+    connectionRef:
+      name: lab-temporal
+    temporalNamespace: default
+  rollout:
+    strategy: AllAtOnce
+  sunset:
+    scaledownDelay: 5m
+    deleteDelay: 30m
+  template:
+    spec:
+      containers:
+        - name: worker
+          image: "k3d-registry.localhost:5050/research-agent:v1-versioned"
 ```
 
-`PINNED` means: once a workflow starts on a particular build ID, all of its tasks get routed exclusively to workers running that same build. The code never changes underneath a running workflow.
+The key fields: `rollout.strategy` controls how new versions are introduced (we'll cover `Progressive` later in the ramping section). `sunset` controls how long old version pods stick around after they stop receiving new work. The controller handles creating versioned Kubernetes Deployments, registering build IDs with Temporal, and cleaning up drained versions automatically.
 
 ### Test It
 
@@ -391,11 +409,9 @@ The solution: detect when a new version is deployed and gracefully migrate using
 
 Temporal provides `workflow.info().is_target_worker_deployment_version_changed()`. This returns `True` when the server has set a newer "current" version for this deployment. We can check it in our wait condition.
 
-Open `src/workflows.py` and update the `ResearchPollingWorkflow`. First, add the PINNED decorator and a few new fields:
+Open `src/workflows.py` and update the `ResearchPollingWorkflow`. Add a few new fields to track draining state and wake-up signals:
 
 ```python
-@workflow.defn(versioning_behavior=VersioningBehavior.PINNED)  # [!code ++]
-@workflow.defn                                                  # [!code --]
 class ResearchPollingWorkflow:
     def __init__(self) -> None:
         self._pending: list[ResearchRequest] = []
