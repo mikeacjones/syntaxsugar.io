@@ -479,12 +479,12 @@ Check the Deployments tab again. The previous version is now Draining because th
 temporal workflow signal \
   --workflow-id research-polling \
   --name submit_request \
-  --input '{"topic": "quantum computing", "request_id": "test-1"}'
+  --input '{"topic": "quantum computing", "request_id": "poll-test-1"}'
 ```
 
-The polling workflow wakes up, processes the research request on the V3 worker, and goes back to sleep. Check the Deployments tab again. It's still on `v3-versioned`. It processed the work just fine, but it didn't migrate because the history isn't large enough to trigger `is_continue_as_new_suggested()`.
+The polling workflow wakes up, processes the research request on the V2 worker, and goes back to sleep. Check the Deployments tab again. It's still on `v2-versioned`. It processed the work just fine, but it didn't migrate because the history isn't large enough to trigger `is_continue_as_new_suggested()`.
 
-The V3 pod is going to stick around until the history grows enough. For a workflow that processes a few requests a day, that could be a long time.
+The V2 pod is going to stick around until the history grows enough. For a workflow that processes a few requests a day, that could be a long time.
 
 ### Part 2: Detecting Version Changes
 
@@ -523,10 +523,11 @@ Now update the main loop to check for version changes:
                 )
             )
 
-            if (
-                workflow.info().is_continue_as_new_suggested()
+            if workflow.info().is_continue_as_new_suggested(): #[!code --]
+            if ( # [!code ++]
+                workflow.info().is_continue_as_new_suggested() # [!code ++]
                 or workflow.info().is_target_worker_deployment_version_changed()       # [!code ++]
-            ):
+            ): # [!code ++]
                 self._draining = True                                                 # [!code ++]
                 await workflow.wait_condition(workflow.all_handlers_finished)          # [!code ++]
                 workflow.continue_as_new(
@@ -551,7 +552,9 @@ Now update the main loop to check for version changes:
 
 ### See It Work
 
-Deploy the updated code and start the polling workflow:
+Deploy the updated code and start the polling workflow: 
+
+> Wait for the 30 second sleep here; the new pod needs to get promoted to the current version
 
 ```bash
 ./scripts/build-and-deploy.sh v4-versioned --versioned && sleep 30 && \
@@ -574,7 +577,7 @@ Check the Deployments tab. The polling workflow is still on `v4-versioned`. Now 
 temporal workflow signal \
   --workflow-id research-polling \
   --name submit_request \
-  --input '{"topic": "quantum computing", "request_id": "test-2"}'
+  --input '{"topic": "quantum computing", "request_id": "poll-test-2"}'
 ```
 
 This time the workflow wakes up, sees the version change, drains, and continues-as-new onto `v5-versioned`. Check the Deployments tab again. The workflow has migrated. The old deployment should transition to Drained.
@@ -599,7 +602,7 @@ Here's a gotcha that's easy to miss.
 
 If the polling workflow is idle, sitting in `wait_condition` with no pending requests, it's completely evicted from the worker's memory. The `is_target_worker_deployment_version_changed()` flag only gets checked when the workflow executes a Workflow Task. An idle workflow isn't executing anything. It doesn't know a new version exists.
 
-You could just wait. The next time a signal comes in (a new research request), the workflow will wake up, check the condition, see the version change, and migrate. But if requests are infrequent, the old worker pod could be sitting around for hours or days waiting for that to happen.
+You could just wait. The next time a signal comes in (a new research request), the workflow will wake up, check the condition, see the version change, and migrate. Any workflow task will trigger this. But if requests are infrequent, the old worker pod could be sitting around for hours or days waiting for that to happen.
 
 ### The Wake-Up Signal
 
@@ -610,25 +613,10 @@ class ResearchPollingWorkflow:
     def __init__(self) -> None:
         self._pending: list[ResearchRequest] = []
         self._draining: bool = False
-        self._wake_up: bool = False     # [!code ++]
 
     @workflow.signal                    # [!code ++]
     async def wake_up(self) -> None:    # [!code ++]
-        self._wake_up = True            # [!code ++]
-```
-
-And add it to the wait condition:
-
-```python
-            await workflow.wait_condition(
-                lambda: (
-                    len(self._pending) > 0
-                    or workflow.info().is_continue_as_new_suggested()
-                    or workflow.info().is_target_worker_deployment_version_changed()
-                    or self._wake_up                                                  # [!code ++]
-                )
-            )
-            self._wake_up = False                                                     # [!code ++]
+        pass #we just need the workflow to wake up            # [!code ++]
 ```
 
 After deploying a new version, send the signal to nudge the workflow:
@@ -641,25 +629,7 @@ temporal workflow signal \
 
 The signal causes a Workflow Task. The workflow wakes up, checks the wait condition, sees the version change, and migrates.
 
-In production, you could automate this with a post-deploy script that signals all long-running workflows. Or you could use a periodic timer in your wait condition:
-
-```python
-# Alternative: wake up every 5 minutes to check
-try:
-    await workflow.wait_condition(
-        lambda: (
-            len(self._pending) > 0
-            or workflow.info().is_continue_as_new_suggested()
-            or workflow.info().is_target_worker_deployment_version_changed()
-            or self._wake_up
-        ),
-        timeout=timedelta(minutes=5),
-    )
-except asyncio.TimeoutError:
-    pass  # timeout fires, loop re-evaluates the version check
-```
-
-Pick the approach that fits your workload. Explicit signals give you immediate migration. Periodic timers give you eventual migration without extra tooling.
+In production, you could automate this with a post-deploy script that signals all long-running workflows.
 
 ### Another Angle: Replay-Gated AUTO_UPGRADE
 
