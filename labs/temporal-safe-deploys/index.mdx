@@ -652,7 +652,7 @@ temporal workflow update-options \
   --versioning-override-behavior auto_upgrade
 ```
 
-Sleeping workflows naturally drain off the old version whenever they next wake up. No signals, no continue-as-new dance.
+Sleeping workflows naturally drain off the old version even without waking up; a sleeping workflow isn't actually running on the worker, and with the AUTO_UGPRADE flag set, Temporal knows it can now route that workflow, and any new workflow tasks, to the new worker immediately. No signals, no continue-as-new.
 
 3. Replayer fails (breaking change) → deploy with PINNED. Use the continue-as-new migration pattern we covered in the previous section.
 
