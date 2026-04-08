@@ -364,7 +364,11 @@ Now rebuild and deploy V1 with versioning enabled:
 
 The `--versioned` flag tells the deploy script to use the `TemporalWorkerDeployment` chart instead of a plain Kubernetes Deployment.
 
-Start a workflow, let the research steps complete, then deploy V2 mid-flight:
+Head to the Temporal UI at [localhost:8233](http://localhost:8233) and check the **Deployments** tab. You should see your `research-agent` deployment with build ID `v1-versioned` listed. This is where you'll be able to see multiple versions coexisting once we deploy V2.
+
+{/* TODO: Screenshot of the Deployments tab showing v1-versioned */}
+
+Now start a workflow, let the research steps complete, then deploy V2 mid-flight:
 
 ```bash
 temporal workflow start \
