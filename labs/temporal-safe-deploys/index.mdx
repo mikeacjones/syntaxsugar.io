@@ -450,11 +450,9 @@ This is the simplest version migration path. It works, but it's passive. The wor
 
 ### Try It Out
 
-Build and deploy, then start the polling workflow:
+Start the polling workflow on the current versioned deployment:
 
 ```bash
-./scripts/build-and-deploy.sh v3-versioned --versioned
-
 temporal workflow start \
   --task-queue research-agent \
   --type ResearchPollingWorkflow \
@@ -462,13 +460,13 @@ temporal workflow start \
   --workflow-id research-polling
 ```
 
-The polling workflow is running on `v3-versioned`. Now deploy a new version:
+Check the Deployments tab in the Temporal UI. The polling workflow is running on the current version. Now deploy a new version:
 
 ```bash
-./scripts/build-and-deploy.sh v4-versioned --versioned
+./scripts/build-and-deploy.sh v3-versioned --versioned
 ```
 
-Check the Deployments tab in the Temporal UI. You'll see `v3-versioned` is in the Draining state because the polling workflow is still pinned to it. Now send it some work:
+Check the Deployments tab again. The previous version is now Draining because the polling workflow is still pinned to it. Now send it some work:
 
 ```bash
 temporal workflow signal \
@@ -546,10 +544,10 @@ Now update the main loop to check for version changes:
 
 ### See It Work
 
-Deploy and start the polling workflow again with the updated code:
+Deploy the updated code and start the polling workflow again:
 
 ```bash
-./scripts/build-and-deploy.sh v5-versioned --versioned
+./scripts/build-and-deploy.sh v4-versioned --versioned
 
 temporal workflow start \
   --task-queue research-agent \
@@ -558,13 +556,13 @@ temporal workflow start \
   --workflow-id research-polling
 ```
 
-Deploy a new version:
+Now deploy another new version:
 
 ```bash
-./scripts/build-and-deploy.sh v6-versioned --versioned
+./scripts/build-and-deploy.sh v5-versioned --versioned
 ```
 
-Check the Deployments tab. The polling workflow is still on `v5-versioned`. Now send it a research request:
+Check the Deployments tab. The polling workflow is still on `v4-versioned`. Now send it a research request:
 
 ```bash
 temporal workflow signal \
@@ -573,9 +571,9 @@ temporal workflow signal \
   --input '{"topic": "quantum computing", "request_id": "test-2"}'
 ```
 
-This time the workflow wakes up, sees the version change, drains, and continues-as-new onto `v6-versioned`. Check the Deployments tab again. The workflow has migrated. The V5 deployment should transition to Drained.
+This time the workflow wakes up, sees the version change, drains, and continues-as-new onto `v5-versioned`. Check the Deployments tab again. The workflow has migrated. The old deployment should transition to Drained.
 
-{/* TODO: Screenshot showing the continue-as-new chain from V5 to V6 in the Temporal UI */}
+{/* TODO: Screenshot showing the continue-as-new chain in the Temporal UI */}
 
 ### The Draining Pattern
 
