@@ -390,7 +390,7 @@ Wait for the workflow to reach the signal gate (research steps done), then deplo
 ./scripts/build-and-deploy.sh v2-versioned --versioned
 ```
 
-Check `kubectl get pods`. You'll see pods for both versions running simultaneously. Head over to the deployments tab again, and you'll see a current and draining deployment. Clicking into the draining deployment, you'll see the in-flight workflow is currently "on" this deployment. Until the workflow completes successfully, this deployment version will stay in the draining state, allowing the workflow to complete. If you were to start a new workflow now, you'd see the new workflow route to the current deployment version.
+Check `kubectl get pods`. You'll see pods for both versions running simultaneously. Head over to the deployments tab again, and then click on the deployment to see the versions - you'll see a current and draining deployment. Clicking into the draining deployment, you'll see the in-flight workflow is currently "on" this deployment. Until the workflow completes successfully, this deployment version will stay in the draining state, allowing the workflow to complete. If you were to start a new workflow now, you'd see the new workflow route to the current deployment version.
 
 
 Now signal the V1 workflow:
