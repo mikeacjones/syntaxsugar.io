@@ -536,7 +536,7 @@ Now update the main loop to check for version changes:
                 request = self._pending.pop(0)
                 await workflow.execute_child_workflow(
                     ResearchWorkflow.run,
-                    request.topic,
+                    args=[request.topic, False],
                     id=f"research-{request.request_id}",
                 )
                 state.completed_count += 1
