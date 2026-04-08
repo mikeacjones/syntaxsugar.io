@@ -1,0 +1,720 @@
+<!DOCTYPE html><html lang="en"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="description" content="Learn how to safely deploy workflow code changes using Temporal's Worker Versioning on Kubernetes, without patching and without losing expensive in-flight work."><title>Safe Deployments with Temporal Worker Versioning on Kubernetes | Michael Jones</title><!-- Favicons --><link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="icon" type="image/x-icon" href="/favicon.ico"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="manifest" href="/site.webmanifest"><link rel="mask-icon" href="/safari-pinned-tab.svg" color="#52307c"><!-- Google Fonts --><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Titillium+Web:wght@300;400;600;700&family=Ubuntu+Mono:wght@400;700&display=swap" rel="stylesheet"><!-- Sitemap --><link rel="sitemap" href="/sitemap-index.xml"><link rel="stylesheet" href="/_astro/dw-cookbook.Yk2r_nAC.css"></head> <body> <div id="Layout"> <div class="SideBarWrapper"> <div id="SideBarToggleWrapper"> <div id="SideBarToggle"> <label class="toggle" for="SideBarToggle-checkbox">&#9776;</label> </div> </div> <input type="checkbox" id="SideBarToggle-checkbox"> <nav id="SideBar"> <div id="AboutMe"> <div id="AboutMe-ProfilePicture"> <img src="/images/profilePicture.png" alt="Michael Jones"> </div> <h2 style="text-align: center;">Michael Jones</h2> <div id="AboutMe-MenuItems"> <ul id="MenuItems"> <a href="/" class> <li>Posts</li> </a> <a href="/labs" class="active"> <li>Labs</li> </a> <a href="/dw-cookbook" class> <li>DW Cookbook</li> </a> </ul> </div> </div> <div id="SocialIcons"> <a href="https://github.com/mikeacjones" target="_blank" rel="noreferrer" aria-label="GitHub"> <svg viewBox="0 0 496 512" xmlns="http://www.w3.org/2000/svg"> <path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.8-14.1-112.8-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"></path> </svg> </a> <a href="https://www.linkedin.com/in/michael-jones-5a870678" target="_blank" rel="noreferrer" aria-label="LinkedIn"> <svg viewBox="0 0 448 512" xmlns="http://www.w3.org/2000/svg"> <path d="M416 32H31.9C14.3 32 0 46.5 0 64.3v383.4C0 465.5 14.3 480 31.9 480H416c17.6 0 32-14.5 32-32.3V64.3c0-17.8-14.4-32.3-32-32.3zM135.4 416H69V202.2h66.5V416zm-33.2-243c-21.3 0-38.5-17.3-38.5-38.5S80.9 96 102.2 96c21.2 0 38.5 17.3 38.5 38.5 0 21.3-17.2 38.5-38.5 38.5zm282.1 243h-66.4V312c0-24.8-.5-56.7-34.5-56.7-34.6 0-39.9 27-39.9 54.9V416h-66.4V202.2h63.7v29.2h.9c8.9-16.8 30.6-34.5 62.9-34.5 67.2 0 79.7 44.3 79.7 101.9V416z"></path> </svg> </a> <a href="https://stackoverflow.com/users/10890536/michael-jones" target="_blank" rel="noreferrer" aria-label="Stack Overflow"> <svg viewBox="0 0 384 512" xmlns="http://www.w3.org/2000/svg"> <path d="M290.7 311L95 269.7 86.8 309l195.7 41zm51-87L188.2 95.7l-25.5 30.8 153.5 128.3zm-31.2 39.7L129.2 179l-16.7 36.5L293.7 300zM262 32l-32 24 119.3 160.3 32-24zm20.5 328h-200v39.7h200zm39.7 80H42.7V320h-40v160h319.9V320h-40z"></path> </svg> </a> </div> </nav> </div> <script type="module">document.addEventListener("astro:page-load",()=>{const e=document.getElementById("SideBarToggle-checkbox"),t=document.querySelector(".toggle");t&&e&&t.addEventListener("click",n=>{n.preventDefault(),e.checked=!e.checked});const c=document.getElementById("ContentWrapper");c&&e&&c.addEventListener("click",()=>{e.checked&&(e.checked=!1)})});</script> <div id="Layout-ContentWrapper"> <div id="ContentWrapper">  <div class="post-view"> <div class="post-view-title"> <h1>Safe Deployments with Temporal Worker Versioning on Kubernetes</h1> </div> <div class="post-view-date"> April 7, 2026 <span> &middot; 60 min</span> </div> <div class="post-view-tags"> <span class="Chip"> <a class="Chip-link" href="/labs?category=temporal">Temporal</a> </span><span class="Chip"> <a class="Chip-link" href="/labs?category=kubernetes">Kubernetes</a> </span><span class="Chip"> <a class="Chip-link" href="/labs?category=worker-versioning">Worker Versioning</a> </span> </div> <div class="codelab-wrapper"> <nav class="codelab-steps-nav" id="lab-steps-nav"></nav> <div class="codelab-content" id="lab-content"> <div class="post-view-content" id="lab-raw-content"> <h2 id="what-were-building">What We’re Building</h2>
+<p>I recently refactored some personal projects to use Temporal as the orchestrator. When I was updating my pipelines that handle the deployments, and while testing things (ie: playing whack-a-mole with bugs I created as I learned a new SDK), I ran into a fairly common problem in Temporal when making changes to your code base: determinism errors for in-flight workflows. This lead to diving into learning how to reset the event history, terminating my workflows before deployments, code patching / versioning…</p>
+<p><img src="https://media.giphy.com/media/rBA9YKPPA4v7DXPdvg/giphy.gif" alt="Crazy mental connections I now needed to maintain.."/></p>
+<p>Eventually though I started digging to see if there was a way to manage this without juggling multiple live versions of the workflow code. Enter the temporal worker controller. This post walks through an example exercise to help understand, at least at a high level, the problem the controller solves and the basic deployment pattern.</p>
+<p>Picture this: you have an agentic workflow making expensive LLM calls. Each research step costs real money and takes real time. Three steps in, your workflow has burned through a few dollars of compute. Then someone deploys a code change. The in-flight workflow hits a non-determinism error and stops dead.</p>
+<p>Your options? Reset the workflow to a point before the change. Those LLM calls you already paid for? Gone. That work? Wasted.</p>
+<p>There has to be a better way. And there is.</p>
+<p>In this lab we’ll build a research agent workflow, break it with a naive deployment, feel that pain firsthand, and then fix it with Temporal’s Worker Versioning on Kubernetes. By the end you’ll understand how to safely roll out workflow code changes without patching, without losing in-flight work, and without any of the usual deployment anxiety.</p>
+<p>Here’s what we’ll cover:</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Section</th><th>What You’ll Learn</th></tr></thead><tbody><tr><td>The Research Agent</td><td>Build and deploy a multi-step agentic workflow</td></tr><tr><td>The Breaking Change</td><td>See a non-determinism error destroy a running workflow</td></tr><tr><td>Worker Versioning</td><td>Pin workflows to their version so old and new coexist</td></tr><tr><td>Long-Running Workflows</td><td>Migrate a polling workflow to a new version with continue-as-new</td></tr><tr><td>Sleeping Workflows</td><td>Handle the caveat where idle workflows don’t notice version changes</td></tr><tr><td>Scaling &amp; Ramping</td><td>Understand the full HA story with progressive rollouts</td></tr></tbody></table>
+<h3 id="what-youll-need">What You’ll Need</h3>
+<ul>
+<li><a href="https://docs.docker.com/get-docker/" rel="noreferrer" target="_blank">Docker</a> (make sure it’s running)</li>
+</ul>
+<p>That’s it. Everything else (Python, uv, kubectl, Helm, k3d, Temporal CLI) runs inside a dev environment container. Nothing gets installed on your machine.</p>
+<h2 id="setup">Setup</h2>
+<p>Clone the starter branch:</p>
+<pre class="astro-code material-theme-palenight" style="background-color:#292D3E;color:#babed8;overflow-x:auto;white-space:pre-wrap;word-wrap:break-word" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#FFCB6B">git</span><span style="color:#C3E88D"> clone</span><span style="color:#C3E88D"> -b</span><span style="color:#C3E88D"> starter</span><span style="color:#C3E88D"> https://github.com/mikeacjones/temporal-safe-deploys-lab</span></span>
+<span class="line"><span style="color:#82AAFF">cd</span><span style="color:#C3E88D"> temporal-safe-deploys-lab</span></span></code></pre>
+<h3 id="start-the-dev-environment">Start the Dev Environment</h3>
+<p>The repo includes a containerized dev environment with everything pre-installed: Python, uv, kubectl, Helm, k3d, and the Temporal CLI. One command gets you a fully working environment:</p>
+<pre class="astro-code material-theme-palenight" style="background-color:#292D3E;color:#babed8;overflow-x:auto;white-space:pre-wrap;word-wrap:break-word" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#FFCB6B">./scripts/devenv.sh</span></span></code></pre>
+<p>This builds the dev container, then automatically:</p>
+<ol>
+<li>Installs Python dependencies</li>
+<li>Creates a k3d cluster (Kubernetes running inside Docker) with a local container registry</li>
+<li>Starts the Temporal dev server in a background screen session</li>
+</ol>
+<p>When it’s done, you’ll be dropped into a bash shell with everything ready. The Temporal UI is at <a href="http://localhost:8233" rel="noreferrer" target="_blank">localhost:8233</a>.</p>
+<p>To check on the Temporal server logs, run <code>screen -r temporal</code> (Ctrl+A then D to detach back to your shell).</p>
+<p>When you’re done with the lab, just <code>exit</code> the container. The k3d cluster, registry, and Temporal server are cleaned up automatically. Your system goes back to how it was.</p>
+<p>Quick sanity check that the cluster is up:</p>
+<pre class="astro-code material-theme-palenight" style="background-color:#292D3E;color:#babed8;overflow-x:auto;white-space:pre-wrap;word-wrap:break-word" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#FFCB6B">kubectl</span><span style="color:#C3E88D"> get</span><span style="color:#C3E88D"> nodes</span></span></code></pre>
+<p>You should see a single node in <code>Ready</code> state.</p>
+<h2 id="the-research-agent">The Research Agent</h2>
+<p>Let’s walk through what the starter code gives you.</p>
+<h3 id="the-workflow">The Workflow</h3>
+<p><code>src/workflows.py</code> defines a <code>ResearchWorkflow</code> that runs a multi-step research pipeline:</p>
+<pre class="astro-code material-theme-palenight" style="background-color:#292D3E;color:#babed8;overflow-x:auto;white-space:pre-wrap;word-wrap:break-word" tabindex="0" data-language="python"><code><span class="line"><span style="color:#89DDFF">@</span><span style="color:#82AAFF">workflow</span><span style="color:#89DDFF">.</span><span style="color:#82AAFF">defn</span></span>
+<span class="line"><span style="color:#C792EA">class</span><span style="color:#FFCB6B"> ResearchWorkflow</span><span style="color:#89DDFF">:</span></span>
+<span class="line"><span style="color:#89DDFF">    @</span><span style="color:#82AAFF">workflow</span><span style="color:#89DDFF">.</span><span style="color:#82AAFF">run</span></span>
+<span class="line"><span style="color:#C792EA">    async</span><span style="color:#C792EA"> def</span><span style="color:#82AAFF"> run</span><span style="color:#89DDFF">(</span><span style="color:#F07178;font-style:italic">self</span><span style="color:#89DDFF">,</span><span style="color:#BABED8;font-style:italic"> topic</span><span style="color:#89DDFF">:</span><span style="color:#FFCB6B"> str</span><span style="color:#89DDFF">)</span><span style="color:#89DDFF"> -&gt;</span><span style="color:#FFCB6B"> str</span><span style="color:#89DDFF">:</span></span>
+<span class="line"><span style="color:#676E95;font-style:italic">        # Phase 1: Plan the research</span></span>
+<span class="line"><span style="color:#BABED8">        plan </span><span style="color:#89DDFF">=</span><span style="color:#89DDFF;font-style:italic"> await</span><span style="color:#BABED8"> workflow</span><span style="color:#89DDFF">.</span><span style="color:#82AAFF">execute_activity</span><span style="color:#89DDFF">(</span></span>
+<span class="line"><span style="color:#82AAFF">            plan_research</span><span style="color:#89DDFF">,</span><span style="color:#82AAFF"> topic</span><span style="color:#89DDFF">,</span></span>
+<span class="line"><span style="color:#BABED8;font-style:italic">            start_to_close_timeout</span><span style="color:#89DDFF">=</span><span style="color:#82AAFF">timedelta</span><span style="color:#89DDFF">(</span><span style="color:#BABED8;font-style:italic">seconds</span><span style="color:#89DDFF">=</span><span style="color:#F78C6C">30</span><span style="color:#89DDFF">),</span></span>
+<span class="line"><span style="color:#89DDFF">        )</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#676E95;font-style:italic">        # Phase 2: Execute each research step (the expensive part)</span></span>
+<span class="line"><span style="color:#BABED8">        findings</span><span style="color:#89DDFF">:</span><span style="color:#BABED8"> list</span><span style="color:#89DDFF">[</span><span style="color:#BABED8">StepFindings</span><span style="color:#89DDFF">]</span><span style="color:#89DDFF"> =</span><span style="color:#89DDFF"> []</span></span>
+<span class="line"><span style="color:#89DDFF;font-style:italic">        for</span><span style="color:#BABED8"> step </span><span style="color:#89DDFF;font-style:italic">in</span><span style="color:#BABED8"> plan</span><span style="color:#89DDFF">.</span><span style="color:#F07178">steps</span><span style="color:#89DDFF">:</span></span>
+<span class="line"><span style="color:#BABED8">            result </span><span style="color:#89DDFF">=</span><span style="color:#89DDFF;font-style:italic"> await</span><span style="color:#BABED8"> workflow</span><span style="color:#89DDFF">.</span><span style="color:#82AAFF">execute_activity</span><span style="color:#89DDFF">(</span></span>
+<span class="line"><span style="color:#82AAFF">                execute_research_step</span><span style="color:#89DDFF">,</span><span style="color:#82AAFF"> step</span><span style="color:#89DDFF">,</span></span>
+<span class="line"><span style="color:#BABED8;font-style:italic">                start_to_close_timeout</span><span style="color:#89DDFF">=</span><span style="color:#82AAFF">timedelta</span><span style="color:#89DDFF">(</span><span style="color:#BABED8;font-style:italic">seconds</span><span style="color:#89DDFF">=</span><span style="color:#F78C6C">30</span><span style="color:#89DDFF">),</span></span>
+<span class="line"><span style="color:#89DDFF">            )</span></span>
+<span class="line"><span style="color:#BABED8">            findings</span><span style="color:#89DDFF">.</span><span style="color:#82AAFF">append</span><span style="color:#89DDFF">(</span><span style="color:#82AAFF">result</span><span style="color:#89DDFF">)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#676E95;font-style:italic">        # Wait for proceed signal before synthesis</span></span>
+<span class="line"><span style="color:#89DDFF;font-style:italic">        await</span><span style="color:#BABED8"> workflow</span><span style="color:#89DDFF">.</span><span style="color:#82AAFF">wait_condition</span><span style="color:#89DDFF">(</span><span style="color:#C792EA">lambda</span><span style="color:#89DDFF">:</span><span style="color:#BABED8"> self</span><span style="color:#89DDFF">.</span><span style="color:#F07178">_proceed</span><span style="color:#89DDFF">)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#676E95;font-style:italic">        # Phase 3: Synthesize findings</span></span>
+<span class="line"><span style="color:#BABED8">        summary </span><span style="color:#89DDFF">=</span><span style="color:#89DDFF;font-style:italic"> await</span><span style="color:#BABED8"> workflow</span><span style="color:#89DDFF">.</span><span style="color:#82AAFF">execute_activity</span><span style="color:#89DDFF">(</span></span>
+<span class="line"><span style="color:#82AAFF">            synthesize_findings</span><span style="color:#89DDFF">,</span><span style="color:#BABED8;font-style:italic"> args</span><span style="color:#89DDFF">=[</span><span style="color:#82AAFF">topic</span><span style="color:#89DDFF">,</span><span style="color:#82AAFF"> findings</span><span style="color:#89DDFF">],</span></span>
+<span class="line"><span style="color:#BABED8;font-style:italic">            start_to_close_timeout</span><span style="color:#89DDFF">=</span><span style="color:#82AAFF">timedelta</span><span style="color:#89DDFF">(</span><span style="color:#BABED8;font-style:italic">seconds</span><span style="color:#89DDFF">=</span><span style="color:#F78C6C">30</span><span style="color:#89DDFF">),</span></span>
+<span class="line"><span style="color:#89DDFF">        )</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#89DDFF;font-style:italic">        return</span><span style="color:#BABED8"> summary</span><span style="color:#89DDFF">.</span><span style="color:#F07178">summary</span></span></code></pre>
+<p>The activities in <code>src/activities.py</code> wrap mocked LLM calls in <code>src/mock_llm.py</code>. Each <code>execute_research_step</code> call sleeps for 5 seconds to simulate an expensive API call. Three steps means about 15 seconds of “LLM compute” per workflow. After the research steps complete, the workflow waits for a <code>proceed</code> signal before running synthesis. This signal gate lets you pause the workflow at a controlled point, which is going to be important in the next section.</p>
+<p>There’s also a <code>fact_check</code> activity already defined in the starter code. We’re not using it yet, but it’ll be important later.</p>
+<h3 id="the-worker">The Worker</h3>
+<p><code>src/worker.py</code> is a straightforward Temporal worker. It registers both workflows and all four activities (including <code>fact_check</code>) on the <code>research-agent</code> task queue. Nothing fancy here.</p>
+<h3 id="deploy-v1">Deploy V1</h3>
+<p>Build the Docker image and deploy to your k3d cluster:</p>
+<pre class="astro-code material-theme-palenight" style="background-color:#292D3E;color:#babed8;overflow-x:auto;white-space:pre-wrap;word-wrap:break-word" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#FFCB6B">./scripts/build-and-deploy.sh</span><span style="color:#C3E88D"> v1</span></span></code></pre>
+<p>This builds the image, pushes it to your local registry, and deploys it as a standard Kubernetes Deployment via Helm. Check it’s running:</p>
+<pre class="astro-code material-theme-palenight" style="background-color:#292D3E;color:#babed8;overflow-x:auto;white-space:pre-wrap;word-wrap:break-word" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#FFCB6B">kubectl</span><span style="color:#C3E88D"> get</span><span style="color:#C3E88D"> pods</span></span></code></pre>
+<p>You should see a pod for <code>research-agent</code> in a Running state.</p>
+<h3 id="run-a-workflow">Run a Workflow</h3>
+<p>Start a research workflow:</p>
+<pre class="astro-code material-theme-palenight" style="background-color:#292D3E;color:#babed8;overflow-x:auto;white-space:pre-wrap;word-wrap:break-word" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#FFCB6B">temporal</span><span style="color:#C3E88D"> workflow</span><span style="color:#C3E88D"> start</span><span style="color:#BABED8"> \</span></span>
+<span class="line"><span style="color:#C3E88D">  --task-queue</span><span style="color:#C3E88D"> research-agent</span><span style="color:#BABED8"> \</span></span>
+<span class="line"><span style="color:#C3E88D">  --type</span><span style="color:#C3E88D"> ResearchWorkflow</span><span style="color:#BABED8"> \</span></span>
+<span class="line"><span style="color:#C3E88D">  --input</span><span style="color:#89DDFF"> &#39;</span><span style="color:#C3E88D">&quot;quantum computing&quot;</span><span style="color:#89DDFF">&#39;</span><span style="color:#BABED8"> \</span></span>
+<span class="line"><span style="color:#C3E88D">  --workflow-id</span><span style="color:#C3E88D"> research-test-1</span></span></code></pre>
+<p>Head to the Temporal UI at <a href="http://localhost:8233" rel="noreferrer" target="_blank">localhost:8233</a>. You’ll see the workflow has completed the plan activity and is working through the research steps (~5 seconds each). Once all three steps finish, the workflow waits for the <code>proceed</code> signal. Send it:</p>
+<pre class="astro-code material-theme-palenight" style="background-color:#292D3E;color:#babed8;overflow-x:auto;white-space:pre-wrap;word-wrap:break-word" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#FFCB6B">temporal</span><span style="color:#C3E88D"> workflow</span><span style="color:#C3E88D"> signal</span><span style="color:#BABED8"> \</span></span>
+<span class="line"><span style="color:#C3E88D">  --workflow-id</span><span style="color:#C3E88D"> research-test-1</span><span style="color:#BABED8"> \</span></span>
+<span class="line"><span style="color:#C3E88D">  --name</span><span style="color:#C3E88D"> proceed</span></span></code></pre>
+<p>Now watch the workflow complete with the synthesis activity.</p>
+
+<h2 id="the-breaking-change">The Breaking Change</h2>
+<p>Product wants each research step fact-checked before moving on to the next one. Totally reasonable. Let’s add it.</p>
+<p>Open <code>src/workflows.py</code> and add the <code>fact_check</code> activity call inside the research loop, right after each step. First, update the import at the top of the file to include <code>fact_check</code>:</p>
+<pre class="astro-code material-theme-palenight has-diff" style="background-color:#292D3E;color:#babed8;overflow-x:auto;white-space:pre-wrap;word-wrap:break-word" tabindex="0" data-language="python"><code><span class="line"><span style="color:#89DDFF;font-style:italic">with</span><span style="color:#BABED8"> workflow</span><span style="color:#89DDFF">.</span><span style="color:#F07178">unsafe</span><span style="color:#89DDFF">.</span><span style="color:#82AAFF">imports_passed_through</span><span style="color:#89DDFF">():</span></span>
+<span class="line"><span style="color:#89DDFF;font-style:italic">    from</span><span style="color:#BABED8"> src</span><span style="color:#89DDFF">.</span><span style="color:#BABED8">activities </span><span style="color:#89DDFF;font-style:italic">import</span><span style="color:#89DDFF"> (</span></span>
+<span class="line"><span style="color:#BABED8">        execute_research_step</span><span style="color:#89DDFF">,</span></span>
+<span class="line diff add"><span style="color:#BABED8">        fact_check</span><span style="color:#89DDFF">,</span></span>
+<span class="line"><span style="color:#BABED8">        plan_research</span><span style="color:#89DDFF">,</span></span>
+<span class="line"><span style="color:#BABED8">        synthesize_findings</span><span style="color:#89DDFF">,</span></span>
+<span class="line"><span style="color:#89DDFF">    )</span></span></code></pre>
+<p>Then modify the research loop to fact-check each step’s findings before moving on:</p>
+<pre class="astro-code material-theme-palenight has-diff" style="background-color:#292D3E;color:#babed8;overflow-x:auto;white-space:pre-wrap;word-wrap:break-word" tabindex="0" data-language="python"><code><span class="line"><span style="color:#BABED8">        findings</span><span style="color:#89DDFF">:</span><span style="color:#BABED8"> list</span><span style="color:#89DDFF">[</span><span style="color:#BABED8">StepFindings</span><span style="color:#89DDFF">]</span><span style="color:#89DDFF"> =</span><span style="color:#89DDFF"> []</span></span>
+<span class="line"><span style="color:#89DDFF;font-style:italic">        for</span><span style="color:#BABED8"> step </span><span style="color:#89DDFF;font-style:italic">in</span><span style="color:#BABED8"> plan</span><span style="color:#89DDFF">.</span><span style="color:#F07178">steps</span><span style="color:#89DDFF">:</span></span>
+<span class="line"><span style="color:#BABED8">            result </span><span style="color:#89DDFF">=</span><span style="color:#89DDFF;font-style:italic"> await</span><span style="color:#BABED8"> workflow</span><span style="color:#89DDFF">.</span><span style="color:#82AAFF">execute_activity</span><span style="color:#89DDFF">(</span></span>
+<span class="line"><span style="color:#82AAFF">                execute_research_step</span><span style="color:#89DDFF">,</span><span style="color:#82AAFF"> step</span><span style="color:#89DDFF">,</span></span>
+<span class="line"><span style="color:#BABED8;font-style:italic">                start_to_close_timeout</span><span style="color:#89DDFF">=</span><span style="color:#82AAFF">timedelta</span><span style="color:#89DDFF">(</span><span style="color:#BABED8;font-style:italic">seconds</span><span style="color:#89DDFF">=</span><span style="color:#F78C6C">30</span><span style="color:#89DDFF">),</span></span>
+<span class="line"><span style="color:#89DDFF">            )</span></span>
+<span class="line diff add"><span style="color:#89DDFF;font-style:italic">            await</span><span style="color:#BABED8"> workflow</span><span style="color:#89DDFF">.</span><span style="color:#82AAFF">execute_activity</span><span style="color:#89DDFF">(</span></span>
+<span class="line diff add"><span style="color:#82AAFF">                fact_check</span><span style="color:#89DDFF">,</span><span style="color:#82AAFF"> result</span><span style="color:#89DDFF">,</span></span>
+<span class="line diff add"><span style="color:#BABED8;font-style:italic">                start_to_close_timeout</span><span style="color:#89DDFF">=</span><span style="color:#82AAFF">timedelta</span><span style="color:#89DDFF">(</span><span style="color:#BABED8;font-style:italic">seconds</span><span style="color:#89DDFF">=</span><span style="color:#F78C6C">30</span><span style="color:#89DDFF">),</span></span>
+<span class="line diff add"><span style="color:#89DDFF">            )</span></span>
+<span class="line"><span style="color:#BABED8">            findings</span><span style="color:#89DDFF">.</span><span style="color:#82AAFF">append</span><span style="color:#89DDFF">(</span><span style="color:#82AAFF">result</span><span style="color:#89DDFF">)</span></span></code></pre>
+<p>Now here’s where things go wrong. Start a V1 workflow and let it run through the research steps:</p>
+<pre class="astro-code material-theme-palenight" style="background-color:#292D3E;color:#babed8;overflow-x:auto;white-space:pre-wrap;word-wrap:break-word" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#FFCB6B">temporal</span><span style="color:#C3E88D"> workflow</span><span style="color:#C3E88D"> start</span><span style="color:#BABED8"> \</span></span>
+<span class="line"><span style="color:#C3E88D">  --task-queue</span><span style="color:#C3E88D"> research-agent</span><span style="color:#BABED8"> \</span></span>
+<span class="line"><span style="color:#C3E88D">  --type</span><span style="color:#C3E88D"> ResearchWorkflow</span><span style="color:#BABED8"> \</span></span>
+<span class="line"><span style="color:#C3E88D">  --input</span><span style="color:#89DDFF"> &#39;</span><span style="color:#C3E88D">&quot;artificial intelligence&quot;</span><span style="color:#89DDFF">&#39;</span><span style="color:#BABED8"> \</span></span>
+<span class="line"><span style="color:#C3E88D">  --workflow-id</span><span style="color:#C3E88D"> research-test-2</span></span></code></pre>
+<p>Check the Temporal UI. The workflow runs the plan, then the three research steps (~15 seconds), and then waits for the <code>proceed</code> signal. All that expensive LLM work is done and recorded in the history.</p>
+<p>Now, while it’s paused at the signal gate, deploy V2:</p>
+<pre class="astro-code material-theme-palenight" style="background-color:#292D3E;color:#babed8;overflow-x:auto;white-space:pre-wrap;word-wrap:break-word" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#FFCB6B">./scripts/build-and-deploy.sh</span><span style="color:#C3E88D"> v2</span></span></code></pre>
+<p>Wait for the new pod to be running (<code>kubectl get pods</code>), then send the proceed signal:</p>
+<pre class="astro-code material-theme-palenight" style="background-color:#292D3E;color:#babed8;overflow-x:auto;white-space:pre-wrap;word-wrap:break-word" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#FFCB6B">temporal</span><span style="color:#C3E88D"> workflow</span><span style="color:#C3E88D"> signal</span><span style="color:#BABED8"> \</span></span>
+<span class="line"><span style="color:#C3E88D">  --workflow-id</span><span style="color:#C3E88D"> research-test-2</span><span style="color:#BABED8"> \</span></span>
+<span class="line"><span style="color:#C3E88D">  --name</span><span style="color:#C3E88D"> proceed</span></span></code></pre>
+<p>What happens: the V2 worker picks up the workflow task and replays the history. Plan matches. Step 1 matches. Then V2’s code says “schedule fact_check” but the V1 history says “schedule step 2” at that position. The commands don’t match the events. Non-determinism error.</p>
+
+<p><img src="https://media.tenor.com/FAuc6bmub8QAAAAM/picard-facepalm.gif" alt="Picard Facepalm"/></p>
+<p>The workflow is stuck. Your options:</p>
+<ol>
+<li><strong>Reset the workflow</strong> to a point before the code divergence. But those three <code>execute_research_step</code> activities already ran. In production, those were real LLM API calls. Real money. Gone.</li>
+<li><strong>Use patching</strong> to branch the code so old and new workflows both replay correctly. Patching is a solid tool when you need it, but it requires you to maintain both code paths until all old workflows complete. For frequent deploys on long-running workflows, that’s a lot of branches to juggle.</li>
+</ol>
+<p>Both options work. But there’s a third option that sidesteps the problem entirely: what if old workflows could just finish on old workers, while new workflows start on new workers? That’s Worker Versioning.</p>
+<h2 id="worker-versioning">Worker Versioning</h2>
+<p>The core idea is simple: multiple versions of your worker run simultaneously on the same task queue. The Temporal server routes tasks to the right version. Workflows that started on V1 stay on V1 workers. New workflows go to V2. No conflicts, no non-determinism errors, no lost work.</p>
+<p>One thing to call out: all versions share the same task queue. You don’t need separate queues. The Temporal server handles the routing based on the build ID each worker registers with.</p>
+<p>On Kubernetes, the <a href="https://docs.temporal.io/production-deployment/worker-deployments/kubernetes-controller" rel="noreferrer" target="_blank">Temporal Worker Controller</a> automates all of this. It’s a Kubernetes operator that watches <code>TemporalWorkerDeployment</code> resources and manages the full version lifecycle: spinning up new versions, draining old ones, and cleaning up when they’re done. The source is at <a href="https://github.com/temporalio/temporal-worker-controller" rel="noreferrer" target="_blank">temporalio/temporal-worker-controller</a> and the Helm charts are published to Docker Hub as OCI artifacts.</p>
+<p>When you update the image tag on a <code>TemporalWorkerDeployment</code>, the controller spins up new pods alongside old pods. Old pods drain their work and eventually get cleaned up. This is sometimes called “rainbow deployments” because you can have many versions running at once.</p>
+<h3 id="install-the-worker-controller">Install the Worker Controller</h3>
+<p>Let’s get it set up. Install the CRDs and controller:</p>
+<pre class="astro-code material-theme-palenight" style="background-color:#292D3E;color:#babed8;overflow-x:auto;white-space:pre-wrap;word-wrap:break-word" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#FFCB6B">helm</span><span style="color:#C3E88D"> upgrade</span><span style="color:#C3E88D"> --install</span><span style="color:#C3E88D"> temporal-worker-controller-crds</span><span style="color:#BABED8"> \</span></span>
+<span class="line"><span style="color:#C3E88D">  oci://docker.io/temporalio/temporal-worker-controller-crds</span><span style="color:#BABED8"> \</span></span>
+<span class="line"><span style="color:#C3E88D">  --namespace</span><span style="color:#C3E88D"> temporal-system</span><span style="color:#BABED8"> \</span></span>
+<span class="line"><span style="color:#C3E88D">  --create-namespace</span><span style="color:#BABED8"> \</span></span>
+<span class="line"><span style="color:#C3E88D">  --wait</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#FFCB6B">helm</span><span style="color:#C3E88D"> upgrade</span><span style="color:#C3E88D"> --install</span><span style="color:#C3E88D"> temporal-worker-controller</span><span style="color:#BABED8"> \</span></span>
+<span class="line"><span style="color:#C3E88D">  oci://docker.io/temporalio/temporal-worker-controller</span><span style="color:#BABED8"> \</span></span>
+<span class="line"><span style="color:#C3E88D">  --namespace</span><span style="color:#C3E88D"> temporal-system</span><span style="color:#BABED8"> \</span></span>
+<span class="line"><span style="color:#C3E88D">  --wait</span></span></code></pre>
+<p>Next, deploy a <code>TemporalConnection</code> resource so the controller knows how to reach our dev server. There’s a Helm chart for this in the repo:</p>
+<pre class="astro-code material-theme-palenight" style="background-color:#292D3E;color:#babed8;overflow-x:auto;white-space:pre-wrap;word-wrap:break-word" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#FFCB6B">helm</span><span style="color:#C3E88D"> upgrade</span><span style="color:#C3E88D"> --install</span><span style="color:#C3E88D"> lab-infra</span><span style="color:#C3E88D"> ./charts/infra</span><span style="color:#C3E88D"> --namespace</span><span style="color:#C3E88D"> default</span></span></code></pre>
+<p>Take a look at <code>charts/infra/templates/temporal-connection.yaml</code> if you’re curious. It points at <code>temporal-lab-devenv:7233</code> which is the dev environment container’s hostname on the shared Docker network. The k3d cluster and devenv container are on the same network, so the pods can reach Temporal by container name.</p>
+<p>Verify everything is in place:</p>
+<pre class="astro-code material-theme-palenight" style="background-color:#292D3E;color:#babed8;overflow-x:auto;white-space:pre-wrap;word-wrap:break-word" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#FFCB6B">kubectl</span><span style="color:#C3E88D"> get</span><span style="color:#C3E88D"> crds</span><span style="color:#89DDFF"> |</span><span style="color:#FFCB6B"> grep</span><span style="color:#C3E88D"> temporal</span></span>
+<span class="line"><span style="color:#FFCB6B">kubectl</span><span style="color:#C3E88D"> get</span><span style="color:#C3E88D"> temporalconnections</span></span></code></pre>
+<p>You should see <code>temporalworkerdeployments.temporal.io</code> and <code>temporalconnections.temporal.io</code> in the CRDs, and a <code>lab-temporal</code> connection resource.</p>
+<h3 id="configure-the-worker">Configure the Worker</h3>
+<p>Let’s add versioning to the worker. Open <code>src/worker.py</code> and add the deployment config. First, the new imports:</p>
+<pre class="astro-code material-theme-palenight has-diff" style="background-color:#292D3E;color:#babed8;overflow-x:auto;white-space:pre-wrap;word-wrap:break-word" tabindex="0" data-language="python"><code><span class="line diff add"><span style="color:#89DDFF;font-style:italic">from</span><span style="color:#BABED8"> temporalio</span><span style="color:#89DDFF">.</span><span style="color:#BABED8">common </span><span style="color:#89DDFF;font-style:italic">import</span><span style="color:#BABED8"> VersioningBehavior</span><span style="color:#89DDFF">,</span><span style="color:#BABED8"> WorkerDeploymentVersion  </span></span>
+<span class="line diff add"><span style="color:#89DDFF;font-style:italic">from</span><span style="color:#BABED8"> temporalio</span><span style="color:#89DDFF">.</span><span style="color:#BABED8">worker </span><span style="color:#89DDFF;font-style:italic">import</span><span style="color:#BABED8"> Worker</span><span style="color:#89DDFF">,</span><span style="color:#BABED8"> WorkerDeploymentConfig               </span></span>
+<span class="line diff remove"><span style="color:#89DDFF;font-style:italic">from</span><span style="color:#BABED8"> temporalio</span><span style="color:#89DDFF">.</span><span style="color:#BABED8">worker </span><span style="color:#89DDFF;font-style:italic">import</span><span style="color:#BABED8"> Worker                                       </span></span></code></pre>
+<p>Then add these constants and the <code>deployment_config</code> parameter to the <code>Worker</code> constructor:</p>
+<pre class="astro-code material-theme-palenight has-diff" style="background-color:#292D3E;color:#babed8;overflow-x:auto;white-space:pre-wrap;word-wrap:break-word" tabindex="0" data-language="python"><code><span class="line"><span style="color:#BABED8">TASK_QUEUE </span><span style="color:#89DDFF">=</span><span style="color:#89DDFF"> &quot;</span><span style="color:#C3E88D">research-agent</span><span style="color:#89DDFF">&quot;</span></span>
+<span class="line diff add"><span style="color:#BABED8">DEPLOYMENT_NAME </span><span style="color:#89DDFF">=</span><span style="color:#BABED8"> os</span><span style="color:#89DDFF">.</span><span style="color:#F07178">environ</span><span style="color:#89DDFF">.</span><span style="color:#82AAFF">get</span><span style="color:#89DDFF">(</span><span style="color:#89DDFF">&quot;</span><span style="color:#C3E88D">TEMPORAL_DEPLOYMENT_NAME</span><span style="color:#89DDFF">&quot;</span><span style="color:#89DDFF">,</span><span style="color:#89DDFF"> &quot;</span><span style="color:#C3E88D">research-agent</span><span style="color:#89DDFF">&quot;</span><span style="color:#89DDFF">)</span></span>
+<span class="line diff add"><span style="color:#BABED8">BUILD_ID </span><span style="color:#89DDFF">=</span><span style="color:#BABED8"> os</span><span style="color:#89DDFF">.</span><span style="color:#F07178">environ</span><span style="color:#89DDFF">.</span><span style="color:#82AAFF">get</span><span style="color:#89DDFF">(</span><span style="color:#89DDFF">&quot;</span><span style="color:#C3E88D">TEMPORAL_WORKER_BUILD_ID</span><span style="color:#89DDFF">&quot;</span><span style="color:#89DDFF">,</span><span style="color:#89DDFF"> &quot;</span><span style="color:#C3E88D">local-dev</span><span style="color:#89DDFF">&quot;</span><span style="color:#89DDFF">)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#676E95;font-style:italic"># ... inside main():</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#BABED8">worker </span><span style="color:#89DDFF">=</span><span style="color:#82AAFF"> Worker</span><span style="color:#89DDFF">(</span></span>
+<span class="line"><span style="color:#82AAFF">    client</span><span style="color:#89DDFF">,</span></span>
+<span class="line"><span style="color:#BABED8;font-style:italic">    task_queue</span><span style="color:#89DDFF">=</span><span style="color:#82AAFF">TASK_QUEUE</span><span style="color:#89DDFF">,</span></span>
+<span class="line"><span style="color:#BABED8;font-style:italic">    workflows</span><span style="color:#89DDFF">=[</span><span style="color:#82AAFF">ResearchWorkflow</span><span style="color:#89DDFF">,</span><span style="color:#82AAFF"> ResearchPollingWorkflow</span><span style="color:#89DDFF">],</span></span>
+<span class="line"><span style="color:#BABED8;font-style:italic">    activities</span><span style="color:#89DDFF">=[</span></span>
+<span class="line"><span style="color:#82AAFF">        plan_research</span><span style="color:#89DDFF">,</span></span>
+<span class="line"><span style="color:#82AAFF">        execute_research_step</span><span style="color:#89DDFF">,</span></span>
+<span class="line"><span style="color:#82AAFF">        synthesize_findings</span><span style="color:#89DDFF">,</span></span>
+<span class="line"><span style="color:#82AAFF">        fact_check</span><span style="color:#89DDFF">,</span></span>
+<span class="line"><span style="color:#89DDFF">    ],</span></span>
+<span class="line diff add"><span style="color:#BABED8;font-style:italic">    deployment_config</span><span style="color:#89DDFF">=</span><span style="color:#82AAFF">WorkerDeploymentConfig</span><span style="color:#89DDFF">(</span></span>
+<span class="line diff add"><span style="color:#BABED8;font-style:italic">        version</span><span style="color:#89DDFF">=</span><span style="color:#82AAFF">WorkerDeploymentVersion</span><span style="color:#89DDFF">(</span></span>
+<span class="line diff add"><span style="color:#BABED8;font-style:italic">            deployment_name</span><span style="color:#89DDFF">=</span><span style="color:#82AAFF">DEPLOYMENT_NAME</span><span style="color:#89DDFF">,</span></span>
+<span class="line diff add"><span style="color:#BABED8;font-style:italic">            build_id</span><span style="color:#89DDFF">=</span><span style="color:#82AAFF">BUILD_ID</span><span style="color:#89DDFF">,</span></span>
+<span class="line diff add"><span style="color:#89DDFF">        ),</span></span>
+<span class="line diff add"><span style="color:#BABED8;font-style:italic">        use_worker_versioning</span><span style="color:#89DDFF">=True,</span></span>
+<span class="line diff add"><span style="color:#BABED8;font-style:italic">        default_versioning_behavior</span><span style="color:#89DDFF">=</span><span style="color:#82AAFF">VersioningBehavior</span><span style="color:#89DDFF">.</span><span style="color:#F07178">PINNED</span><span style="color:#89DDFF">,</span></span>
+<span class="line diff add"><span style="color:#89DDFF">    ),</span></span>
+<span class="line"><span style="color:#89DDFF">)</span></span></code></pre>
+<p>The Worker Controller injects <code>TEMPORAL_DEPLOYMENT_NAME</code> and <code>TEMPORAL_WORKER_BUILD_ID</code> as environment variables when running inside Kubernetes. The <code>&quot;local-dev&quot;</code> fallbacks are for running outside the cluster.</p>
+<p>Notice the <code>default_versioning_behavior=VersioningBehavior.PINNED</code> on the config. This sets the default for all workflows registered on this worker. <code>PINNED</code> means: once a workflow starts on a particular build ID, all of its tasks get routed exclusively to workers running that same build. The code never changes underneath a running workflow.</p>
+<p>You can also set the behavior per-workflow with <code>@workflow.defn(versioning_behavior=VersioningBehavior.PINNED)</code> if you need different behaviors for different workflow types. See the <a href="https://docs.temporal.io/develop/python/versioning#pinned-vs-auto_upgrade-behaviors" rel="noreferrer" target="_blank">Python SDK versioning reference</a> for the full set of options.</p>
+<h3 id="the-temporalworkerdeployment-chart">The TemporalWorkerDeployment Chart</h3>
+<p>Take a look at <code>charts/worker/templates/temporal-worker-deployment.yaml</code> to see what the Worker Controller manages:</p>
+<pre class="astro-code material-theme-palenight" style="background-color:#292D3E;color:#babed8;overflow-x:auto;white-space:pre-wrap;word-wrap:break-word" tabindex="0" data-language="yaml"><code><span class="line"><span style="color:#F07178">apiVersion</span><span style="color:#89DDFF">:</span><span style="color:#C3E88D"> temporal.io/v1alpha1</span></span>
+<span class="line"><span style="color:#F07178">kind</span><span style="color:#89DDFF">:</span><span style="color:#C3E88D"> TemporalWorkerDeployment</span></span>
+<span class="line"><span style="color:#F07178">metadata</span><span style="color:#89DDFF">:</span></span>
+<span class="line"><span style="color:#F07178">  name</span><span style="color:#89DDFF">:</span><span style="color:#C3E88D"> research-agent</span></span>
+<span class="line"><span style="color:#F07178">spec</span><span style="color:#89DDFF">:</span></span>
+<span class="line"><span style="color:#F07178">  replicas</span><span style="color:#89DDFF">:</span><span style="color:#F78C6C"> 1</span></span>
+<span class="line"><span style="color:#F07178">  workerOptions</span><span style="color:#89DDFF">:</span></span>
+<span class="line"><span style="color:#F07178">    connectionRef</span><span style="color:#89DDFF">:</span></span>
+<span class="line"><span style="color:#F07178">      name</span><span style="color:#89DDFF">:</span><span style="color:#C3E88D"> lab-temporal</span></span>
+<span class="line"><span style="color:#F07178">    temporalNamespace</span><span style="color:#89DDFF">:</span><span style="color:#C3E88D"> default</span></span>
+<span class="line"><span style="color:#F07178">  rollout</span><span style="color:#89DDFF">:</span></span>
+<span class="line"><span style="color:#F07178">    strategy</span><span style="color:#89DDFF">:</span><span style="color:#C3E88D"> AllAtOnce</span></span>
+<span class="line"><span style="color:#F07178">  sunset</span><span style="color:#89DDFF">:</span></span>
+<span class="line"><span style="color:#F07178">    scaledownDelay</span><span style="color:#89DDFF">:</span><span style="color:#C3E88D"> 5s</span></span>
+<span class="line"><span style="color:#F07178">    deleteDelay</span><span style="color:#89DDFF">:</span><span style="color:#C3E88D"> 10s</span></span>
+<span class="line"><span style="color:#F07178">  template</span><span style="color:#89DDFF">:</span></span>
+<span class="line"><span style="color:#F07178">    spec</span><span style="color:#89DDFF">:</span></span>
+<span class="line"><span style="color:#F07178">      containers</span><span style="color:#89DDFF">:</span></span>
+<span class="line"><span style="color:#89DDFF">        -</span><span style="color:#F07178"> name</span><span style="color:#89DDFF">:</span><span style="color:#C3E88D"> worker</span></span>
+<span class="line"><span style="color:#F07178">          image</span><span style="color:#89DDFF">:</span><span style="color:#89DDFF"> &quot;</span><span style="color:#C3E88D">k3d-registry.localhost:5050/research-agent:v1-versioned</span><span style="color:#89DDFF">&quot;</span></span></code></pre>
+<p>The key fields: <code>rollout.strategy</code> controls how new versions are introduced (we’ll cover <code>Progressive</code> later in the ramping section). <code>sunset</code> controls how long old version pods stick around after they stop receiving new work. The controller handles creating versioned Kubernetes Deployments, registering build IDs with Temporal, and cleaning up drained versions automatically.</p>
+<h3 id="test-it">Test It</h3>
+<p>First, uninstall the old simple deployment since we’re switching to the Worker Controller:</p>
+<pre class="astro-code material-theme-palenight" style="background-color:#292D3E;color:#babed8;overflow-x:auto;white-space:pre-wrap;word-wrap:break-word" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#FFCB6B">helm</span><span style="color:#C3E88D"> uninstall</span><span style="color:#C3E88D"> research-agent</span><span style="color:#C3E88D"> -n</span><span style="color:#C3E88D"> default</span></span></code></pre>
+<p>Now rebuild and deploy V1 with versioning enabled:</p>
+<pre class="astro-code material-theme-palenight" style="background-color:#292D3E;color:#babed8;overflow-x:auto;white-space:pre-wrap;word-wrap:break-word" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#FFCB6B">./scripts/build-and-deploy.sh</span><span style="color:#C3E88D"> v1-versioned</span><span style="color:#C3E88D"> --versioned</span></span></code></pre>
+<p>The <code>--versioned</code> flag tells the deploy script to use the <code>TemporalWorkerDeployment</code> chart instead of a plain Kubernetes Deployment.</p>
+<p>Head to the Temporal UI at <a href="http://localhost:8233" rel="noreferrer" target="_blank">localhost:8233</a> and check the <strong>Deployments</strong> tab. You should see your <code>research-agent</code> deployment with build ID <code>v1-versioned</code> listed. This is where you’ll be able to see multiple versions coexisting once we deploy V2.</p>
+
+<p>Now start a workflow, let the research steps complete, then deploy V2 mid-flight:</p>
+<pre class="astro-code material-theme-palenight" style="background-color:#292D3E;color:#babed8;overflow-x:auto;white-space:pre-wrap;word-wrap:break-word" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#FFCB6B">temporal</span><span style="color:#C3E88D"> workflow</span><span style="color:#C3E88D"> start</span><span style="color:#BABED8"> \</span></span>
+<span class="line"><span style="color:#C3E88D">  --task-queue</span><span style="color:#C3E88D"> research-agent</span><span style="color:#BABED8"> \</span></span>
+<span class="line"><span style="color:#C3E88D">  --type</span><span style="color:#C3E88D"> ResearchWorkflow</span><span style="color:#BABED8"> \</span></span>
+<span class="line"><span style="color:#C3E88D">  --input</span><span style="color:#89DDFF"> &#39;</span><span style="color:#C3E88D">&quot;machine learning&quot;</span><span style="color:#89DDFF">&#39;</span><span style="color:#BABED8"> \</span></span>
+<span class="line"><span style="color:#C3E88D">  --workflow-id</span><span style="color:#C3E88D"> research-test-3</span></span></code></pre>
+<p>Wait for the workflow to reach the signal gate (research steps done), then deploy V2:</p>
+<pre class="astro-code material-theme-palenight" style="background-color:#292D3E;color:#babed8;overflow-x:auto;white-space:pre-wrap;word-wrap:break-word" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#FFCB6B">./scripts/build-and-deploy.sh</span><span style="color:#C3E88D"> v2-versioned</span><span style="color:#C3E88D"> --versioned</span></span></code></pre>
+<p>Check <code>kubectl get pods</code>. You’ll see pods for both versions running simultaneously. Head over to the deployments tab again, and you’ll see a current and draining deployment. Clicking into the draining deployment, you’ll see the in-flight workflow is currently “on” this deployment. Until the workflow completes successfully, this deployment version will stay in the draining state, allowing the workflow to complete. If you were to start a new workflow now, you’d see the new workflow route to the current deployment version.</p>
+<p>Now signal the V1 workflow:</p>
+<pre class="astro-code material-theme-palenight" style="background-color:#292D3E;color:#babed8;overflow-x:auto;white-space:pre-wrap;word-wrap:break-word" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#FFCB6B">temporal</span><span style="color:#C3E88D"> workflow</span><span style="color:#C3E88D"> signal</span><span style="color:#BABED8"> \</span></span>
+<span class="line"><span style="color:#C3E88D">  --workflow-id</span><span style="color:#C3E88D"> research-test-3</span><span style="color:#BABED8"> \</span></span>
+<span class="line"><span style="color:#C3E88D">  --name</span><span style="color:#C3E88D"> proceed</span></span></code></pre>
+<p>This time the V1 workflow finishes on the V1 pod. If we had made a change that broke determinism before deploying V2, there would have been no determinism errors - the V1 worker would continue handling the workflow.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th></th><th>Without Versioning</th><th>With Versioning</th></tr></thead><tbody><tr><td>In-flight V1 workflows</td><td>Non-determinism error</td><td>Complete normally on V1</td></tr><tr><td>New workflows</td><td>Start on V2</td><td>Start on V2</td></tr><tr><td>LLM spend</td><td>Lost on event history reset</td><td>Preserved</td></tr><tr><td>Old workers</td><td>Replaced immediately</td><td>Drain, then removed</td></tr></tbody></table>
+<h2 id="long-running-workflows">Long-Running Workflows</h2>
+<p>So far we’ve been working with the <code>ResearchWorkflow</code>, which starts, does its thing, and completes. Worker Versioning handles that beautifully: V1 workflows finish on V1 workers, V2 workflows start on V2 workers, everyone’s happy.</p>
+<p>But what about the <code>ResearchPollingWorkflow</code>? It runs indefinitely, processing research requests as they come in via signals. It never completes. Since our worker is configured with <code>PINNED</code> behavior, this workflow stays on V1 forever. That means the V1 worker pod sticks around forever too, which defeats the purpose of draining old versions.</p>
+<p>We need a way for long-running workflows to migrate to new versions. There are two pieces to this, and we’ll tackle them one at a time.</p>
+<h3 id="part-1-continue-as-new-with-auto_upgrade">Part 1: Continue-as-New with AUTO_UPGRADE</h3>
+<p>The starter code already has a basic <code>continue_as_new</code> for history management:</p>
+<pre class="astro-code material-theme-palenight" style="background-color:#292D3E;color:#babed8;overflow-x:auto;white-space:pre-wrap;word-wrap:break-word" tabindex="0" data-language="python"><code><span class="line"><span style="color:#89DDFF;font-style:italic">if</span><span style="color:#BABED8"> workflow</span><span style="color:#89DDFF">.</span><span style="color:#82AAFF">info</span><span style="color:#89DDFF">().</span><span style="color:#82AAFF">is_continue_as_new_suggested</span><span style="color:#89DDFF">():</span></span>
+<span class="line"><span style="color:#BABED8">    workflow</span><span style="color:#89DDFF">.</span><span style="color:#82AAFF">continue_as_new</span><span style="color:#89DDFF">(</span></span>
+<span class="line"><span style="color:#82AAFF">        PollingState</span><span style="color:#89DDFF">(</span></span>
+<span class="line"><span style="color:#BABED8;font-style:italic">            pending_requests</span><span style="color:#89DDFF">=</span><span style="color:#FFCB6B">list</span><span style="color:#89DDFF">(</span><span style="color:#BABED8">self</span><span style="color:#89DDFF">.</span><span style="color:#F07178">_pending</span><span style="color:#89DDFF">),</span></span>
+<span class="line"><span style="color:#BABED8;font-style:italic">            completed_count</span><span style="color:#89DDFF">=</span><span style="color:#82AAFF">state</span><span style="color:#89DDFF">.</span><span style="color:#F07178">completed_count</span><span style="color:#89DDFF">,</span></span>
+<span class="line"><span style="color:#89DDFF">        )</span></span>
+<span class="line"><span style="color:#89DDFF">    )</span></span></code></pre>
+<p>This is standard Temporal practice: when the event history gets large, the workflow restarts itself with fresh history. But with <code>PINNED</code> behavior, the continued execution stays on the same version. It doesn’t migrate.</p>
+<p>The fix is one line. Add <code>initial_versioning_behavior=AUTO_UPGRADE</code> to the continue-as-new call:</p>
+<pre class="astro-code material-theme-palenight has-diff" style="background-color:#292D3E;color:#babed8;overflow-x:auto;white-space:pre-wrap;word-wrap:break-word" tabindex="0" data-language="python"><code><span class="line"><span style="color:#89DDFF;font-style:italic">if</span><span style="color:#BABED8"> workflow</span><span style="color:#89DDFF">.</span><span style="color:#82AAFF">info</span><span style="color:#89DDFF">().</span><span style="color:#82AAFF">is_continue_as_new_suggested</span><span style="color:#89DDFF">():</span></span>
+<span class="line"><span style="color:#BABED8">    workflow</span><span style="color:#89DDFF">.</span><span style="color:#82AAFF">continue_as_new</span><span style="color:#89DDFF">(</span></span>
+<span class="line"><span style="color:#82AAFF">        PollingState</span><span style="color:#89DDFF">(</span></span>
+<span class="line"><span style="color:#BABED8;font-style:italic">            pending_requests</span><span style="color:#89DDFF">=</span><span style="color:#FFCB6B">list</span><span style="color:#89DDFF">(</span><span style="color:#BABED8">self</span><span style="color:#89DDFF">.</span><span style="color:#F07178">_pending</span><span style="color:#89DDFF">),</span></span>
+<span class="line"><span style="color:#BABED8;font-style:italic">            completed_count</span><span style="color:#89DDFF">=</span><span style="color:#82AAFF">state</span><span style="color:#89DDFF">.</span><span style="color:#F07178">completed_count</span><span style="color:#89DDFF">,</span></span>
+<span class="line"><span style="color:#89DDFF">        ),</span></span>
+<span class="line diff add"><span style="color:#BABED8;font-style:italic">        initial_versioning_behavior</span><span style="color:#89DDFF">=(</span></span>
+<span class="line diff add"><span style="color:#82AAFF">            workflow</span><span style="color:#89DDFF">.</span><span style="color:#F07178">ContinueAsNewVersioningBehavior</span><span style="color:#89DDFF">.</span><span style="color:#F07178">AUTO_UPGRADE</span></span>
+<span class="line diff add"><span style="color:#89DDFF">        ),</span></span>
+<span class="line"><span style="color:#89DDFF">    )</span></span></code></pre>
+<p>Now when the history gets large enough to trigger a continue-as-new, the new execution starts on the current (latest) version instead of staying pinned to the old one. The state carries over. Pending requests and the completed count survive the migration. From the outside it looks like the workflow just kept running, but under the hood it jumped from V1 to V2.</p>
+<p>This is the simplest version migration path. It works, but it’s passive. The workflow only migrates when Temporal suggests a continue-as-new, which might not happen for a while if the workflow isn’t doing much. Let’s see that in action.</p>
+<h3 id="try-it-out">Try It Out</h3>
+<p>Start the polling workflow on the current versioned deployment:</p>
+<pre class="astro-code material-theme-palenight" style="background-color:#292D3E;color:#babed8;overflow-x:auto;white-space:pre-wrap;word-wrap:break-word" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#FFCB6B">temporal</span><span style="color:#C3E88D"> workflow</span><span style="color:#C3E88D"> start</span><span style="color:#BABED8"> \</span></span>
+<span class="line"><span style="color:#C3E88D">  --task-queue</span><span style="color:#C3E88D"> research-agent</span><span style="color:#BABED8"> \</span></span>
+<span class="line"><span style="color:#C3E88D">  --type</span><span style="color:#C3E88D"> ResearchPollingWorkflow</span><span style="color:#BABED8"> \</span></span>
+<span class="line"><span style="color:#C3E88D">  --input</span><span style="color:#89DDFF"> &#39;</span><span style="color:#C3E88D">{&quot;pending_requests&quot;: [], &quot;completed_count&quot;: 0}</span><span style="color:#89DDFF">&#39;</span><span style="color:#BABED8"> \</span></span>
+<span class="line"><span style="color:#C3E88D">  --workflow-id</span><span style="color:#C3E88D"> research-polling</span></span></code></pre>
+<p>Check the Deployments tab in the Temporal UI. The polling workflow is running on the current version. Now deploy a new version:</p>
+<pre class="astro-code material-theme-palenight" style="background-color:#292D3E;color:#babed8;overflow-x:auto;white-space:pre-wrap;word-wrap:break-word" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#FFCB6B">./scripts/build-and-deploy.sh</span><span style="color:#C3E88D"> v3-versioned</span><span style="color:#C3E88D"> --versioned</span></span></code></pre>
+<p>Check the Deployments tab again. The previous version is now Draining because the polling workflow is still pinned to it. Now send it some work:</p>
+<pre class="astro-code material-theme-palenight" style="background-color:#292D3E;color:#babed8;overflow-x:auto;white-space:pre-wrap;word-wrap:break-word" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#FFCB6B">temporal</span><span style="color:#C3E88D"> workflow</span><span style="color:#C3E88D"> signal</span><span style="color:#BABED8"> \</span></span>
+<span class="line"><span style="color:#C3E88D">  --workflow-id</span><span style="color:#C3E88D"> research-polling</span><span style="color:#BABED8"> \</span></span>
+<span class="line"><span style="color:#C3E88D">  --name</span><span style="color:#C3E88D"> submit_request</span><span style="color:#BABED8"> \</span></span>
+<span class="line"><span style="color:#C3E88D">  --input</span><span style="color:#89DDFF"> &#39;</span><span style="color:#C3E88D">{&quot;topic&quot;: &quot;quantum computing&quot;, &quot;request_id&quot;: &quot;poll-test-1&quot;}</span><span style="color:#89DDFF">&#39;</span></span></code></pre>
+<p>The polling workflow wakes up, processes the research request on the V2 worker, and goes back to sleep. Check the Deployments tab again. It’s still on <code>v2-versioned</code>. It processed the work just fine, but it didn’t migrate because the history isn’t large enough to trigger <code>is_continue_as_new_suggested()</code>.</p>
+<p>The V2 pod is going to stick around until the history grows enough. For a workflow that processes a few requests a day, that could be a long time.</p>
+<h3 id="part-2-detecting-version-changes">Part 2: Detecting Version Changes</h3>
+<p>What if you want the workflow to migrate as soon as it has a chance, not just whenever the history happens to get large?</p>
+<p>Temporal provides <code>workflow.info().is_target_worker_deployment_version_changed()</code>. This returns <code>True</code> when the server has set a newer “current” version for this deployment. We can add it to the wait condition so that when the workflow receives new work and wakes up, it checks for a version change and migrates immediately.</p>
+<p>First, terminate the running polling workflow so we can redeploy with the updated code:</p>
+<pre class="astro-code material-theme-palenight" style="background-color:#292D3E;color:#babed8;overflow-x:auto;white-space:pre-wrap;word-wrap:break-word" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#FFCB6B">temporal</span><span style="color:#C3E88D"> workflow</span><span style="color:#C3E88D"> terminate</span><span style="color:#C3E88D"> --workflow-id</span><span style="color:#C3E88D"> research-polling</span></span></code></pre>
+<p>Open <code>src/workflows.py</code> and update the <code>ResearchPollingWorkflow</code>. Add a field to track draining state:</p>
+<pre class="astro-code material-theme-palenight has-diff" style="background-color:#292D3E;color:#babed8;overflow-x:auto;white-space:pre-wrap;word-wrap:break-word" tabindex="0" data-language="python"><code><span class="line"><span style="color:#C792EA">class</span><span style="color:#FFCB6B"> ResearchPollingWorkflow</span><span style="color:#89DDFF">:</span></span>
+<span class="line"><span style="color:#C792EA">    def</span><span style="color:#82AAFF"> __init__</span><span style="color:#89DDFF">(</span><span style="color:#F07178;font-style:italic">self</span><span style="color:#89DDFF">)</span><span style="color:#89DDFF"> -&gt;</span><span style="color:#89DDFF"> None:</span></span>
+<span class="line"><span style="color:#BABED8">        self</span><span style="color:#89DDFF">.</span><span style="color:#F07178">_pending</span><span style="color:#89DDFF">:</span><span style="color:#BABED8"> list</span><span style="color:#89DDFF">[</span><span style="color:#BABED8">ResearchRequest</span><span style="color:#89DDFF">]</span><span style="color:#89DDFF"> =</span><span style="color:#89DDFF"> []</span></span>
+<span class="line diff add"><span style="color:#BABED8">        self</span><span style="color:#89DDFF">.</span><span style="color:#F07178">_draining</span><span style="color:#89DDFF">:</span><span style="color:#FFCB6B"> bool</span><span style="color:#89DDFF"> =</span><span style="color:#89DDFF"> False</span></span></code></pre>
+<p>Now update the main loop to check for version changes:</p>
+<pre class="astro-code material-theme-palenight has-diff" style="background-color:#292D3E;color:#babed8;overflow-x:auto;white-space:pre-wrap;word-wrap:break-word" tabindex="0" data-language="python"><code><span class="line"><span style="color:#89DDFF">    @</span><span style="color:#82AAFF">workflow</span><span style="color:#89DDFF">.</span><span style="color:#82AAFF">run</span></span>
+<span class="line"><span style="color:#C792EA">    async</span><span style="color:#C792EA"> def</span><span style="color:#82AAFF"> run</span><span style="color:#89DDFF">(</span><span style="color:#F07178;font-style:italic">self</span><span style="color:#89DDFF">,</span><span style="color:#BABED8;font-style:italic"> state</span><span style="color:#89DDFF">:</span><span style="color:#BABED8"> PollingState</span><span style="color:#89DDFF">)</span><span style="color:#89DDFF"> -&gt;</span><span style="color:#89DDFF"> None:</span></span>
+<span class="line"><span style="color:#BABED8">        self</span><span style="color:#89DDFF">.</span><span style="color:#F07178">_pending</span><span style="color:#89DDFF"> =</span><span style="color:#FFCB6B"> list</span><span style="color:#89DDFF">(</span><span style="color:#82AAFF">state</span><span style="color:#89DDFF">.</span><span style="color:#F07178">pending_requests</span><span style="color:#89DDFF">)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#89DDFF;font-style:italic">        while</span><span style="color:#89DDFF"> True:</span></span>
+<span class="line"><span style="color:#89DDFF;font-style:italic">            await</span><span style="color:#BABED8"> workflow</span><span style="color:#89DDFF">.</span><span style="color:#82AAFF">wait_condition</span><span style="color:#89DDFF">(</span></span>
+<span class="line"><span style="color:#C792EA">                lambda</span><span style="color:#89DDFF">:</span><span style="color:#89DDFF"> (</span></span>
+<span class="line"><span style="color:#82AAFF">                    len</span><span style="color:#89DDFF">(</span><span style="color:#BABED8">self</span><span style="color:#89DDFF">.</span><span style="color:#F07178">_pending</span><span style="color:#89DDFF">)</span><span style="color:#89DDFF"> &gt;</span><span style="color:#F78C6C"> 0</span></span>
+<span class="line"><span style="color:#89DDFF">                    or</span><span style="color:#82AAFF"> workflow</span><span style="color:#89DDFF">.</span><span style="color:#82AAFF">info</span><span style="color:#89DDFF">().</span><span style="color:#82AAFF">is_continue_as_new_suggested</span><span style="color:#89DDFF">()</span></span>
+<span class="line diff add"><span style="color:#89DDFF">                    or</span><span style="color:#82AAFF"> workflow</span><span style="color:#89DDFF">.</span><span style="color:#82AAFF">info</span><span style="color:#89DDFF">().</span><span style="color:#82AAFF">is_target_worker_deployment_version_changed</span><span style="color:#89DDFF">()</span></span>
+<span class="line"><span style="color:#89DDFF">                )</span></span>
+<span class="line"><span style="color:#89DDFF">            )</span></span>
+<span class="line"></span>
+<span class="line diff remove"><span style="color:#89DDFF;font-style:italic">            if</span><span style="color:#BABED8"> workflow</span><span style="color:#89DDFF">.</span><span style="color:#82AAFF">info</span><span style="color:#89DDFF">().</span><span style="color:#82AAFF">is_continue_as_new_suggested</span><span style="color:#89DDFF">():</span></span>
+<span class="line diff add"><span style="color:#89DDFF;font-style:italic">            if</span><span style="color:#89DDFF"> (</span></span>
+<span class="line diff add"><span style="color:#BABED8">                workflow</span><span style="color:#89DDFF">.</span><span style="color:#82AAFF">info</span><span style="color:#89DDFF">().</span><span style="color:#82AAFF">is_continue_as_new_suggested</span><span style="color:#89DDFF">()</span></span>
+<span class="line diff add"><span style="color:#89DDFF">                or</span><span style="color:#BABED8"> workflow</span><span style="color:#89DDFF">.</span><span style="color:#82AAFF">info</span><span style="color:#89DDFF">().</span><span style="color:#82AAFF">is_target_worker_deployment_version_changed</span><span style="color:#89DDFF">()</span></span>
+<span class="line diff add"><span style="color:#89DDFF">            ):</span></span>
+<span class="line diff add"><span style="color:#BABED8">                self</span><span style="color:#89DDFF">.</span><span style="color:#F07178">_draining</span><span style="color:#89DDFF"> =</span><span style="color:#89DDFF"> True</span></span>
+<span class="line diff add"><span style="color:#89DDFF;font-style:italic">                await</span><span style="color:#BABED8"> workflow</span><span style="color:#89DDFF">.</span><span style="color:#82AAFF">wait_condition</span><span style="color:#89DDFF">(</span><span style="color:#82AAFF">workflow</span><span style="color:#89DDFF">.</span><span style="color:#F07178">all_handlers_finished</span><span style="color:#89DDFF">)</span></span>
+<span class="line"><span style="color:#BABED8">                workflow</span><span style="color:#89DDFF">.</span><span style="color:#82AAFF">continue_as_new</span><span style="color:#89DDFF">(</span></span>
+<span class="line"><span style="color:#82AAFF">                    PollingState</span><span style="color:#89DDFF">(</span></span>
+<span class="line"><span style="color:#BABED8;font-style:italic">                        pending_requests</span><span style="color:#89DDFF">=</span><span style="color:#FFCB6B">list</span><span style="color:#89DDFF">(</span><span style="color:#BABED8">self</span><span style="color:#89DDFF">.</span><span style="color:#F07178">_pending</span><span style="color:#89DDFF">),</span></span>
+<span class="line"><span style="color:#BABED8;font-style:italic">                        completed_count</span><span style="color:#89DDFF">=</span><span style="color:#82AAFF">state</span><span style="color:#89DDFF">.</span><span style="color:#F07178">completed_count</span><span style="color:#89DDFF">,</span></span>
+<span class="line"><span style="color:#89DDFF">                    ),</span></span>
+<span class="line"><span style="color:#BABED8;font-style:italic">                    initial_versioning_behavior</span><span style="color:#89DDFF">=(</span></span>
+<span class="line"><span style="color:#82AAFF">                        workflow</span><span style="color:#89DDFF">.</span><span style="color:#F07178">ContinueAsNewVersioningBehavior</span><span style="color:#89DDFF">.</span><span style="color:#F07178">AUTO_UPGRADE</span></span>
+<span class="line"><span style="color:#89DDFF">                    ),</span></span>
+<span class="line"><span style="color:#89DDFF">                )</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#89DDFF;font-style:italic">            if</span><span style="color:#BABED8"> self</span><span style="color:#89DDFF">.</span><span style="color:#F07178">_pending</span><span style="color:#89DDFF">:</span></span>
+<span class="line"><span style="color:#BABED8">                request </span><span style="color:#89DDFF">=</span><span style="color:#BABED8"> self</span><span style="color:#89DDFF">.</span><span style="color:#F07178">_pending</span><span style="color:#89DDFF">.</span><span style="color:#82AAFF">pop</span><span style="color:#89DDFF">(</span><span style="color:#F78C6C">0</span><span style="color:#89DDFF">)</span></span>
+<span class="line"><span style="color:#89DDFF;font-style:italic">                await</span><span style="color:#BABED8"> workflow</span><span style="color:#89DDFF">.</span><span style="color:#82AAFF">execute_child_workflow</span><span style="color:#89DDFF">(</span></span>
+<span class="line"><span style="color:#82AAFF">                    ResearchWorkflow</span><span style="color:#89DDFF">.</span><span style="color:#F07178">run</span><span style="color:#89DDFF">,</span></span>
+<span class="line"><span style="color:#BABED8;font-style:italic">                    args</span><span style="color:#89DDFF">=[</span><span style="color:#82AAFF">request</span><span style="color:#89DDFF">.</span><span style="color:#F07178">topic</span><span style="color:#89DDFF">,</span><span style="color:#89DDFF"> False],</span></span>
+<span class="line"><span style="color:#BABED8;font-style:italic">                    id</span><span style="color:#89DDFF">=</span><span style="color:#C792EA">f</span><span style="color:#C3E88D">&quot;research-</span><span style="color:#F78C6C">{</span><span style="color:#82AAFF">request</span><span style="color:#89DDFF">.</span><span style="color:#F07178">request_id</span><span style="color:#F78C6C">}</span><span style="color:#C3E88D">&quot;</span><span style="color:#89DDFF">,</span></span>
+<span class="line"><span style="color:#89DDFF">                )</span></span>
+<span class="line"><span style="color:#BABED8">                state</span><span style="color:#89DDFF">.</span><span style="color:#F07178">completed_count</span><span style="color:#89DDFF"> +=</span><span style="color:#F78C6C"> 1</span></span></code></pre>
+<h3 id="see-it-work">See It Work</h3>
+<p>Deploy the updated code and start the polling workflow:</p>
+<blockquote>
+<p>Wait for the 30 second sleep here; the new pod needs to get promoted to the current version</p>
+</blockquote>
+<pre class="astro-code material-theme-palenight" style="background-color:#292D3E;color:#babed8;overflow-x:auto;white-space:pre-wrap;word-wrap:break-word" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#FFCB6B">./scripts/build-and-deploy.sh</span><span style="color:#C3E88D"> v4-versioned</span><span style="color:#C3E88D"> --versioned</span><span style="color:#89DDFF"> &amp;&amp;</span><span style="color:#FFCB6B"> sleep</span><span style="color:#F78C6C"> 30</span><span style="color:#89DDFF"> &amp;&amp;</span><span style="color:#BABED8"> \</span></span>
+<span class="line"><span style="color:#FFCB6B">temporal</span><span style="color:#C3E88D"> workflow</span><span style="color:#C3E88D"> start</span><span style="color:#BABED8"> \</span></span>
+<span class="line"><span style="color:#C3E88D">  --task-queue</span><span style="color:#C3E88D"> research-agent</span><span style="color:#BABED8"> \</span></span>
+<span class="line"><span style="color:#C3E88D">  --type</span><span style="color:#C3E88D"> ResearchPollingWorkflow</span><span style="color:#BABED8"> \</span></span>
+<span class="line"><span style="color:#C3E88D">  --input</span><span style="color:#89DDFF"> &#39;</span><span style="color:#C3E88D">{&quot;pending_requests&quot;: [], &quot;completed_count&quot;: 0}</span><span style="color:#89DDFF">&#39;</span><span style="color:#BABED8"> \</span></span>
+<span class="line"><span style="color:#C3E88D">  --workflow-id</span><span style="color:#C3E88D"> research-polling</span></span></code></pre>
+<p>Now deploy another new version:</p>
+<pre class="astro-code material-theme-palenight" style="background-color:#292D3E;color:#babed8;overflow-x:auto;white-space:pre-wrap;word-wrap:break-word" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#FFCB6B">./scripts/build-and-deploy.sh</span><span style="color:#C3E88D"> v5-versioned</span><span style="color:#C3E88D"> --versioned</span></span></code></pre>
+<p>Check the Deployments tab. The polling workflow is still on <code>v4-versioned</code>. Now send it a research request:</p>
+<pre class="astro-code material-theme-palenight" style="background-color:#292D3E;color:#babed8;overflow-x:auto;white-space:pre-wrap;word-wrap:break-word" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#FFCB6B">temporal</span><span style="color:#C3E88D"> workflow</span><span style="color:#C3E88D"> signal</span><span style="color:#BABED8"> \</span></span>
+<span class="line"><span style="color:#C3E88D">  --workflow-id</span><span style="color:#C3E88D"> research-polling</span><span style="color:#BABED8"> \</span></span>
+<span class="line"><span style="color:#C3E88D">  --name</span><span style="color:#C3E88D"> submit_request</span><span style="color:#BABED8"> \</span></span>
+<span class="line"><span style="color:#C3E88D">  --input</span><span style="color:#89DDFF"> &#39;</span><span style="color:#C3E88D">{&quot;topic&quot;: &quot;quantum computing&quot;, &quot;request_id&quot;: &quot;poll-test-2&quot;}</span><span style="color:#89DDFF">&#39;</span></span></code></pre>
+<p>This time the workflow wakes up, sees the version change, drains, and continues-as-new onto <code>v5-versioned</code>. Check the Deployments tab again. The workflow has migrated. The old deployment should transition to Drained.</p>
+
+<h3 id="the-draining-pattern">The Draining Pattern</h3>
+<p>Let’s unpack what happens when a version change is detected:</p>
+<ol>
+<li>We set <code>self._draining = True</code>. This is a flag you can check in signal handlers to stop accepting new work during migration.</li>
+<li>We wait for <code>workflow.all_handlers_finished()</code>. This ensures any in-flight signal handlers or update handlers complete before we migrate.</li>
+<li>We call <code>continue_as_new</code> with <code>initial_versioning_behavior=AUTO_UPGRADE</code>. The new execution starts on the current version.</li>
+</ol>
+<p>The combination of these two pieces gives you full control: the <code>AUTO_UPGRADE</code> on continue-as-new ensures the workflow actually moves to the new version (instead of staying pinned), and the <code>is_target_worker_deployment_version_changed()</code> check ensures the workflow migrates promptly when it has work to do, rather than waiting for the history to grow.</p>
+
+<h2 id="sleeping-workflows">Sleeping Workflows</h2>
+<p>Here’s a gotcha that’s easy to miss.</p>
+<p>If the polling workflow is idle, sitting in <code>wait_condition</code> with no pending requests, it’s completely evicted from the worker’s memory. The <code>is_target_worker_deployment_version_changed()</code> flag only gets checked when the workflow executes a Workflow Task. An idle workflow isn’t executing anything. It doesn’t know a new version exists.</p>
+<p>You could just wait. The next time a signal comes in (a new research request), the workflow will wake up, check the condition, see the version change, and migrate. Any workflow task will trigger this. But if requests are infrequent, the old worker pod could be sitting around for hours or days waiting for that to happen.</p>
+<h3 id="the-wake-up-signal">The Wake-Up Signal</h3>
+<p>The solution: add a dedicated signal that wakes up idle workflows so they can check for version changes.</p>
+<pre class="astro-code material-theme-palenight has-diff" style="background-color:#292D3E;color:#babed8;overflow-x:auto;white-space:pre-wrap;word-wrap:break-word" tabindex="0" data-language="python"><code><span class="line"><span style="color:#C792EA">class</span><span style="color:#FFCB6B"> ResearchPollingWorkflow</span><span style="color:#89DDFF">:</span></span>
+<span class="line"><span style="color:#C792EA">    def</span><span style="color:#82AAFF"> __init__</span><span style="color:#89DDFF">(</span><span style="color:#F07178;font-style:italic">self</span><span style="color:#89DDFF">)</span><span style="color:#89DDFF"> -&gt;</span><span style="color:#89DDFF"> None:</span></span>
+<span class="line"><span style="color:#BABED8">        self</span><span style="color:#89DDFF">.</span><span style="color:#F07178">_pending</span><span style="color:#89DDFF">:</span><span style="color:#BABED8"> list</span><span style="color:#89DDFF">[</span><span style="color:#BABED8">ResearchRequest</span><span style="color:#89DDFF">]</span><span style="color:#89DDFF"> =</span><span style="color:#89DDFF"> []</span></span>
+<span class="line"><span style="color:#BABED8">        self</span><span style="color:#89DDFF">.</span><span style="color:#F07178">_draining</span><span style="color:#89DDFF">:</span><span style="color:#FFCB6B"> bool</span><span style="color:#89DDFF"> =</span><span style="color:#89DDFF"> False</span></span>
+<span class="line"></span>
+<span class="line diff add"><span style="color:#89DDFF">    @</span><span style="color:#82AAFF">workflow</span><span style="color:#89DDFF">.</span><span style="color:#82AAFF">signal</span></span>
+<span class="line diff add"><span style="color:#C792EA">    async</span><span style="color:#C792EA"> def</span><span style="color:#82AAFF"> wake_up</span><span style="color:#89DDFF">(</span><span style="color:#F07178;font-style:italic">self</span><span style="color:#89DDFF">)</span><span style="color:#89DDFF"> -&gt;</span><span style="color:#89DDFF"> None:</span></span>
+<span class="line diff add"><span style="color:#89DDFF;font-style:italic">        pass</span><span style="color:#676E95;font-style:italic"> #we just need the workflow to wake up            </span></span></code></pre>
+<p>After deploying a new version, send the signal to nudge the workflow:</p>
+<pre class="astro-code material-theme-palenight" style="background-color:#292D3E;color:#babed8;overflow-x:auto;white-space:pre-wrap;word-wrap:break-word" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#FFCB6B">temporal</span><span style="color:#C3E88D"> workflow</span><span style="color:#C3E88D"> signal</span><span style="color:#BABED8"> \</span></span>
+<span class="line"><span style="color:#C3E88D">  --workflow-id</span><span style="color:#C3E88D"> research-polling</span><span style="color:#BABED8"> \</span></span>
+<span class="line"><span style="color:#C3E88D">  --name</span><span style="color:#C3E88D"> wake_up</span></span></code></pre>
+<p>The signal causes a Workflow Task. The workflow wakes up, checks the wait condition, sees the version change, and migrates.</p>
+<p>In production, you could automate this with a post-deploy script that signals all long-running workflows.</p>
+<h3 id="another-angle-replay-gated-auto_upgrade">Another Angle: Replay-Gated AUTO_UPGRADE</h3>
+<p>There’s a third option I’ve been thinking about. Fair warning: I’m about three weeks into learning Temporal, so take this with a grain of salt. I’m not sure if this is an anti-pattern or a legitimate strategy. But it’s interesting enough to discuss.</p>
+<p>The idea: what if your CI/CD pipeline decides the versioning strategy based on whether the code change is replay-compatible?</p>
+<p>Temporal provides a <code>Replayer</code> that can download workflow histories from the server and replay them against your new code. If replay succeeds, there are no determinism issues. The new code is safe to run against existing workflow histories. If replay fails, you have a breaking change.</p>
+<p>Here’s where it gets interesting. With AUTO_UPGRADE behavior, the server routes Workflow Tasks to the current version’s workers. When a sleeping workflow eventually wakes up (timer fires, signal arrives), its next task gets dispatched to the new version. If the code is replay-compatible, the new worker replays the history successfully and the workflow continues on V2. No continue-as-new needed. No wake-up signal needed. It just works.</p>
+<p>So the CI/CD pattern could look like this: keep PINNED as the default on the workflow definition (safest default), but as part of the deploy pipeline, if the replayer passes, batch-update all running workflow executions to AUTO_UPGRADE:</p>
+<ol>
+<li>Run the Replayer against live workflow histories with the new code</li>
+<li>Replayer passes (no determinism errors) → deploy the new version, then flip running workflows to AUTO_UPGRADE:</li>
+</ol>
+<pre class="astro-code material-theme-palenight" style="background-color:#292D3E;color:#babed8;overflow-x:auto;white-space:pre-wrap;word-wrap:break-word" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#FFCB6B">temporal</span><span style="color:#C3E88D"> workflow</span><span style="color:#C3E88D"> update-options</span><span style="color:#BABED8"> \</span></span>
+<span class="line"><span style="color:#C3E88D">  --query</span><span style="color:#89DDFF"> &#39;</span><span style="color:#C3E88D">WorkflowType=&quot;ResearchPollingWorkflow&quot; AND ExecutionStatus=&quot;Running&quot;</span><span style="color:#89DDFF">&#39;</span><span style="color:#BABED8"> \</span></span>
+<span class="line"><span style="color:#C3E88D">  --versioning-override-behavior</span><span style="color:#C3E88D"> auto_upgrade</span></span></code></pre>
+<p>Sleeping workflows naturally drain off the old version whenever they next wake up. No signals, no continue-as-new dance.</p>
+<ol start="3">
+<li>Replayer fails (breaking change) → deploy with PINNED. Use the continue-as-new migration pattern we covered in the previous section.</li>
+</ol>
+<p>One thing to know: this override is sticky. Once you set it on a running execution, it persists for the lifetime of that workflow and takes precedence over whatever behavior the SDK declared. You can clear it later with <code>--versioning-override-behavior unspecified</code> to revert to the original SDK behavior, but you don’t have to. So in practice, your deploy pipeline would need to handle both cases: set the override when the replayer passes, and leave it alone (letting PINNED + continue-as-new do its thing) when it doesn’t.</p>
+<p>This gives you the safety of PINNED by default with the convenience of AUTO_UPGRADE when the code is compatible. The old version drains naturally without extra tooling.</p>
+<p>Like I said, I’m not sure if this is a blessed pattern or if there are edge cases I’m not seeing. But the pieces are all there in the platform. If you try this, I’d love to hear how it goes.</p>
+<h2 id="scaling-and-ramping">Scaling and Ramping</h2>
+<p>Everything so far has been hands-on. This section is conceptual, covering the broader HA story that Worker Versioning enables.</p>
+<h3 id="version-lifecycle">Version Lifecycle</h3>
+<p>Every version goes through a lifecycle:</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>State</th><th>What’s Happening</th></tr></thead><tbody><tr><td>Active</td><td>Currently receiving new workflows and/or ramping traffic</td></tr><tr><td>Draining</td><td>No new work, but existing pinned workflows are still running</td></tr><tr><td>Drained</td><td>All work complete, safe to remove</td></tr></tbody></table>
+<p>The Worker Controller manages this automatically. When a version enters the Drained state, the controller deletes its pods and Kubernetes resources based on the sunset configuration:</p>
+<pre class="astro-code material-theme-palenight" style="background-color:#292D3E;color:#babed8;overflow-x:auto;white-space:pre-wrap;word-wrap:break-word" tabindex="0" data-language="yaml"><code><span class="line"><span style="color:#F07178">sunset</span><span style="color:#89DDFF">:</span></span>
+<span class="line"><span style="color:#F07178">  scaledownDelay</span><span style="color:#89DDFF">:</span><span style="color:#C3E88D"> 5m</span><span style="color:#676E95;font-style:italic">   # scale down 5 min after draining starts</span></span>
+<span class="line"><span style="color:#F07178">  deleteDelay</span><span style="color:#89DDFF">:</span><span style="color:#C3E88D"> 30m</span><span style="color:#676E95;font-style:italic">      # fully remove 30 min later</span></span></code></pre>
+<h3 id="progressive-rollouts">Progressive Rollouts</h3>
+<p>Instead of deploying all-at-once, you can ramp traffic to a new version gradually. The Worker Controller supports this via the <code>Progressive</code> rollout strategy:</p>
+<pre class="astro-code material-theme-palenight" style="background-color:#292D3E;color:#babed8;overflow-x:auto;white-space:pre-wrap;word-wrap:break-word" tabindex="0" data-language="yaml"><code><span class="line"><span style="color:#F07178">rollout</span><span style="color:#89DDFF">:</span></span>
+<span class="line"><span style="color:#F07178">  strategy</span><span style="color:#89DDFF">:</span><span style="color:#C3E88D"> Progressive</span></span>
+<span class="line"><span style="color:#F07178">  steps</span><span style="color:#89DDFF">:</span></span>
+<span class="line"><span style="color:#89DDFF">    -</span><span style="color:#F07178"> rampPercentage</span><span style="color:#89DDFF">:</span><span style="color:#F78C6C"> 10</span></span>
+<span class="line"><span style="color:#F07178">      pauseDuration</span><span style="color:#89DDFF">:</span><span style="color:#C3E88D"> 5m</span></span>
+<span class="line"><span style="color:#89DDFF">    -</span><span style="color:#F07178"> rampPercentage</span><span style="color:#89DDFF">:</span><span style="color:#F78C6C"> 50</span></span>
+<span class="line"><span style="color:#F07178">      pauseDuration</span><span style="color:#89DDFF">:</span><span style="color:#C3E88D"> 10m</span></span></code></pre>
+<p>This sends 10% of new workflow starts to the new version, waits 5 minutes, bumps to 50%, waits 10 more, then promotes to full current. If something goes wrong at 10%, you can roll back before most of your traffic is affected.</p>
+<p>You can also manage this manually with the CLI:</p>
+<pre class="astro-code material-theme-palenight" style="background-color:#292D3E;color:#babed8;overflow-x:auto;white-space:pre-wrap;word-wrap:break-word" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#676E95;font-style:italic"># Set a ramping version at 5%</span></span>
+<span class="line"><span style="color:#FFCB6B">temporal</span><span style="color:#C3E88D"> worker-deployment</span><span style="color:#C3E88D"> set-ramping-version</span><span style="color:#BABED8"> \</span></span>
+<span class="line"><span style="color:#C3E88D">  --deployment-name</span><span style="color:#C3E88D"> research-agent</span><span style="color:#BABED8"> \</span></span>
+<span class="line"><span style="color:#C3E88D">  --build-id</span><span style="color:#C3E88D"> v3</span><span style="color:#BABED8"> \</span></span>
+<span class="line"><span style="color:#C3E88D">  --percentage</span><span style="color:#F78C6C"> 5</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#676E95;font-style:italic"># Once verified, promote to current</span></span>
+<span class="line"><span style="color:#FFCB6B">temporal</span><span style="color:#C3E88D"> worker-deployment</span><span style="color:#C3E88D"> set-current-version</span><span style="color:#BABED8"> \</span></span>
+<span class="line"><span style="color:#C3E88D">  --deployment-name</span><span style="color:#C3E88D"> research-agent</span><span style="color:#BABED8"> \</span></span>
+<span class="line"><span style="color:#C3E88D">  --build-id</span><span style="color:#C3E88D"> v3</span></span></code></pre>
+<h3 id="per-version-autoscaling">Per-Version Autoscaling</h3>
+<p>The Worker Controller can attach separate HPAs to each version’s pods using the <code>WorkerResourceTemplate</code> CRD. This means V1 can scale down as its workload drains while V2 scales up to handle new traffic. The controller can even use Temporal-specific metrics like <code>approximate_backlog_count</code> for smarter scaling decisions.</p>
+<p>This is the full HA picture: versioned deployments with independent scaling, progressive rollouts, and automatic cleanup. No more all-or-nothing deploys.</p>
+<h2 id="wrapping-up">Wrapping Up</h2>
+<p>Here’s what we covered:</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Concept</th><th>Key Takeaway</th></tr></thead><tbody><tr><td>Non-determinism errors</td><td>Changing workflow code breaks in-flight workflows during replay</td></tr><tr><td>PINNED versioning</td><td>Workflows complete on the version they started on</td></tr><tr><td>Rainbow deployments</td><td>Multiple worker versions run simultaneously on the same task queue</td></tr><tr><td>Continue-as-new migration</td><td>Long-running workflows detect version changes and migrate with AUTO_UPGRADE</td></tr><tr><td>Sleeping workflow caveat</td><td>Idle workflows need a signal or timer to notice version changes</td></tr><tr><td>Progressive rollouts</td><td>Ramp traffic gradually for safer deployments</td></tr></tbody></table>
+<p>The finished code is on the <a href="https://github.com/mikeacjones/temporal-safe-deploys-lab" rel="noreferrer" target="_blank">main branch</a>. The starter branch has everything you need to follow along from scratch.</p>
+<p>For a real-world example of all these patterns in production, check out <a href="/post/2026/reddit-bot-temporal-journey/">Building a Reddit Bot on Temporal</a> where I use worker versioning, continue-as-new migration, and the wake-up signal pattern in a 24/7 bot.</p>
+<h3 id="further-reading">Further Reading</h3>
+<ul>
+<li><a href="https://docs.temporal.io/production-deployment/worker-deployments/worker-versioning" rel="noreferrer" target="_blank">Worker Versioning docs</a></li>
+<li><a href="https://docs.temporal.io/production-deployment/worker-deployments/kubernetes-controller" rel="noreferrer" target="_blank">Temporal Worker Controller</a></li>
+<li><a href="https://docs.temporal.io/develop/safe-deployments" rel="noreferrer" target="_blank">Safe Deployment Guide</a></li>
+<li><a href="https://docs.temporal.io/develop/python/versioning" rel="noreferrer" target="_blank">Python SDK Versioning Reference</a></li>
+</ul> </div> </div> </div> </div> <script type="module" src="/_astro/CodeBlock.astro_astro_type_script_index_0_lang.DUA4PhpD.js"></script> <script type="module">function o(){const a=document.querySelector(".post-view-content");if(!a)return;a.querySelectorAll("img").forEach(e=>{e.dataset.zoomable!=="true"&&(e.dataset.zoomable="true",e.style.cursor="pointer",e.addEventListener("click",()=>{const t=document.createElement("div");t.className="zoomable-overlay";const n=document.createElement("img");n.src=e.src,n.alt=e.alt,t.appendChild(n),document.body.appendChild(t),t.addEventListener("click",()=>{t.remove()}),document.addEventListener("keydown",function d(r){r.key==="Escape"&&(t.remove(),document.removeEventListener("keydown",d))})}))})}document.readyState==="loading"?document.addEventListener("DOMContentLoaded",o):o();document.addEventListener("astro:page-load",o);</script>  </div> </div> </div> </body></html> <script>
+  (function() {
+    var rawContent = document.getElementById('lab-raw-content');
+    var labContent = document.getElementById('lab-content');
+    var nav = document.getElementById('lab-steps-nav');
+    if (!rawContent || !labContent || !nav) return;
+
+    var children = Array.from(rawContent.children);
+    var steps = [];
+    var currentStep = null;
+
+    for (var i = 0; i < children.length; i++) {
+      var el = children[i];
+      if (el.tagName === 'H2') {
+        if (currentStep) steps.push(currentStep);
+        currentStep = { title: el.textContent, elements: [] };
+      } else if (currentStep) {
+        currentStep.elements.push(el);
+      } else {
+        if (!currentStep) {
+          currentStep = { title: 'Overview', elements: [] };
+        }
+        currentStep.elements.push(el);
+      }
+    }
+    if (currentStep) steps.push(currentStep);
+    if (steps.length === 0) return;
+
+    rawContent.remove();
+    var sections = [];
+
+    for (var s = 0; s < steps.length; s++) {
+      var step = steps[s];
+
+      var btn = document.createElement('button');
+      btn.className = 'codelab-step-link' + (s === 0 ? ' active' : '');
+      btn.setAttribute('data-step', s);
+      btn.innerHTML = '<span class="codelab-step-number">' + (s + 1) + '</span>' +
+        '<span class="codelab-step-label">' + step.title + '</span>';
+      nav.appendChild(btn);
+
+      var section = document.createElement('section');
+      section.className = 'codelab-step' + (s === 0 ? ' active' : '');
+      section.id = 'step-' + s;
+
+      var topNav = document.createElement('div');
+      topNav.className = 'codelab-step-nav codelab-step-nav-top';
+      if (s > 0) {
+        var prevTop = document.createElement('button');
+        prevTop.className = 'codelab-nav-btn codelab-prev';
+        prevTop.setAttribute('data-target', s - 1);
+        prevTop.innerHTML = '&larr; Previous';
+        topNav.appendChild(prevTop);
+      }
+      if (s < steps.length - 1) {
+        var nextTop = document.createElement('button');
+        nextTop.className = 'codelab-nav-btn codelab-next';
+        nextTop.setAttribute('data-target', s + 1);
+        nextTop.innerHTML = 'Next &rarr;';
+        topNav.appendChild(nextTop);
+      } else {
+        var doneTop = document.createElement('a');
+        doneTop.className = 'codelab-nav-btn codelab-next';
+        doneTop.href = '/labs';
+        doneTop.innerHTML = 'Done &check;';
+        topNav.appendChild(doneTop);
+      }
+      section.appendChild(topNav);
+
+      var title = document.createElement('h2');
+      title.className = 'codelab-step-title';
+      title.innerHTML = '<span class="codelab-step-badge">' + (s + 1) + ' / ' + steps.length + '</span> ' + step.title;
+      section.appendChild(title);
+
+      var content = document.createElement('div');
+      content.className = 'codelab-step-content post-view-content';
+      for (var e = 0; e < step.elements.length; e++) {
+        content.appendChild(step.elements[e]);
+      }
+      section.appendChild(content);
+
+      var botNav = document.createElement('div');
+      botNav.className = 'codelab-step-nav';
+      if (s > 0) {
+        var prevBot = document.createElement('button');
+        prevBot.className = 'codelab-nav-btn codelab-prev';
+        prevBot.setAttribute('data-target', s - 1);
+        prevBot.innerHTML = '&larr; Previous';
+        botNav.appendChild(prevBot);
+      }
+      if (s < steps.length - 1) {
+        var nextBot = document.createElement('button');
+        nextBot.className = 'codelab-nav-btn codelab-next';
+        nextBot.setAttribute('data-target', s + 1);
+        nextBot.innerHTML = 'Next &rarr;';
+        botNav.appendChild(nextBot);
+      } else {
+        var doneBot = document.createElement('a');
+        doneBot.className = 'codelab-nav-btn codelab-next';
+        doneBot.href = '/labs';
+        doneBot.innerHTML = 'Done &check;';
+        botNav.appendChild(doneBot);
+      }
+      section.appendChild(botNav);
+
+      labContent.appendChild(section);
+      sections.push(section);
+    }
+
+    var navLinks = nav.querySelectorAll('.codelab-step-link');
+
+    function goToStep(index) {
+      for (var i = 0; i < sections.length; i++) {
+        sections[i].classList.toggle('active', i === index);
+      }
+      for (var j = 0; j < navLinks.length; j++) {
+        navLinks[j].classList.toggle('active', j === index);
+      }
+      document.querySelector('.codelab-wrapper').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    for (var i = 0; i < navLinks.length; i++) {
+      (function(link) {
+        link.addEventListener('click', function() {
+          goToStep(parseInt(link.getAttribute('data-step'), 10));
+        });
+      })(navLinks[i]);
+    }
+
+    var btns = document.querySelectorAll('.codelab-nav-btn[data-target]');
+    for (var i = 0; i < btns.length; i++) {
+      (function(btn) {
+        btn.addEventListener('click', function() {
+          goToStep(parseInt(btn.getAttribute('data-target'), 10));
+        });
+      })(btns[i]);
+    }
+
+    var images = document.querySelectorAll('.codelab-step-content img');
+    images.forEach(function(img) {
+      if (img.dataset.zoomable === 'true') return;
+      img.dataset.zoomable = 'true';
+      img.style.cursor = 'pointer';
+      img.addEventListener('click', function() {
+        var overlay = document.createElement('div');
+        overlay.className = 'zoomable-overlay';
+        var enlarged = document.createElement('img');
+        enlarged.src = img.src;
+        enlarged.alt = img.alt || '';
+        overlay.appendChild(enlarged);
+        document.body.appendChild(overlay);
+        overlay.addEventListener('click', function() { overlay.remove(); });
+        document.addEventListener('keydown', function handler(e) {
+          if (e.key === 'Escape') { overlay.remove(); document.removeEventListener('keydown', handler); }
+        });
+      });
+    });
+  })();
+</script>

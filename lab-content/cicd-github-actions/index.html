@@ -1,0 +1,493 @@
+<!DOCTYPE html><html lang="en"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="description" content="In this example, you will build a MuleSoft application with automated deployment to Sandbox and Production environments, using a secrets vault as well as environment based properties file."><title>CICD with GitHub Actions | Michael Jones</title><!-- Favicons --><link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="icon" type="image/x-icon" href="/favicon.ico"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="manifest" href="/site.webmanifest"><link rel="mask-icon" href="/safari-pinned-tab.svg" color="#52307c"><!-- Google Fonts --><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Titillium+Web:wght@300;400;600;700&family=Ubuntu+Mono:wght@400;700&display=swap" rel="stylesheet"><!-- Sitemap --><link rel="sitemap" href="/sitemap-index.xml"><link rel="stylesheet" href="/_astro/dw-cookbook.Yk2r_nAC.css"></head> <body> <div id="Layout"> <div class="SideBarWrapper"> <div id="SideBarToggleWrapper"> <div id="SideBarToggle"> <label class="toggle" for="SideBarToggle-checkbox">&#9776;</label> </div> </div> <input type="checkbox" id="SideBarToggle-checkbox"> <nav id="SideBar"> <div id="AboutMe"> <div id="AboutMe-ProfilePicture"> <img src="/images/profilePicture.png" alt="Michael Jones"> </div> <h2 style="text-align: center;">Michael Jones</h2> <div id="AboutMe-MenuItems"> <ul id="MenuItems"> <a href="/" class> <li>Posts</li> </a> <a href="/labs" class> <li>Labs</li> </a> <a href="/dw-cookbook" class> <li>DW Cookbook</li> </a> </ul> </div> </div> <div id="SocialIcons"> <a href="https://github.com/mikeacjones" target="_blank" rel="noreferrer" aria-label="GitHub"> <svg viewBox="0 0 496 512" xmlns="http://www.w3.org/2000/svg"> <path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.8-14.1-112.8-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"></path> </svg> </a> <a href="https://www.linkedin.com/in/michael-jones-5a870678" target="_blank" rel="noreferrer" aria-label="LinkedIn"> <svg viewBox="0 0 448 512" xmlns="http://www.w3.org/2000/svg"> <path d="M416 32H31.9C14.3 32 0 46.5 0 64.3v383.4C0 465.5 14.3 480 31.9 480H416c17.6 0 32-14.5 32-32.3V64.3c0-17.8-14.4-32.3-32-32.3zM135.4 416H69V202.2h66.5V416zm-33.2-243c-21.3 0-38.5-17.3-38.5-38.5S80.9 96 102.2 96c21.2 0 38.5 17.3 38.5 38.5 0 21.3-17.2 38.5-38.5 38.5zm282.1 243h-66.4V312c0-24.8-.5-56.7-34.5-56.7-34.6 0-39.9 27-39.9 54.9V416h-66.4V202.2h63.7v29.2h.9c8.9-16.8 30.6-34.5 62.9-34.5 67.2 0 79.7 44.3 79.7 101.9V416z"></path> </svg> </a> <a href="https://stackoverflow.com/users/10890536/michael-jones" target="_blank" rel="noreferrer" aria-label="Stack Overflow"> <svg viewBox="0 0 384 512" xmlns="http://www.w3.org/2000/svg"> <path d="M290.7 311L95 269.7 86.8 309l195.7 41zm51-87L188.2 95.7l-25.5 30.8 153.5 128.3zm-31.2 39.7L129.2 179l-16.7 36.5L293.7 300zM262 32l-32 24 119.3 160.3 32-24zm20.5 328h-200v39.7h200zm39.7 80H42.7V320h-40v160h319.9V320h-40z"></path> </svg> </a> </div> </nav> </div> <script type="module">document.addEventListener("astro:page-load",()=>{const e=document.getElementById("SideBarToggle-checkbox"),t=document.querySelector(".toggle");t&&e&&t.addEventListener("click",n=>{n.preventDefault(),e.checked=!e.checked});const c=document.getElementById("ContentWrapper");c&&e&&c.addEventListener("click",()=>{e.checked&&(e.checked=!1)})});</script> <div id="Layout-ContentWrapper"> <div id="ContentWrapper">  <div class="post-view"> <div class="post-view-title"> <h1>CICD with GitHub Actions</h1> </div> <div class="post-view-date"> March 10, 2021  </div> <div class="post-view-tags"> <span class="Chip"> <a class="Chip-link" href="/labs?category=devops">devops</a> </span><span class="Chip"> <a class="Chip-link" href="/labs?category=maven">maven</a> </span> </div> <div class="codelab-wrapper"> <nav class="codelab-steps-nav"> <button class="codelab-step-link active" data-step="0"> <span class="codelab-step-number">1</span> <span class="codelab-step-label">Overview</span> </button><button class="codelab-step-link" data-step="1"> <span class="codelab-step-number">2</span> <span class="codelab-step-label">Create Mule Application</span> </button><button class="codelab-step-link" data-step="2"> <span class="codelab-step-number">3</span> <span class="codelab-step-label">Setup Source Control</span> </button><button class="codelab-step-link" data-step="3"> <span class="codelab-step-number">4</span> <span class="codelab-step-label">Setup Maven Plugin</span> </button><button class="codelab-step-link" data-step="4"> <span class="codelab-step-number">5</span> <span class="codelab-step-label">Setup GitHub Actions Workflow</span> </button><button class="codelab-step-link" data-step="5"> <span class="codelab-step-number">6</span> <span class="codelab-step-label">Wrapping Up</span> </button> </nav> <div class="codelab-content"> <section id="step-0" class="codelab-step active" data-step-index="0"> <div class="codelab-step-nav codelab-step-nav-top">  <button class="codelab-nav-btn codelab-next" data-target="1">
+Next &rarr;
+</button> </div> <h2 class="codelab-step-title"> <span class="codelab-step-badge">1 / 6</span> Overview  </h2> <div class="codelab-step-content post-view-content"><p class="image-container"><img src="/lab-content/cicd-github-actions/img/b3b4beef21ee712.png"></p>
+<h2 is-upgraded>CI/CD is an important piece of achieving a development process that is fast and flexible while remaining reliable.</h2>
+<p><strong>Continuous Integration</strong>: This is the process of keeping code iterations as small as possible, and integrating them into the main codebase. By keeping our changes small, we can more quickly identify and fix new issues introduced into the codebase, as well as more quickly release stable updates. In this example, you will briefly touch on this process by automating unit testing via the MUnit plugin.</p>
+<p><strong>Continuous Delivery</strong>: This process ties back into continuous integration, and is the concept that our codebase should always remain deliverable. The main codebase should never enter a state which can not be deployed. As part of this process, we automate building and testing, typically via automatic deployment into QA and UAT environments. We will cover this by utilizing the <code>mule-maven-plugin</code> to automate deployment into our Sandbox environment.</p>
+<p><strong>Continuous Deployment</strong>: This is typically considered the next and final step in building out an automated pipeline; when a company is utilizing continuous deployment, the release management is tied into an automated process. While we will be taking a simplistic approach, we will touch on this today by creating a protected main branch, which requires that our build and test phases in Sandbox have passed before they can be merged into the master branch, and trigger a deployment to the Production environment.</p>
+<h2 is-upgraded>What you&#39;ll build</h2>
+<p>In this codelab, we will build a MuleSoft API, which you will commit to a new GitHub repository. We will then walk through setting up GitHub Actions to act as our CI platform. Your project will:</p>
+<ul>
+<li>Utilize a git repository for tracking code changes</li>
+<li>Automatically execute and validate MUnit test</li>
+<li>Automatically deploy the master branch to CloudHub</li>
+<li>Utilize the <code>mule-maven-plugin</code> to automate this process, parameterizing various secrets through the GitHub secrets vault</li>
+</ul>
+<h2 class="checklist" is-upgraded>What you&#39;ll learn</h2>
+<ul class="checklist">
+<li>How to configure the mule-maven-plugin for deployment to CloudHub, and where to go for documentation covering deployment to other environments</li>
+<li>How to configure maven for communication with the MuleSoft Exchange and Nexus repository</li>
+<li>How to configure GitHub Actions workflow for maven (this process works very similarly to CircleCI - after going through this project, give configuring CircleCI a try as a self-challenge!)</li>
+</ul>
+<h2 is-upgraded>What you&#39;ll need</h2>
+<ul>
+<li>Anypoint platform account for which you have rights to deploy applications, and which you have Environment credentials to; suggest creating a new trial account when doing testing.</li>
+</ul>
+<p><a href="https://anypoint.mulesoft.com/login/signup" target="_blank"><paper-button class="colored" raised>Create Trial Account</paper-button></a></p>
+<ul>
+<li>GitHub account. Does not need to be a paid account, though you will need to set the repository to public if using a free account.</li>
+<li>Credentials to the MuleSoft nexus.</li>
+</ul>
+<p><a href="https://repository.mulesoft.org/nexus-ee/content/repositories/releases-ee/" target="_blank"><paper-button class="colored" raised>Test Nexus Access</paper-button></a></p>
+<aside class="warning"><p>Access to the Nexus repository is only available to customers with an active MuleSoft subscription. If your organization has an active subscription but does not have access to the Nexus, please open a ticket with support.</p>
+<p>You will <strong>NOT</strong> be able to complete this lab without access to the MuleSoft Nexus</p>
+</aside></div> <div class="codelab-step-nav">  <button class="codelab-nav-btn codelab-next" data-target="1">
+Next &rarr;
+</button> </div> </section><section id="step-1" class="codelab-step" data-step-index="1"> <div class="codelab-step-nav codelab-step-nav-top"> <button class="codelab-nav-btn codelab-prev" data-target="0">
+&larr; Previous
+</button> <button class="codelab-nav-btn codelab-next" data-target="2">
+Next &rarr;
+</button> </div> <h2 class="codelab-step-title"> <span class="codelab-step-badge">2 / 6</span> Create Mule Application  </h2> <div class="codelab-step-content post-view-content"><p>In order to automate mule application testing and deployment, we first have to have an actual application to work with! We will be using the <strong>hello-world </strong>example in MuleSoft&#39;s exchange.</p>
+<aside class="warning"><p>Due to potential dependency and environment issues, do not use an existing application unless you are confident debugging maven.</p>
+</aside>
+<h3 is-upgraded>Import Project</h3>
+<ol type="1" start="1">
+<li>Open Anypoint Studio</li>
+<li>Set your workspace to <code>cicid-with-github</code></li>
+</ol>
+<p class="image-container"><img src="/lab-content/cicd-github-actions/img/b5aebd0bcdbab0d0.png"></p>
+<ol type="1" start="3">
+<li>Click <code>Open an Example from Exchange</code> in the package explorer</li>
+</ol>
+<p class="image-container"><img src="/lab-content/cicd-github-actions/img/ded650539c7fc7b0.png"></p>
+<ol type="1" start="4">
+<li>Click on <code>Provided by MuleSoft</code> on the left in the exchange window</li>
+</ol>
+<p class="image-container"><img src="/lab-content/cicd-github-actions/img/850c582dd82e26fd.png"></p>
+<ol type="1" start="5">
+<li>Search for hello world and click on the example</li>
+</ol>
+<p class="image-container"><img src="/lab-content/cicd-github-actions/img/403b7982638b7b90.png"></p>
+<ol type="1" start="6">
+<li>Click <code>Open</code> in the top right</li>
+</ol>
+<p class="image-container"><img src="/lab-content/cicd-github-actions/img/9427c220e747a47d.png"></p>
+<ol type="1" start="7">
+<li>In package explorer, you should now see a project called <code>hello-world</code></li>
+</ol>
+<aside class="special"><p>If you are prompted to update the workspace, click <code>Perform Update</code></p>
+</aside></div> <div class="codelab-step-nav"> <button class="codelab-nav-btn codelab-prev" data-target="0">
+&larr; Previous
+</button> <button class="codelab-nav-btn codelab-next" data-target="2">
+Next &rarr;
+</button> </div> </section><section id="step-2" class="codelab-step" data-step-index="2"> <div class="codelab-step-nav codelab-step-nav-top"> <button class="codelab-nav-btn codelab-prev" data-target="1">
+&larr; Previous
+</button> <button class="codelab-nav-btn codelab-next" data-target="3">
+Next &rarr;
+</button> </div> <h2 class="codelab-step-title"> <span class="codelab-step-badge">3 / 6</span> Setup Source Control  </h2> <div class="codelab-step-content post-view-content"><p>Next, we will create a GitHub repository to house our code, and to run our CI/CD workflow. Everything we will be doing with GitHub can be performed with a free account.</p>
+<p><a href="https://github.com/join" target="_blank"><paper-button class="colored" raised>Create GitHub Account</paper-button></a></p>
+<aside class="warning"><p>You will need the Git CLI installed in order to complete this section. If you are on macOS, you&#39;re good - the CLI comes pre-installed. If you are on Windows, you will need to install the CLI  yourself.</p>
+<p><a href="https://github.com/git-for-windows/git/releases/download/v2.29.2.windows.3/Git-2.29.2.3-64-bit.exe" target="_blank"><paper-button class="colored" raised><iron-icon icon="file-download"></iron-icon>Download Git for Windows</paper-button></a></p>
+</aside>
+<h2 is-upgraded><strong>Create GitHub Repository</strong></h2>
+<ol type="1" start="1">
+<li>Sign in to GitHub</li>
+<li>Click <code>New</code> to create a new repository</li>
+</ol>
+<p class="image-container"><img src="/lab-content/cicd-github-actions/img/30f7020b3867ab1d.png"></p>
+<ol type="1" start="3">
+<li>Give your repository a name like <code>hello-world-mule-lab</code></li>
+</ol>
+<p class="image-container"><img src="/lab-content/cicd-github-actions/img/d515e246c61580a.png"></p>
+<ol type="1" start="4">
+<li>On our new repo&#39;s landing page, copy the <code>git remote add origin </code><a href="https://github.com/%E2%80%A6" target="_blank"><code>https://github.com/...</code></a> command</li>
+</ol>
+<p class="image-container"><img src="/lab-content/cicd-github-actions/img/fe12be8927a24f8d.png"></p>
+<ol type="1" start="5">
+<li>Open terminal/command prompt</li>
+<li>Change directory to <code>cicd-with-github/hello-world</code></li>
+<li>Run command <code>git init</code></li>
+<li>Paste the <code>git remote add origin ...</code> we copied earlier</li>
+</ol>
+<p class="image-container"><img src="/lab-content/cicd-github-actions/img/ef732b647287212f.png"></p>
+<ol type="1" start="9">
+<li>Before we make our first commit, we want to setup our <code>.gitignore</code> file first. In the hello-world directory, create a file called <code>.gitignore</code> and paste the following:</li>
+</ol>
+<h3 is-upgraded><a href="https://github.com/mikeacjones/hello-world-mule-lab/blob/master/.gitignore" target="_blank"><strong>.gitignore</strong></a></h3>
+<pre class="astro-code"><code># ------------------------------------------------------------------------------ #
+# Java defaults (https://github.com/github/gitignore/blob/master/Java.gitignore) #
+# ------------------------------------------------------------------------------ #
+*.class
+
+# Package Files #
+*.jar
+*.war
+*.ear
+
+# ------------------------------------------------------------------------------------------- #
+# Eclipse-specific (https://github.com/github/gitignore/blob/master/Global/Eclipse.gitignore) #
+# ------------------------------------------------------------------------------------------- #
+*.pydevproject
+.metadata
+bin/**
+tmp/**
+tmp/**/*
+*.tmp
+*.bak
+*.swp
+*~.nib
+local.properties
+.settings/
+.loadpath
+.project
+.classpath
+
+# External tool builders
+.externalToolBuilders/
+
+# Locally stored &#34;Eclipse launch configurations&#34;
+*.launch
+
+# CDT-specific
+.cproject
+
+# PDT-specific
+.buildpath
+
+# --------------- #
+# Studio-specific #
+# --------------- #
+target/
+.mule/**
+.mule/**/*
+.DS_Store
+velocity.log
+src/main/resources/config/*
+</code></pre>
+<ol type="1" start="10">
+<li>After saving the <code>.gitignore</code> file, run the command <code>git add .</code></li>
+<li>Run command <code>git commit -m "First commit"</code></li>
+<li>Run command <code>git push -u origin master</code></li>
+</ol>
+<p class="image-container"><img src="/lab-content/cicd-github-actions/img/382bf69354c2cf72.png"></p>
+<ol type="1" start="13">
+<li>We can now check on GitHub, and should see the contents of <code>hello-world</code></li>
+</ol>
+<p class="image-container"><img src="/lab-content/cicd-github-actions/img/c239828c48e702b8.png"></p>
+<h2 is-upgraded><strong>CI Environment Variables / Secrets</strong></h2>
+<p>In order to deploy to CloudHub via an external CI platform, we need to setup some secrets to use as environment variables. For complete documentation on settings you can provide the plugin, see <a href="https://docs.mulesoft.com/mule-runtime/4.3/mmp-concept" target="_blank">https://docs.mulesoft.com/mule-runtime/4.3/mmp-concept</a></p>
+<p>You will need to add each of the environment variables below to your GitHub Repository&#39;s secrets. To add a repository secret:</p>
+<ol type="1" start="1">
+<li>While viewing your GitHub Repository, click settings</li>
+</ol>
+<p class="image-container"><img src="/lab-content/cicd-github-actions/img/e166b00c242034c7.png"></p>
+<ol type="1" start="2">
+<li>Click on Secrets</li>
+</ol>
+<p class="image-container"><img src="/lab-content/cicd-github-actions/img/5858b7c352cb2bd3.png"></p>
+<ol type="1" start="3">
+<li>Click New Repository Secret</li>
+</ol>
+<p class="image-container"><img src="/lab-content/cicd-github-actions/img/3aac05cc5f726128.png"></p>
+<ol type="1" start="4">
+<li>Fill in the name of the secret (use the same key names listed below) and the corresponding value. Click Add Secret</li>
+</ol>
+<p class="image-container"><img src="/lab-content/cicd-github-actions/img/8833c0335679a52a.png"></p>
+<p>Add the following secrets to your repo:</p>
+<ul>
+<li>PLATFORM_USERNAME - your username for logging into <a href="https://anypoint.mulesoft.com" target="_blank">https://anypoint.mulesoft.com</a>; in a real-world environment, we would either use a specific service account with limited rights, or application specific credentials</li>
+<li>PLATFORM_PASSWORD - password for your anypoint account</li>
+<li>SANDBOX_CLIENT_ID - client ID for your CloudHub sandbox environment (to access this information, log into <a href="https://anypoint.mulesoft.com" target="_blank">https://anypoint.mulesoft.com</a> and navigate to Access Management -&gt; Environments and click on the Environment you intend to deploy to</li>
+<li>SANDBOX_CLIENT_SECRET - client secret for CloubHub sandbox environment</li>
+<li>NEXUS_USERNAME - username for your Nexus account (see Overview section for more information on Nexus). These credentials will be used to authenticate with the Enterprise maven repository hosted by MuleSoft.</li>
+<li>NEXUS_PASSWORD - password for your Nexus account</li>
+<li>BUS_GROUP_ID - business group ID you plan to deploy application to. </li>
+</ul>
+<aside class="warning"><p>If you are using a trial account deploying to the master organization (ie: there is no business group ID), you do not need to include the BUS_GROUP_ID</p>
+</aside>
+<p>When your done, your repository secrets should look like this:</p>
+<p class="image-container"><img src="/lab-content/cicd-github-actions/img/a149adee18bbdce7.png"></p>
+<h3 is-upgraded>Now that you&#39;ve added all of your secrets to the repository, we&#39;re ready to setup the repository for automated builds and deployments!</h3>
+<p>------</p>
+<h3 is-upgraded>To find your business group ID:</h3>
+<ol type="1" start="1">
+<li>Log into anypint.mulesoft.com</li>
+<li>Click on the business group in the top right corner</li>
+</ol>
+<p class="image-container"><img src="/lab-content/cicd-github-actions/img/85231075364ba905.png"></p>
+<ol type="1" start="3">
+<li>Click on Business Groups</li>
+</ol>
+<p class="image-container"><img src="/lab-content/cicd-github-actions/img/5bf9d67647a4f32d.png"></p>
+<ol type="1" start="4">
+<li>Click on the business group in the access management window</li>
+</ol>
+<p class="image-container"><img src="/lab-content/cicd-github-actions/img/873b537f4713d83b.png"></p>
+<ol type="1" start="5">
+<li>Copy the Business Group ID</li>
+</ol>
+<p class="image-container"><img src="/lab-content/cicd-github-actions/img/ac390b9e1024396f.png"></p></div> <div class="codelab-step-nav"> <button class="codelab-nav-btn codelab-prev" data-target="1">
+&larr; Previous
+</button> <button class="codelab-nav-btn codelab-next" data-target="3">
+Next &rarr;
+</button> </div> </section><section id="step-3" class="codelab-step" data-step-index="3"> <div class="codelab-step-nav codelab-step-nav-top"> <button class="codelab-nav-btn codelab-prev" data-target="2">
+&larr; Previous
+</button> <button class="codelab-nav-btn codelab-next" data-target="4">
+Next &rarr;
+</button> </div> <h2 class="codelab-step-title"> <span class="codelab-step-badge">4 / 6</span> Setup Maven Plugin  </h2> <div class="codelab-step-content post-view-content"><p>Mule applications are, at the heart of things, mavenized java applications. In order to automate the build and deployment process, MuleSoft provides the <code>mule-maven-plugin</code>. Whether you&#39;re hosting your applications on CloudHub, AWS, Azure, GCP, on-prem, a raspberry pi in your closet, etc.. you can use the <code>mule-maven-plugin</code> to automate your deployments via the Anypoint Control Plane. In this workshop, to keep things as simple as possible, we will be deploying our application to a single .1vcore worker in CloudHub. For information about deployment to other platforms, check the documentation: <a href="https://docs.mulesoft.com/mule-runtime/4.3/mmp-concept" target="_blank">https://docs.mulesoft.com/mule-runtime/4.3/mmp-concept</a></p>
+<p>Back to Anypoint Studio!</p>
+<ol type="1" start="1">
+<li>Open up the POM.xml</li>
+<li>Find the XML key <code>mule.maven.plugin.version</code> and update the version to the latest version <a href="https://docs.mulesoft.com/release-notes/mule-maven-plugin/mule-maven-plugin-release-notes" target="_blank">on the release page</a> to ensure we have the latest fixes. At the time of writing this, the latest version is <code>3.4.2</code>.</li>
+</ol>
+<h3 is-upgraded><a href="https://github.com/mikeacjones/hello-world-mule-lab/blob/master/pom.xml#L16-L19" target="_blank"><strong>pom.xml</strong></a></h3>
+<pre class="shiki material-theme-palenight" style="background-color:#292D3E;color:#babed8" tabindex="0"><code><span class="line"><span style="color:#89DDFF">&#x3C;</span><span style="color:#F07178">properties</span><span style="color:#89DDFF">></span></span>
+<span class="line"><span style="color:#89DDFF">        &#x3C;</span><span style="color:#F07178">munit.version</span><span style="color:#89DDFF">></span><span style="color:#BABED8">2.1.2</span><span style="color:#89DDFF">&#x3C;/</span><span style="color:#F07178">munit.version</span><span style="color:#89DDFF">></span></span>
+<span class="line"><span style="color:#89DDFF">        &#x3C;</span><span style="color:#F07178">mule.maven.plugin.version</span><span style="color:#89DDFF">></span><span style="color:#BABED8">3.4.2</span><span style="color:#89DDFF">&#x3C;/</span><span style="color:#F07178">mule.maven.plugin.version</span><span style="color:#89DDFF">></span></span>
+<span class="line"><span style="color:#89DDFF">&#x3C;/</span><span style="color:#F07178">properties</span><span style="color:#89DDFF">></span></span></code></pre>
+<ol type="1" start="3">
+<li>Add our <code>cloudHubDeployment</code> entry to the <code>mule-maven-plugin</code> entry in the <code>plugins</code> section of the pom.xml file.</li>
+</ol>
+<h3 is-upgraded><a href="https://github.com/mikeacjones/hello-world-mule-lab/blob/master/pom.xml#L29-L49" target="_blank"><strong>pom.xml</strong></a></h3>
+<pre class="shiki material-theme-palenight" style="background-color:#292D3E;color:#babed8" tabindex="0"><code><span class="line"><span style="color:#89DDFF">&#x3C;</span><span style="color:#F07178">plugins</span><span style="color:#89DDFF">></span></span>
+<span class="line"><span style="color:#89DDFF">  &#x3C;</span><span style="color:#F07178">plugin</span><span style="color:#89DDFF">></span></span>
+<span class="line"><span style="color:#89DDFF">    &#x3C;</span><span style="color:#F07178">groupId</span><span style="color:#89DDFF">></span><span style="color:#BABED8">org.mule.tools.maven</span><span style="color:#89DDFF">&#x3C;/</span><span style="color:#F07178">groupId</span><span style="color:#89DDFF">></span></span>
+<span class="line"><span style="color:#89DDFF">    &#x3C;</span><span style="color:#F07178">artifactId</span><span style="color:#89DDFF">></span><span style="color:#BABED8">mule-maven-plugin</span><span style="color:#89DDFF">&#x3C;/</span><span style="color:#F07178">artifactId</span><span style="color:#89DDFF">></span></span>
+<span class="line"><span style="color:#89DDFF">    &#x3C;</span><span style="color:#F07178">version</span><span style="color:#89DDFF">></span><span style="color:#BABED8">${mule.maven.plugin.version}</span><span style="color:#89DDFF">&#x3C;/</span><span style="color:#F07178">version</span><span style="color:#89DDFF">></span></span>
+<span class="line"><span style="color:#89DDFF">    &#x3C;</span><span style="color:#F07178">extensions</span><span style="color:#89DDFF">></span><span style="color:#BABED8">true</span><span style="color:#89DDFF">&#x3C;/</span><span style="color:#F07178">extensions</span><span style="color:#89DDFF">></span></span>
+<span class="line"><span style="color:#89DDFF">    &#x3C;</span><span style="color:#F07178">configuration</span><span style="color:#89DDFF">></span></span>
+<span class="line"><span style="color:#89DDFF">      &#x3C;</span><span style="color:#F07178">classifier</span><span style="color:#89DDFF">></span><span style="color:#BABED8">mule-application</span><span style="color:#89DDFF">&#x3C;/</span><span style="color:#F07178">classifier</span><span style="color:#89DDFF">></span></span>
+<span class="line"><span style="color:#89DDFF">      &#x3C;</span><span style="color:#F07178">cloudHubDeployment</span><span style="color:#89DDFF">></span></span>
+<span class="line"><span style="color:#89DDFF">        &#x3C;</span><span style="color:#F07178">muleVersion</span><span style="color:#89DDFF">></span><span style="color:#BABED8">4.3.0</span><span style="color:#89DDFF">&#x3C;/</span><span style="color:#F07178">muleVersion</span><span style="color:#89DDFF">></span></span>
+<span class="line"><span style="color:#89DDFF">        &#x3C;</span><span style="color:#F07178">username</span><span style="color:#89DDFF">></span><span style="color:#BABED8">${env.PLATFORM_USERNAME}</span><span style="color:#89DDFF">&#x3C;/</span><span style="color:#F07178">username</span><span style="color:#89DDFF">></span></span>
+<span class="line"><span style="color:#89DDFF">        &#x3C;</span><span style="color:#F07178">password</span><span style="color:#89DDFF">></span><span style="color:#BABED8">${env.PLATFORM_PASSWORD}</span><span style="color:#89DDFF">&#x3C;/</span><span style="color:#F07178">password</span><span style="color:#89DDFF">></span></span>
+<span class="line"><span style="color:#89DDFF">        &#x3C;</span><span style="color:#F07178">applicationName</span><span style="color:#89DDFF">></span><span style="color:#BABED8">hello-world-SOMETHING-UNIQUE</span><span style="color:#89DDFF">&#x3C;/</span><span style="color:#F07178">applicationName</span><span style="color:#89DDFF">></span></span>
+<span class="line"><span style="color:#89DDFF">        &#x3C;</span><span style="color:#F07178">environment</span><span style="color:#89DDFF">></span><span style="color:#BABED8">Sandbox</span><span style="color:#89DDFF">&#x3C;/</span><span style="color:#F07178">environment</span><span style="color:#89DDFF">></span></span>
+<span class="line"><span style="color:#89DDFF">        &#x3C;</span><span style="color:#F07178">workers</span><span style="color:#89DDFF">></span><span style="color:#BABED8">1</span><span style="color:#89DDFF">&#x3C;/</span><span style="color:#F07178">workers</span><span style="color:#89DDFF">></span></span>
+<span class="line"><span style="color:#89DDFF">        &#x3C;</span><span style="color:#F07178">workerType</span><span style="color:#89DDFF">></span><span style="color:#BABED8">MICRO</span><span style="color:#89DDFF">&#x3C;/</span><span style="color:#F07178">workerType</span><span style="color:#89DDFF">></span></span>
+<span class="line"><span style="color:#89DDFF">        &#x3C;</span><span style="color:#F07178">objectStoreV2</span><span style="color:#89DDFF">></span><span style="color:#BABED8">true</span><span style="color:#89DDFF">&#x3C;/</span><span style="color:#F07178">objectStoreV2</span><span style="color:#89DDFF">></span></span>
+<span class="line"><span style="color:#89DDFF">        &#x3C;</span><span style="color:#F07178">region</span><span style="color:#89DDFF">></span><span style="color:#BABED8">us-east-2</span><span style="color:#89DDFF">&#x3C;/</span><span style="color:#F07178">region</span><span style="color:#89DDFF">></span></span>
+<span class="line"><span style="color:#89DDFF">        &#x3C;</span><span style="color:#F07178">businessGroupId</span><span style="color:#89DDFF">></span><span style="color:#BABED8">${env.BUS_GROUP_ID}</span><span style="color:#89DDFF">&#x3C;/</span><span style="color:#F07178">businessGroupId</span><span style="color:#89DDFF">></span></span>
+<span class="line"><span style="color:#89DDFF">      &#x3C;/</span><span style="color:#F07178">cloudHubDeployment</span><span style="color:#89DDFF">></span></span>
+<span class="line"><span style="color:#89DDFF">    &#x3C;/</span><span style="color:#F07178">configuration</span><span style="color:#89DDFF">></span></span>
+<span class="line"><span style="color:#89DDFF">  &#x3C;/</span><span style="color:#F07178">plugin</span><span style="color:#89DDFF">></span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#BABED8">  ...</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#89DDFF">&#x3C;/</span><span style="color:#F07178">plugins</span><span style="color:#89DDFF">></span></span></code></pre>
+<p>We&#39;re specifying how we want the application deployed to CloudHub. For the complete list of available keys, see <a href="https://docs.mulesoft.com/mule-runtime/4.3/deploy-to-cloudhub" target="_blank">https://docs.mulesoft.com/mule-runtime/4.3/deploy-to-cloudhub</a></p>
+<aside class="warning"><p>Because we are deploying to CloudHub, a multi-tenanted environment, our <code>applicationName</code> must be unique. Add something unique, eg: first initial last name.</p>
+</aside>
+<p>When authenticating with maven repositories, maven needs credentials (duh!). Typically, reusable credentials are stored in a shared <code>settings.xml</code> file located in your m2 folder. You can do the same thing with your CI platform; the majority of CI platforms (GitHub only offers these features for paid accounts) allow you to store shared organization credentials / configurations. As we&#39;re using a free GitHub repository, we&#39;ll go ahead and add a settings.xml file to our project.</p>
+<ol type="1" start="1">
+<li>Create a new XML file: <code>/cicd-with-github/hello-world/.maven/settings.xml</code></li>
+</ol>
+<p class="image-container"><img src="/lab-content/cicd-github-actions/img/d7528c06bca45b48.png"></p>
+<ol type="1" start="2">
+<li>Open settings.xml and paste the following code:</li>
+</ol>
+<h3 is-upgraded><a href="https://github.com/mikeacjones/hello-world-mule-lab/blob/master/.maven/settings.xml" target="_blank"><strong>.maven/settings.xml</strong></a></h3>
+<pre class="shiki material-theme-palenight" style="background-color:#292D3E;color:#babed8" tabindex="0"><code><span class="line"><span style="color:#89DDFF">&#x3C;?</span><span style="color:#F07178">xml</span><span style="color:#C792EA"> version</span><span style="color:#89DDFF">=</span><span style="color:#89DDFF">"</span><span style="color:#C3E88D">1.0</span><span style="color:#89DDFF">"</span><span style="color:#C792EA"> encoding</span><span style="color:#89DDFF">=</span><span style="color:#89DDFF">"</span><span style="color:#C3E88D">UTF-8</span><span style="color:#89DDFF">"</span><span style="color:#C792EA"> standalone</span><span style="color:#89DDFF">=</span><span style="color:#89DDFF">"</span><span style="color:#C3E88D">no</span><span style="color:#89DDFF">"</span><span style="color:#89DDFF">?></span></span>
+<span class="line"><span style="color:#89DDFF">&#x3C;</span><span style="color:#F07178">settings</span><span style="color:#89DDFF">></span></span>
+<span class="line"><span style="color:#89DDFF">  &#x3C;</span><span style="color:#F07178">servers</span><span style="color:#89DDFF">></span></span>
+<span class="line"><span style="color:#89DDFF">    &#x3C;</span><span style="color:#F07178">server</span><span style="color:#89DDFF">></span></span>
+<span class="line"><span style="color:#89DDFF">      &#x3C;</span><span style="color:#F07178">id</span><span style="color:#89DDFF">></span><span style="color:#BABED8">MuleRepository</span><span style="color:#89DDFF">&#x3C;/</span><span style="color:#F07178">id</span><span style="color:#89DDFF">></span></span>
+<span class="line"><span style="color:#89DDFF">      &#x3C;</span><span style="color:#F07178">username</span><span style="color:#89DDFF">></span><span style="color:#BABED8">${env.NEXUS_USERNAME}</span><span style="color:#89DDFF">&#x3C;/</span><span style="color:#F07178">username</span><span style="color:#89DDFF">></span></span>
+<span class="line"><span style="color:#89DDFF">      &#x3C;</span><span style="color:#F07178">password</span><span style="color:#89DDFF">></span><span style="color:#BABED8">${env.NEXUS_PASSWORD}</span><span style="color:#89DDFF">&#x3C;/</span><span style="color:#F07178">password</span><span style="color:#89DDFF">></span></span>
+<span class="line"><span style="color:#89DDFF">    &#x3C;/</span><span style="color:#F07178">server</span><span style="color:#89DDFF">></span></span>
+<span class="line"><span style="color:#89DDFF">    &#x3C;</span><span style="color:#F07178">server</span><span style="color:#89DDFF">></span></span>
+<span class="line"><span style="color:#89DDFF">      &#x3C;</span><span style="color:#F07178">id</span><span style="color:#89DDFF">></span><span style="color:#BABED8">anypoint-exchange-v2</span><span style="color:#89DDFF">&#x3C;/</span><span style="color:#F07178">id</span><span style="color:#89DDFF">></span></span>
+<span class="line"><span style="color:#89DDFF">      &#x3C;</span><span style="color:#F07178">username</span><span style="color:#89DDFF">></span><span style="color:#BABED8">${env.PLATFORM_USERNAME}</span><span style="color:#89DDFF">&#x3C;/</span><span style="color:#F07178">username</span><span style="color:#89DDFF">></span></span>
+<span class="line"><span style="color:#89DDFF">      &#x3C;</span><span style="color:#F07178">password</span><span style="color:#89DDFF">></span><span style="color:#BABED8">${env.PLATFORM_PASSWORD}</span><span style="color:#89DDFF">&#x3C;/</span><span style="color:#F07178">password</span><span style="color:#89DDFF">></span></span>
+<span class="line"><span style="color:#89DDFF">    &#x3C;/</span><span style="color:#F07178">server</span><span style="color:#89DDFF">></span></span>
+<span class="line"><span style="color:#89DDFF">  &#x3C;/</span><span style="color:#F07178">servers</span><span style="color:#89DDFF">></span></span>
+<span class="line"><span style="color:#89DDFF">  &#x3C;</span><span style="color:#F07178">pluginGroups</span><span style="color:#89DDFF">></span></span>
+<span class="line"><span style="color:#89DDFF">    &#x3C;</span><span style="color:#F07178">pluginGroup</span><span style="color:#89DDFF">></span><span style="color:#BABED8">org.mule.tools</span><span style="color:#89DDFF">&#x3C;/</span><span style="color:#F07178">pluginGroup</span><span style="color:#89DDFF">></span></span>
+<span class="line"><span style="color:#89DDFF">  &#x3C;/</span><span style="color:#F07178">pluginGroups</span><span style="color:#89DDFF">></span></span>
+<span class="line"><span style="color:#89DDFF">  &#x3C;</span><span style="color:#F07178">profiles</span><span style="color:#89DDFF">></span></span>
+<span class="line"><span style="color:#89DDFF">    &#x3C;</span><span style="color:#F07178">profile</span><span style="color:#89DDFF">></span></span>
+<span class="line"><span style="color:#89DDFF">      &#x3C;</span><span style="color:#F07178">id</span><span style="color:#89DDFF">></span><span style="color:#BABED8">mule-extra-repos</span><span style="color:#89DDFF">&#x3C;/</span><span style="color:#F07178">id</span><span style="color:#89DDFF">></span></span>
+<span class="line"><span style="color:#89DDFF">      &#x3C;</span><span style="color:#F07178">activation</span><span style="color:#89DDFF">></span></span>
+<span class="line"><span style="color:#89DDFF">        &#x3C;</span><span style="color:#F07178">activeByDefault</span><span style="color:#89DDFF">></span><span style="color:#BABED8">true</span><span style="color:#89DDFF">&#x3C;/</span><span style="color:#F07178">activeByDefault</span><span style="color:#89DDFF">></span></span>
+<span class="line"><span style="color:#89DDFF">      &#x3C;/</span><span style="color:#F07178">activation</span><span style="color:#89DDFF">></span></span>
+<span class="line"><span style="color:#89DDFF">      &#x3C;</span><span style="color:#F07178">repositories</span><span style="color:#89DDFF">></span></span>
+<span class="line"><span style="color:#89DDFF">        &#x3C;</span><span style="color:#F07178">repository</span><span style="color:#89DDFF">></span></span>
+<span class="line"><span style="color:#89DDFF">          &#x3C;</span><span style="color:#F07178">id</span><span style="color:#89DDFF">></span><span style="color:#BABED8">mule-public</span><span style="color:#89DDFF">&#x3C;/</span><span style="color:#F07178">id</span><span style="color:#89DDFF">></span></span>
+<span class="line"><span style="color:#89DDFF">          &#x3C;</span><span style="color:#F07178">url</span><span style="color:#89DDFF">></span><span style="color:#BABED8">https://repository.mulesoft.org/nexus/content/repositories/public</span><span style="color:#89DDFF">&#x3C;/</span><span style="color:#F07178">url</span><span style="color:#89DDFF">></span></span>
+<span class="line"><span style="color:#89DDFF">        &#x3C;/</span><span style="color:#F07178">repository</span><span style="color:#89DDFF">></span></span>
+<span class="line"><span style="color:#89DDFF">      &#x3C;/</span><span style="color:#F07178">repositories</span><span style="color:#89DDFF">></span></span>
+<span class="line"><span style="color:#89DDFF">      &#x3C;</span><span style="color:#F07178">pluginRepositories</span><span style="color:#89DDFF">></span></span>
+<span class="line"><span style="color:#89DDFF">        &#x3C;</span><span style="color:#F07178">pluginRepository</span><span style="color:#89DDFF">></span></span>
+<span class="line"><span style="color:#89DDFF">          &#x3C;</span><span style="color:#F07178">id</span><span style="color:#89DDFF">></span><span style="color:#BABED8">mule-public</span><span style="color:#89DDFF">&#x3C;/</span><span style="color:#F07178">id</span><span style="color:#89DDFF">></span></span>
+<span class="line"><span style="color:#89DDFF">          &#x3C;</span><span style="color:#F07178">url</span><span style="color:#89DDFF">></span><span style="color:#BABED8">https://repository.mulesoft.org/nexus/content/repositories/public</span><span style="color:#89DDFF">&#x3C;/</span><span style="color:#F07178">url</span><span style="color:#89DDFF">></span></span>
+<span class="line"><span style="color:#89DDFF">        &#x3C;/</span><span style="color:#F07178">pluginRepository</span><span style="color:#89DDFF">></span></span>
+<span class="line"><span style="color:#89DDFF">      &#x3C;/</span><span style="color:#F07178">pluginRepositories</span><span style="color:#89DDFF">></span></span>
+<span class="line"><span style="color:#89DDFF">    &#x3C;/</span><span style="color:#F07178">profile</span><span style="color:#89DDFF">></span></span>
+<span class="line"><span style="color:#89DDFF">    &#x3C;</span><span style="color:#F07178">profile</span><span style="color:#89DDFF">></span></span>
+<span class="line"><span style="color:#89DDFF">      &#x3C;</span><span style="color:#F07178">id</span><span style="color:#89DDFF">></span><span style="color:#BABED8">Mule</span><span style="color:#89DDFF">&#x3C;/</span><span style="color:#F07178">id</span><span style="color:#89DDFF">></span></span>
+<span class="line"><span style="color:#89DDFF">      &#x3C;</span><span style="color:#F07178">activation</span><span style="color:#89DDFF">></span></span>
+<span class="line"><span style="color:#89DDFF">        &#x3C;</span><span style="color:#F07178">activeByDefault</span><span style="color:#89DDFF">></span><span style="color:#BABED8">true</span><span style="color:#89DDFF">&#x3C;/</span><span style="color:#F07178">activeByDefault</span><span style="color:#89DDFF">></span></span>
+<span class="line"><span style="color:#89DDFF">      &#x3C;/</span><span style="color:#F07178">activation</span><span style="color:#89DDFF">></span></span>
+<span class="line"><span style="color:#89DDFF">      &#x3C;</span><span style="color:#F07178">repositories</span><span style="color:#89DDFF">></span></span>
+<span class="line"><span style="color:#89DDFF">        &#x3C;</span><span style="color:#F07178">repository</span><span style="color:#89DDFF">></span></span>
+<span class="line"><span style="color:#89DDFF">          &#x3C;</span><span style="color:#F07178">id</span><span style="color:#89DDFF">></span><span style="color:#BABED8">MuleRepository</span><span style="color:#89DDFF">&#x3C;/</span><span style="color:#F07178">id</span><span style="color:#89DDFF">></span></span>
+<span class="line"><span style="color:#89DDFF">          &#x3C;</span><span style="color:#F07178">name</span><span style="color:#89DDFF">></span><span style="color:#BABED8">MuleRepository</span><span style="color:#89DDFF">&#x3C;/</span><span style="color:#F07178">name</span><span style="color:#89DDFF">></span></span>
+<span class="line"><span style="color:#89DDFF">          &#x3C;</span><span style="color:#F07178">url</span><span style="color:#89DDFF">></span><span style="color:#BABED8">https://repository.mulesoft.org/nexus-ee/content/repositories/releases-ee/</span><span style="color:#89DDFF">&#x3C;/</span><span style="color:#F07178">url</span><span style="color:#89DDFF">></span></span>
+<span class="line"><span style="color:#89DDFF">          &#x3C;</span><span style="color:#F07178">layout</span><span style="color:#89DDFF">></span><span style="color:#BABED8">default</span><span style="color:#89DDFF">&#x3C;/</span><span style="color:#F07178">layout</span><span style="color:#89DDFF">></span></span>
+<span class="line"><span style="color:#89DDFF">          &#x3C;</span><span style="color:#F07178">releases</span><span style="color:#89DDFF">></span></span>
+<span class="line"><span style="color:#89DDFF">            &#x3C;</span><span style="color:#F07178">enabled</span><span style="color:#89DDFF">></span><span style="color:#BABED8">true</span><span style="color:#89DDFF">&#x3C;/</span><span style="color:#F07178">enabled</span><span style="color:#89DDFF">></span></span>
+<span class="line"><span style="color:#89DDFF">          &#x3C;/</span><span style="color:#F07178">releases</span><span style="color:#89DDFF">></span></span>
+<span class="line"><span style="color:#89DDFF">          &#x3C;</span><span style="color:#F07178">snapshots</span><span style="color:#89DDFF">></span></span>
+<span class="line"><span style="color:#89DDFF">            &#x3C;</span><span style="color:#F07178">enabled</span><span style="color:#89DDFF">></span><span style="color:#BABED8">true</span><span style="color:#89DDFF">&#x3C;/</span><span style="color:#F07178">enabled</span><span style="color:#89DDFF">></span></span>
+<span class="line"><span style="color:#89DDFF">          &#x3C;/</span><span style="color:#F07178">snapshots</span><span style="color:#89DDFF">></span></span>
+<span class="line"><span style="color:#89DDFF">        &#x3C;/</span><span style="color:#F07178">repository</span><span style="color:#89DDFF">></span></span>
+<span class="line"><span style="color:#89DDFF">      &#x3C;/</span><span style="color:#F07178">repositories</span><span style="color:#89DDFF">></span></span>
+<span class="line"><span style="color:#89DDFF">    &#x3C;/</span><span style="color:#F07178">profile</span><span style="color:#89DDFF">></span></span>
+<span class="line"><span style="color:#89DDFF">  &#x3C;/</span><span style="color:#F07178">profiles</span><span style="color:#89DDFF">></span></span>
+<span class="line"><span style="color:#89DDFF">&#x3C;/</span><span style="color:#F07178">settings</span><span style="color:#89DDFF">></span></span>
+<span class="line"></span></code></pre>
+<ol type="1" start="3">
+<li>Now that we&#39;ve made our changes, commit the changes and push to your repository.</li>
+</ol>
+<p class="image-container"><img src="/lab-content/cicd-github-actions/img/d6bf52ce4bcbf89d.png"></p></div> <div class="codelab-step-nav"> <button class="codelab-nav-btn codelab-prev" data-target="2">
+&larr; Previous
+</button> <button class="codelab-nav-btn codelab-next" data-target="4">
+Next &rarr;
+</button> </div> </section><section id="step-4" class="codelab-step" data-step-index="4"> <div class="codelab-step-nav codelab-step-nav-top"> <button class="codelab-nav-btn codelab-prev" data-target="3">
+&larr; Previous
+</button> <button class="codelab-nav-btn codelab-next" data-target="5">
+Next &rarr;
+</button> </div> <h2 class="codelab-step-title"> <span class="codelab-step-badge">5 / 6</span> Setup GitHub Actions Workflow  </h2> <div class="codelab-step-content post-view-content"><p>We&#39;re in the home stretch now! Now that we&#39;ve created our repository, setup our secrets, and configured our application for automated deployment, we need to create the workflow. While we can do this just as easily from our local file system, for this lab we&#39;re going to use the GitHub web interface to create the workflow.</p>
+<aside class="warning"><p>Before proceeding with this section, make sure you have committed all of your local changes!</p>
+</aside>
+<ol type="1" start="1">
+<li>Navigate to your repository on GitHub</li>
+<li>Click on Actions</li>
+<li>Find the <strong>Publish Java Application with Maven</strong> entry in the <strong>Continuous integration workflows </strong>section (remember! Mule applications are mavenized java applications) and click Setup this workflow.</li>
+</ol>
+<p>Replace the default workflow code with the following:</p>
+<h3 is-upgraded><a href="https://github.com/mikeacjones/hello-world-mule-lab/blob/master/.github/workflows/maven-publish.yml" target="_blank"><strong>.github/workflows/maven-publish.yml</strong></a></h3>
+<pre class="shiki material-theme-palenight" style="background-color:#292D3E;color:#babed8" tabindex="0"><code><span class="line"><span style="color:#F07178">name</span><span style="color:#89DDFF">:</span><span style="color:#C3E88D"> Sandbox - Build and Deploy</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#FF9CAC">on</span><span style="color:#89DDFF">:</span></span>
+<span class="line"><span style="color:#F07178">  push</span><span style="color:#89DDFF">:</span></span>
+<span class="line"><span style="color:#F07178">    branches</span><span style="color:#89DDFF">:</span><span style="color:#C3E88D"> master</span><span style="color:#BABED8"> </span></span>
+<span class="line"><span style="color:#676E95;font-style:italic">#normally you wouldn't be deploying master branch pushes to Sandbox,</span></span>
+<span class="line"><span style="color:#676E95;font-style:italic">#but we're keeping things simple! 😁</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F07178">jobs</span><span style="color:#89DDFF">:</span></span>
+<span class="line"><span style="color:#F07178">  buildAndDeploy</span><span style="color:#89DDFF">:</span></span>
+<span class="line"><span style="color:#F07178">    runs-on</span><span style="color:#89DDFF">:</span><span style="color:#C3E88D"> ubuntu-latest</span></span>
+<span class="line"><span style="color:#F07178">    steps</span><span style="color:#89DDFF">:</span></span>
+<span class="line"><span style="color:#676E95;font-style:italic">#first, we need to checkout our mule application's code</span></span>
+<span class="line"><span style="color:#89DDFF">      -</span><span style="color:#F07178"> name</span><span style="color:#89DDFF">:</span><span style="color:#C3E88D"> Checkout repository</span></span>
+<span class="line"><span style="color:#F07178">        uses</span><span style="color:#89DDFF">:</span><span style="color:#C3E88D"> actions/checkout@v2</span></span>
+<span class="line"><span style="color:#89DDFF">      -</span><span style="color:#F07178"> name</span><span style="color:#89DDFF">:</span><span style="color:#C3E88D"> Build and deploy artifact to sandbox</span></span>
+<span class="line"><span style="color:#676E95;font-style:italic">#run the maven deploy lifecycle. The -B indicated a batch process,</span></span>
+<span class="line"><span style="color:#676E95;font-style:italic">#which reduces the amount of logging the deployment does</span></span>
+<span class="line"><span style="color:#F07178">        run</span><span style="color:#89DDFF">:</span><span style="color:#C3E88D"> mvn -B deploy -DmuleDeploy -s .maven/settings.xml</span></span>
+<span class="line"><span style="color:#676E95;font-style:italic">#Pass in the secrets we need for deployment as environment variables</span></span>
+<span class="line"><span style="color:#F07178">        env</span><span style="color:#89DDFF">:</span></span>
+<span class="line"><span style="color:#F07178">          NEXUS_USERNAME</span><span style="color:#89DDFF">:</span><span style="color:#C3E88D"> ${{ secrets.NEXUS_USERNAME }}</span></span>
+<span class="line"><span style="color:#F07178">          NEXUS_PASSWORD</span><span style="color:#89DDFF">:</span><span style="color:#C3E88D"> ${{ secrets.NEXUS_PASSWORD }}</span></span>
+<span class="line"><span style="color:#F07178">          PLATFORM_USERNAME</span><span style="color:#89DDFF">:</span><span style="color:#C3E88D"> ${{ secrets.PLATFORM_USERNAME }}</span></span>
+<span class="line"><span style="color:#F07178">          PLATFORM_PASSWORD</span><span style="color:#89DDFF">:</span><span style="color:#C3E88D"> ${{ secrets.PLATFORM_PASSWORD }}</span></span>
+<span class="line"><span style="color:#F07178">          SANDBOX_CLIENT_ID</span><span style="color:#89DDFF">:</span><span style="color:#C3E88D"> ${{ secrets.SANDBOX_CLIENT_ID }}</span></span>
+<span class="line"><span style="color:#F07178">          SANDBOX_CLIENT_SECRET</span><span style="color:#89DDFF">:</span><span style="color:#C3E88D"> ${{ secrets.SANDBOX_CLIENT_SECRET }}</span></span>
+<span class="line"><span style="color:#F07178">          BUS_GROUP_ID</span><span style="color:#89DDFF">:</span><span style="color:#C3E88D"> ${{ secrets.BUS_GROUP_ID }}</span></span></code></pre>
+<ol type="1" start="4">
+<li>Click Start Commit in the top right</li>
+</ol>
+<p class="image-container"><img src="/lab-content/cicd-github-actions/img/bbfdc0f760d1a835.png"></p>
+<ol type="1" start="5">
+<li>As soon as you commit the file, you can go back to the Actions tab and you should see our workflow running!</li>
+</ol>
+<p class="image-container"><img src="/lab-content/cicd-github-actions/img/37b3e4edaff339de.png"></p>
+<ol type="1" start="6">
+<li>The application has an MUnit test suite (<code>src/test/munit</code>) which will be automatically run:</li>
+</ol>
+<p class="image-container"><img src="/lab-content/cicd-github-actions/img/739b4c64eb019037.png"></p>
+<ol type="1" start="7">
+<li>Once done building the application, the plugin will upload the artifact to CloudHub and then wait for the SLB to acknowledge the application has started up and is live.</li>
+</ol>
+<p class="image-container"><img src="/lab-content/cicd-github-actions/img/92cf564d8845dc04.png"></p>
+<ol type="1" start="8">
+<li>While the application is starting, if you navigate to Runtime Manager, you can see our new application starting</li>
+</ol>
+<p class="image-container"><img src="/lab-content/cicd-github-actions/img/dd303e73c58497ee.png"></p></div> <div class="codelab-step-nav"> <button class="codelab-nav-btn codelab-prev" data-target="3">
+&larr; Previous
+</button> <button class="codelab-nav-btn codelab-next" data-target="5">
+Next &rarr;
+</button> </div> </section><section id="step-5" class="codelab-step" data-step-index="5"> <div class="codelab-step-nav codelab-step-nav-top"> <button class="codelab-nav-btn codelab-prev" data-target="4">
+&larr; Previous
+</button> <a href="/labs" class="codelab-nav-btn codelab-next">
+Done &check;
+</a> </div> <h2 class="codelab-step-title"> <span class="codelab-step-badge">6 / 6</span> Wrapping Up  </h2> <div class="codelab-step-content post-view-content"><p>Today we created an automated deployment of a Mule Application using GitHub Actions. While our GitHub workflow and GitHub secrets are unique to GitHub, the concepts used are not. Whether your using Jenkins, Azure Pipelines, CircleCI, GitLab, etc, the process is largely the same:</p>
+<ol type="1" start="1">
+<li>Establish source control</li>
+<li>Build tests &amp; application</li>
+<li>Configure the maven application with the <code>mule-maven-plugin</code></li>
+<li>Parameterize sensitive information; do NOT store directly in source code</li>
+<li>In CI platform  pass in sensitive information from some form of vault</li>
+<li>Profit</li>
+</ol>
+<p>This was an extremely simplistic example, but Mule Applications are standard mavenized java applications. This means you can make your CI processes as complicated or simple as your use case dictated, eg: multibranch pipelines, secure vaults trigger builds via webhooks, SonarQube for quality gates, etc.</p>
+<p>If you had any issues with this lab, please feel free to open an issue: <a href="https://github.com/mikeacjones/hello-world-mule-lab/issues/new" target="_blank">https://github.com/mikeacjones/hello-world-mule-lab/issues/new</a></p></div> <div class="codelab-step-nav"> <button class="codelab-nav-btn codelab-prev" data-target="4">
+&larr; Previous
+</button> <a href="/labs" class="codelab-nav-btn codelab-next">
+Done &check;
+</a> </div> </section> </div> </div> </div> <script type="module" src="/_astro/CodeBlock.astro_astro_type_script_index_0_lang.DUA4PhpD.js"></script>  </div> </div> </div> </body></html> <script>
+  // Initialize zoomable images for ALL codelab steps
+  (function() {
+    var images = document.querySelectorAll('.codelab-step-content img');
+    images.forEach(function(img) {
+      if (img.dataset.zoomable === 'true') return;
+      img.dataset.zoomable = 'true';
+      img.style.cursor = 'pointer';
+      img.addEventListener('click', function() {
+        var overlay = document.createElement('div');
+        overlay.className = 'zoomable-overlay';
+        var enlarged = document.createElement('img');
+        enlarged.src = img.src;
+        enlarged.alt = img.alt || '';
+        overlay.appendChild(enlarged);
+        document.body.appendChild(overlay);
+        overlay.addEventListener('click', function() { overlay.remove(); });
+        document.addEventListener('keydown', function handler(e) {
+          if (e.key === 'Escape') { overlay.remove(); document.removeEventListener('keydown', handler); }
+        });
+      });
+    });
+  })();
+</script> <script>
+  (function() {
+    var steps = document.querySelectorAll('.codelab-step');
+    var navLinks = document.querySelectorAll('.codelab-step-link');
+    if (steps.length === 0) return;
+
+    function goToStep(index) {
+      for (var i = 0; i < steps.length; i++) {
+        if (i === index) {
+          steps[i].classList.add('active');
+        } else {
+          steps[i].classList.remove('active');
+        }
+      }
+      for (var j = 0; j < navLinks.length; j++) {
+        if (j === index) {
+          navLinks[j].classList.add('active');
+        } else {
+          navLinks[j].classList.remove('active');
+        }
+      }
+      document.querySelector('.codelab-wrapper').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    for (var i = 0; i < navLinks.length; i++) {
+      (function(link) {
+        link.addEventListener('click', function() {
+          goToStep(parseInt(link.getAttribute('data-step'), 10));
+        });
+      })(navLinks[i]);
+    }
+
+    var btns = document.querySelectorAll('.codelab-nav-btn[data-target]');
+    for (var i = 0; i < btns.length; i++) {
+      (function(btn) {
+        btn.addEventListener('click', function() {
+          goToStep(parseInt(btn.getAttribute('data-target'), 10));
+        });
+      })(btns[i]);
+    }
+  })();
+</script>
