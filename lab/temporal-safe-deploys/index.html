@@ -454,7 +454,7 @@
 <pre class="astro-code material-theme-palenight" style="background-color:#292D3E;color:#babed8;overflow-x:auto;white-space:pre-wrap;word-wrap:break-word" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#FFCB6B">temporal</span><span style="color:#C3E88D"> workflow</span><span style="color:#C3E88D"> update-options</span><span style="color:#BABED8"> \</span></span>
 <span class="line"><span style="color:#C3E88D">  --query</span><span style="color:#89DDFF"> &#39;</span><span style="color:#C3E88D">WorkflowType=&quot;ResearchPollingWorkflow&quot; AND ExecutionStatus=&quot;Running&quot;</span><span style="color:#89DDFF">&#39;</span><span style="color:#BABED8"> \</span></span>
 <span class="line"><span style="color:#C3E88D">  --versioning-override-behavior</span><span style="color:#C3E88D"> auto_upgrade</span></span></code></pre>
-<p>Sleeping workflows naturally drain off the old version whenever they next wake up. No signals, no continue-as-new dance.</p>
+<p>Sleeping workflows naturally drain off the old version even without waking up; a sleeping workflow isn’t actually running on the worker, and with the AUTO_UGPRADE flag set, Temporal knows it can now route that workflow, and any new workflow tasks, to the new worker immediately. No signals, no continue-as-new.</p>
 <ol start="3">
 <li>Replayer fails (breaking change) → deploy with PINNED. Use the continue-as-new migration pattern we covered in the previous section.</li>
 </ol>
