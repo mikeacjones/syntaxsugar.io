@@ -317,8 +317,7 @@ The Worker Controller injects `TEMPORAL_DEPLOYMENT_NAME` and `TEMPORAL_WORKER_BU
 
 Notice the `default_versioning_behavior=VersioningBehavior.PINNED` on the config. This sets the default for all workflows registered on this worker. `PINNED` means: once a workflow starts on a particular build ID, all of its tasks get routed exclusively to workers running that same build. The code never changes underneath a running workflow.
 
-You can also set the behavior per-workflow with `@workflow.defn(versioning_behavior=VersioningBehavior.PINNED)` if you need different behaviors for different workflow types. See the [Python SDK versioning reference](https://docs.temporal.io/develop/python/versioning#pinned-vs-auto_upgrade-behaviors) for the full set of options. But for most cases, the worker-level default is cleaner.
-
+You can also set the behavior per-workflow with `@workflow.defn(versioning_behavior=VersioningBehavior.PINNED)` if you need different behaviors for different workflow types. See the [Python SDK versioning reference](https://docs.temporal.io/develop/python/versioning#pinned-vs-auto_upgrade-behaviors) for the full set of options.
 ### The TemporalWorkerDeployment Chart
 
 Take a look at `charts/worker/templates/temporal-worker-deployment.yaml` to see what the Worker Controller manages:
