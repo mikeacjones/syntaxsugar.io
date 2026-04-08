@@ -452,24 +452,15 @@ This is the simplest version migration path. It works, but it's passive. The wor
 
 What if you want the workflow to migrate as soon as a new version is deployed, not just whenever the history happens to get large?
 
-Temporal provides `workflow.info().is_target_worker_deployment_version_changed()`. This returns `True` when the server has set a newer "current" version for this deployment. We can add it to the wait condition so the workflow wakes up and migrates immediately.
+Temporal provides `workflow.info().is_target_worker_deployment_version_changed()`. This returns `True` when the server has set a newer "current" version for this deployment. We can add it to the wait condition so that when the workflow receives new work and wakes up, it migrates immediately instead of waiting for the continue-as-new-suggested, cutting down on how long old pods stick around.
 
-Open `src/workflows.py` and update the `ResearchPollingWorkflow`. Add a couple of new fields:
+Open `src/workflows.py` and update the `ResearchPollingWorkflow`. Add a field to track draining state:
 
 ```python
 class ResearchPollingWorkflow:
     def __init__(self) -> None:
         self._pending: list[ResearchRequest] = []
         self._draining: bool = False    # [!code ++]
-        self._wake_up: bool = False     # [!code ++]
-```
-
-Add a `wake_up` signal (we'll need this in the next section):
-
-```python
-    @workflow.signal
-    async def wake_up(self) -> None:
-        self._wake_up = True
 ```
 
 Now update the main loop to check for version changes:
@@ -485,10 +476,8 @@ Now update the main loop to check for version changes:
                     len(self._pending) > 0
                     or workflow.info().is_continue_as_new_suggested()
                     or workflow.info().is_target_worker_deployment_version_changed()  # [!code ++]
-                    or self._wake_up                                                  # [!code ++]
                 )
             )
-            self._wake_up = False                                                     # [!code ++]
 
             if (
                 workflow.info().is_continue_as_new_suggested()
@@ -524,7 +513,7 @@ Let's unpack what happens when a version change is detected:
 2. We wait for `workflow.all_handlers_finished()`. This ensures any in-flight signal handlers or update handlers complete before we migrate.
 3. We call `continue_as_new` with `initial_versioning_behavior=AUTO_UPGRADE`. The new execution starts on the current version.
 
-The combination of these two pieces gives you full control: the `AUTO_UPGRADE` on continue-as-new ensures the workflow actually moves to the new version (instead of staying pinned), and the `is_target_worker_deployment_version_changed()` check ensures the workflow migrates promptly rather than waiting for the history to grow.
+The combination of these two pieces gives you full control: the `AUTO_UPGRADE` on continue-as-new ensures the workflow actually moves to the new version (instead of staying pinned), and the `is_target_worker_deployment_version_changed()` check ensures the workflow migrates promptly when it has work to do, rather than waiting for the history to grow.
 
 {/* TODO: Screenshot showing the continue-as-new chain from V1 to V2 in the Temporal UI */}
 
@@ -538,7 +527,35 @@ You could just wait. The next time a signal comes in (a new research request), t
 
 ### The Wake-Up Signal
 
-That's why we added the `wake_up` signal earlier. After deploying a new version, send a signal to nudge the workflow:
+The solution: add a dedicated signal that wakes up idle workflows so they can check for version changes.
+
+```python
+class ResearchPollingWorkflow:
+    def __init__(self) -> None:
+        self._pending: list[ResearchRequest] = []
+        self._draining: bool = False
+        self._wake_up: bool = False     # [!code ++]
+
+    @workflow.signal                    # [!code ++]
+    async def wake_up(self) -> None:    # [!code ++]
+        self._wake_up = True            # [!code ++]
+```
+
+And add it to the wait condition:
+
+```python
+            await workflow.wait_condition(
+                lambda: (
+                    len(self._pending) > 0
+                    or workflow.info().is_continue_as_new_suggested()
+                    or workflow.info().is_target_worker_deployment_version_changed()
+                    or self._wake_up                                                  # [!code ++]
+                )
+            )
+            self._wake_up = False                                                     # [!code ++]
+```
+
+After deploying a new version, send the signal to nudge the workflow:
 
 ```bash
 temporal workflow signal \
