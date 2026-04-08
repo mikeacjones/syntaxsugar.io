@@ -446,13 +446,52 @@ if workflow.info().is_continue_as_new_suggested():
 
 Now when the history gets large enough to trigger a continue-as-new, the new execution starts on the current (latest) version instead of staying pinned to the old one. The state carries over. Pending requests and the completed count survive the migration. From the outside it looks like the workflow just kept running, but under the hood it jumped from V1 to V2.
 
-This is the simplest version migration path. It works, but it's passive. The workflow only migrates when Temporal suggests a continue-as-new, which might not happen for a while if the workflow isn't doing much.
+This is the simplest version migration path. It works, but it's passive. The workflow only migrates when Temporal suggests a continue-as-new, which might not happen for a while if the workflow isn't doing much. Let's see that in action.
+
+### Try It Out
+
+Build and deploy, then start the polling workflow:
+
+```bash
+./scripts/build-and-deploy.sh v3-versioned --versioned
+
+temporal workflow start \
+  --task-queue research-agent \
+  --type ResearchPollingWorkflow \
+  --input '{"pending_requests": [], "completed_count": 0}' \
+  --workflow-id research-polling
+```
+
+The polling workflow is running on `v3-versioned`. Now deploy a new version:
+
+```bash
+./scripts/build-and-deploy.sh v4-versioned --versioned
+```
+
+Check the Deployments tab in the Temporal UI. You'll see `v3-versioned` is in the Draining state because the polling workflow is still pinned to it. Now send it some work:
+
+```bash
+temporal workflow signal \
+  --workflow-id research-polling \
+  --name submit_request \
+  --input '{"topic": "quantum computing", "request_id": "test-1"}'
+```
+
+The polling workflow wakes up, processes the research request on the V3 worker, and goes back to sleep. Check the Deployments tab again. It's still on `v3-versioned`. It processed the work just fine, but it didn't migrate because the history isn't large enough to trigger `is_continue_as_new_suggested()`.
+
+The V3 pod is going to stick around until the history grows enough. For a workflow that processes a few requests a day, that could be a long time.
 
 ### Part 2: Detecting Version Changes
 
-What if you want the workflow to migrate as soon as a new version is deployed, not just whenever the history happens to get large?
+What if you want the workflow to migrate as soon as it has a chance, not just whenever the history happens to get large?
 
-Temporal provides `workflow.info().is_target_worker_deployment_version_changed()`. This returns `True` when the server has set a newer "current" version for this deployment. We can add it to the wait condition so that when the workflow receives new work and wakes up, it migrates immediately instead of waiting for the continue-as-new-suggested, cutting down on how long old pods stick around.
+Temporal provides `workflow.info().is_target_worker_deployment_version_changed()`. This returns `True` when the server has set a newer "current" version for this deployment. We can add it to the wait condition so that when the workflow receives new work and wakes up, it checks for a version change and migrates immediately.
+
+First, terminate the running polling workflow so we can redeploy with the updated code:
+
+```bash
+temporal workflow terminate --workflow-id research-polling
+```
 
 Open `src/workflows.py` and update the `ResearchPollingWorkflow`. Add a field to track draining state:
 
@@ -504,6 +543,39 @@ Now update the main loop to check for version changes:
                 )
                 state.completed_count += 1
 ```
+
+### See It Work
+
+Deploy and start the polling workflow again with the updated code:
+
+```bash
+./scripts/build-and-deploy.sh v5-versioned --versioned
+
+temporal workflow start \
+  --task-queue research-agent \
+  --type ResearchPollingWorkflow \
+  --input '{"pending_requests": [], "completed_count": 0}' \
+  --workflow-id research-polling
+```
+
+Deploy a new version:
+
+```bash
+./scripts/build-and-deploy.sh v6-versioned --versioned
+```
+
+Check the Deployments tab. The polling workflow is still on `v5-versioned`. Now send it a research request:
+
+```bash
+temporal workflow signal \
+  --workflow-id research-polling \
+  --name submit_request \
+  --input '{"topic": "quantum computing", "request_id": "test-2"}'
+```
+
+This time the workflow wakes up, sees the version change, drains, and continues-as-new onto `v6-versioned`. Check the Deployments tab again. The workflow has migrated. The V5 deployment should transition to Drained.
+
+{/* TODO: Screenshot showing the continue-as-new chain from V5 to V6 in the Temporal UI */}
 
 ### The Draining Pattern
 
