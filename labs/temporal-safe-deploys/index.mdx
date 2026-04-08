@@ -383,7 +383,10 @@ Wait for the workflow to reach the signal gate (research steps done), then deplo
 ./scripts/build-and-deploy.sh v2-versioned --versioned
 ```
 
-Check `kubectl get pods`. You'll see pods for both versions running simultaneously. Now signal the V1 workflow:
+Check `kubectl get pods`. You'll see pods for both versions running simultaneously. Head over to the deployments tab again, and you'll see a current and draining deployment. Clicking into the draining deployment, you'll see the in-flight workflow is currently "on" this deployment. Until the workflow completes successfully, this deployment version will stay in the draining state, allowing the workflow to complete. If you were to start a new workflow now, you'd see the new workflow route to the current deployment version.
+
+
+Now signal the V1 workflow:
 
 ```bash
 temporal workflow signal \
@@ -391,7 +394,7 @@ temporal workflow signal \
   --name proceed
 ```
 
-This time the V1 workflow finishes on the V1 pod. No errors. New workflows start on V2 with the fact-check step. No lost work.
+This time the V1 workflow finishes on the V1 pod. If we had made a change that broke determinism before deploying V2, there would have been no determinism errors - the V1 worker would continue handling the workflow.
 
 {/* TODO: Screenshot showing both V1 and V2 workflows coexisting */}
 
@@ -404,15 +407,54 @@ This time the V1 workflow finishes on the V1 pod. No errors. New workflows start
 
 ## Long-Running Workflows
 
-The `ResearchPollingWorkflow` in the starter code runs indefinitely, processing research requests as they arrive via signals. Since it's pinned, it'll stay on V1 forever. That keeps old worker pods alive indefinitely, which isn't what we want.
+So far we've been working with the `ResearchWorkflow`, which starts, does its thing, and completes. Worker Versioning handles that beautifully: V1 workflows finish on V1 workers, V2 workflows start on V2 workers, everyone's happy.
 
-The solution: detect when a new version is deployed and gracefully migrate using continue-as-new.
+But what about the `ResearchPollingWorkflow`? It runs indefinitely, processing research requests as they come in via signals. It never completes. Since our worker is configured with `PINNED` behavior, this workflow stays on V1 forever. That means the V1 worker pod sticks around forever too, which defeats the purpose of draining old versions.
 
-### Detect the Version Change
+We need a way for long-running workflows to migrate to new versions. There are two pieces to this, and we'll tackle them one at a time.
 
-Temporal provides `workflow.info().is_target_worker_deployment_version_changed()`. This returns `True` when the server has set a newer "current" version for this deployment. We can check it in our wait condition.
+### Part 1: Continue-as-New with AUTO_UPGRADE
 
-Open `src/workflows.py` and update the `ResearchPollingWorkflow`. Add a few new fields to track draining state and wake-up signals:
+The starter code already has a basic `continue_as_new` for history management:
+
+```python
+if workflow.info().is_continue_as_new_suggested():
+    workflow.continue_as_new(
+        PollingState(
+            pending_requests=list(self._pending),
+            completed_count=state.completed_count,
+        )
+    )
+```
+
+This is standard Temporal practice: when the event history gets large, the workflow restarts itself with fresh history. But with `PINNED` behavior, the continued execution stays on the same version. It doesn't migrate.
+
+The fix is one line. Add `initial_versioning_behavior=AUTO_UPGRADE` to the continue-as-new call:
+
+```python
+if workflow.info().is_continue_as_new_suggested():
+    workflow.continue_as_new(
+        PollingState(
+            pending_requests=list(self._pending),
+            completed_count=state.completed_count,
+        ),
+        initial_versioning_behavior=(                            # [!code ++]
+            workflow.ContinueAsNewVersioningBehavior.AUTO_UPGRADE  # [!code ++]
+        ),                                                       # [!code ++]
+    )
+```
+
+Now when the history gets large enough to trigger a continue-as-new, the new execution starts on the current (latest) version instead of staying pinned to the old one. The state carries over. Pending requests and the completed count survive the migration. From the outside it looks like the workflow just kept running, but under the hood it jumped from V1 to V2.
+
+This is the simplest version migration path. It works, but it's passive. The workflow only migrates when Temporal suggests a continue-as-new, which might not happen for a while if the workflow isn't doing much.
+
+### Part 2: Detecting Version Changes
+
+What if you want the workflow to migrate as soon as a new version is deployed, not just whenever the history happens to get large?
+
+Temporal provides `workflow.info().is_target_worker_deployment_version_changed()`. This returns `True` when the server has set a newer "current" version for this deployment. We can add it to the wait condition so the workflow wakes up and migrates immediately.
+
+Open `src/workflows.py` and update the `ResearchPollingWorkflow`. Add a couple of new fields:
 
 ```python
 class ResearchPollingWorkflow:
@@ -430,7 +472,7 @@ Add a `wake_up` signal (we'll need this in the next section):
         self._wake_up = True
 ```
 
-Now update the main loop. Replace the `wait_condition` and add the version check:
+Now update the main loop to check for version changes:
 
 ```python
     @workflow.run
@@ -448,11 +490,10 @@ Now update the main loop. Replace the `wait_condition` and add the version check
             )
             self._wake_up = False                                                     # [!code ++]
 
-            # Version change or history getting large: drain and migrate
-            if (                                                                      # [!code ++]
+            if (
                 workflow.info().is_continue_as_new_suggested()
                 or workflow.info().is_target_worker_deployment_version_changed()       # [!code ++]
-            ):                                                                        # [!code ++]
+            ):
                 self._draining = True                                                 # [!code ++]
                 await workflow.wait_condition(workflow.all_handlers_finished)          # [!code ++]
                 workflow.continue_as_new(
@@ -460,9 +501,9 @@ Now update the main loop. Replace the `wait_condition` and add the version check
                         pending_requests=list(self._pending),
                         completed_count=state.completed_count,
                     ),
-                    initial_versioning_behavior=(                                     # [!code ++]
-                        workflow.ContinueAsNewVersioningBehavior.AUTO_UPGRADE          # [!code ++]
-                    ),                                                                # [!code ++]
+                    initial_versioning_behavior=(
+                        workflow.ContinueAsNewVersioningBehavior.AUTO_UPGRADE
+                    ),
                 )
 
             if self._pending:
@@ -477,13 +518,13 @@ Now update the main loop. Replace the `wait_condition` and add the version check
 
 ### The Draining Pattern
 
-Let's unpack what's happening in that version-check block:
+Let's unpack what happens when a version change is detected:
 
 1. We set `self._draining = True`. This is a flag you can check in signal handlers to stop accepting new work during migration.
 2. We wait for `workflow.all_handlers_finished()`. This ensures any in-flight signal handlers or update handlers complete before we migrate.
-3. We call `continue_as_new` with `initial_versioning_behavior=AUTO_UPGRADE`. This tells Temporal to start the new execution on the latest current version, not on the same build ID we started on.
+3. We call `continue_as_new` with `initial_versioning_behavior=AUTO_UPGRADE`. The new execution starts on the current version.
 
-The state carries over. Pending requests and the completed count survive the migration. From the outside, it looks like the workflow just kept running. But under the hood, it jumped from V1 to V2.
+The combination of these two pieces gives you full control: the `AUTO_UPGRADE` on continue-as-new ensures the workflow actually moves to the new version (instead of staying pinned), and the `is_target_worker_deployment_version_changed()` check ensures the workflow migrates promptly rather than waiting for the history to grow.
 
 {/* TODO: Screenshot showing the continue-as-new chain from V1 to V2 in the Temporal UI */}
 
