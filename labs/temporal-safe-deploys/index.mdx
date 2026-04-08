@@ -9,6 +9,12 @@ duration: "60 min"
 
 ## What We're Building
 
+I recently refactored some personal projects to use Temporal as the orchestrator. When I was updating my pipelines that handle the deployments, and while testing things (ie: playing whack-a-mole with bugs I created as I learned a new SDK), I ran into a fairly common problem in Temporal when making changes to your code base: determinism errors for in-flight workflows. This lead to diving into learning how to reset the event history, terminating my workflows before deployments, code patching / versioning...
+
+![Crazy mental connections I now needed to maintain..](https://media.giphy.com/media/rBA9YKPPA4v7DXPdvg/giphy.gif)
+
+Eventually though I started digging to see if there was a way to manage this without juggling multiple live versions of the workflow code. Enter the temporal worker controller. This post walks through an example exercise to help understand, at least at a high level, the problem the controller solves and the basic deployment pattern.
+
 Picture this: you have an agentic workflow making expensive LLM calls. Each research step costs real money and takes real time. Three steps in, your workflow has burned through a few dollars of compute. Then someone deploys a code change. The in-flight workflow hits a non-determinism error and stops dead.
 
 Your options? Reset the workflow to a point before the change. Those LLM calls you already paid for? Gone. That work? Wasted.
@@ -287,6 +293,7 @@ from temporalio.worker import Worker                                       # [!c
 Then add these constants and the `deployment_config` parameter to the `Worker` constructor:
 
 ```python
+TASK_QUEUE = "research-agent"
 DEPLOYMENT_NAME = os.environ.get("TEMPORAL_DEPLOYMENT_NAME", "research-agent")  # [!code ++]
 BUILD_ID = os.environ.get("TEMPORAL_WORKER_BUILD_ID", "local-dev")              # [!code ++]
 
@@ -336,8 +343,8 @@ spec:
   rollout:
     strategy: AllAtOnce
   sunset:
-    scaledownDelay: 5m
-    deleteDelay: 30m
+    scaledownDelay: 5s
+    deleteDelay: 10s
   template:
     spec:
       containers:
@@ -402,7 +409,7 @@ This time the V1 workflow finishes on the V1 pod. If we had made a change that b
 |---|---|---|
 | In-flight V1 workflows | Non-determinism error | Complete normally on V1 |
 | New workflows | Start on V2 | Start on V2 |
-| LLM spend | Lost on error | Preserved |
+| LLM spend | Lost on event history reset | Preserved |
 | Old workers | Replaced immediately | Drain, then removed |
 
 ## Long-Running Workflows
@@ -547,7 +554,7 @@ Now update the main loop to check for version changes:
 Deploy the updated code and start the polling workflow:
 
 ```bash
-./scripts/build-and-deploy.sh v4-versioned --versioned && sleep 10 && \
+./scripts/build-and-deploy.sh v4-versioned --versioned && sleep 30 && \
 temporal workflow start \
   --task-queue research-agent \
   --type ResearchPollingWorkflow \
