@@ -544,10 +544,16 @@ Now update the main loop to check for version changes:
 
 ### See It Work
 
-Deploy the updated code and start the polling workflow again:
+Deploy the updated code:
 
 ```bash
 ./scripts/build-and-deploy.sh v4-versioned --versioned
+```
+
+Wait for the new pod to be ready before starting the workflow, otherwise it might land on the previous version:
+
+```bash
+kubectl wait --for=condition=Ready pod -l app=research-agent --timeout=60s
 
 temporal workflow start \
   --task-queue research-agent \
