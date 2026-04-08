@@ -161,9 +161,9 @@ Now watch the workflow complete with the synthesis activity.
 
 ## The Breaking Change
 
-Product wants a fact-check step before synthesis. Totally reasonable. Let's add it.
+Product wants each research step fact-checked before moving on to the next one. Totally reasonable. Let's add it.
 
-Open `src/workflows.py` and add the `fact_check` activity call right before the signal gate. First, update the import at the top of the file to include `fact_check`:
+Open `src/workflows.py` and add the `fact_check` activity call inside the research loop, right after each step. First, update the import at the top of the file to include `fact_check`:
 
 ```python
 with workflow.unsafe.imports_passed_through():
@@ -175,20 +175,20 @@ with workflow.unsafe.imports_passed_through():
     )
 ```
 
-Then add the `fact_check` call right before `await workflow.wait_condition(lambda: self._proceed)`:
+Then modify the research loop to fact-check each step's findings before moving on:
 
 ```python
-        findings.append(result)
-
-    # Fact-check before proceeding to synthesis  # [!code ++]
-    checked = await workflow.execute_activity(    # [!code ++]
-        fact_check,                               # [!code ++]
-        args=[topic, findings],                   # [!code ++]
-        start_to_close_timeout=timedelta(seconds=30),  # [!code ++]
-    )                                             # [!code ++]
-
-    # Wait for proceed signal before synthesis
-    await workflow.wait_condition(lambda: self._proceed)
+        findings: list[StepFindings] = []
+        for step in plan.steps:
+            result = await workflow.execute_activity(
+                execute_research_step, step,
+                start_to_close_timeout=timedelta(seconds=30),
+            )
+            await workflow.execute_activity(              # [!code ++]
+                fact_check, result,                       # [!code ++]
+                start_to_close_timeout=timedelta(seconds=30),  # [!code ++]
+            )                                             # [!code ++]
+            findings.append(result)
 ```
 
 Now here's where things go wrong. Start a V1 workflow and let it run through the research steps:
@@ -217,7 +217,7 @@ temporal workflow signal \
   --name proceed
 ```
 
-What happens: the V2 worker picks up the workflow task and replays the history. Plan matches. Research steps match. Then V2's code says "schedule fact_check" but the V1 history has no fact_check at this point. It went straight to the signal wait. The commands don't match the events. Non-determinism error.
+What happens: the V2 worker picks up the workflow task and replays the history. Plan matches. Step 1 matches. Then V2's code says "schedule fact_check" but the V1 history says "schedule step 2" at that position. The commands don't match the events. Non-determinism error.
 
 {/* TODO: Screenshot of the non-determinism error in Temporal UI */}
 
