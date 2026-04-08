@@ -242,14 +242,7 @@ When you update the image tag on a `TemporalWorkerDeployment`, the controller sp
 
 ### Install the Worker Controller
 
-Let's get it set up. The controller uses cert-manager for TLS certificates on its webhook, so we need that first:
-
-```bash
-kubectl apply -f https://github.com/cert-manager/cert-manager/releases/latest/download/cert-manager.yaml
-kubectl wait --for=condition=Available deployment --all -n cert-manager --timeout=120s
-```
-
-Now install the CRDs and controller:
+Let's get it set up. The dev environment already installed cert-manager (which the controller needs for its webhook TLS). Install the CRDs and controller:
 
 ```bash
 helm upgrade --install temporal-worker-controller-crds \
