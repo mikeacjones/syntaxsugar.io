@@ -205,18 +205,38 @@ h1, h2, h3, h4 {
 
 /* ===== Footer ===== */
 .SiteFooter {
-  width: 100%;
-  max-width: calc(var(--wide) + 2 * var(--gutter));
+  width: calc(100% - 2 * var(--gutter));
+  max-width: var(--wide);
   margin: 0 auto;
-  padding: 24px var(--gutter) 40px;
+  padding: 24px 0 40px;
   border-top: 1px solid var(--rule);
   display: flex;
   justify-content: space-between;
+  align-items: center;
   flex-wrap: wrap;
-  gap: 8px 24px;
-  font-family: inherit;
+  gap: 16px 32px;
   font-size: 0.95rem;
   color: var(--ink-muted);
+}
+
+.About {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  max-width: 30rem;
+}
+
+.About img {
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.About p {
+  margin: 0;
+  line-height: 1.45;
 }
 
 .SiteFooter nav {
@@ -227,29 +247,6 @@ h1, h2, h3, h4 {
 
 .SiteFooter a {
   color: var(--ink-muted);
-}
-
-/* ===== Home intro ===== */
-.Intro {
-  display: flex;
-  gap: 20px;
-  align-items: center;
-  max-width: var(--measure);
-  margin: 56px 0 48px;
-}
-
-.Intro-photo {
-  flex: 0 0 72px;
-  width: 72px;
-  height: 72px;
-  border-radius: 50%;
-  object-fit: cover;
-}
-
-.Intro p {
-  margin: 0;
-  font-size: var(--step-1);
-  line-height: 1.4;
 }
 
 /* ===== Entries (post and lab lists) ===== */
@@ -324,6 +321,7 @@ a.Tag:hover {
 /* The newest post gets the room a hero would: it's what most visitors came for. */
 .Entry--featured {
   border-top: 3px solid var(--ink);
+  margin-top: 48px;
   padding: 28px 0 40px;
 }
 
@@ -878,21 +876,6 @@ pre.astro-code .line.diff.remove::before {
 
   .Masthead {
     padding-top: 20px;
-  }
-
-  .Intro {
-    align-items: flex-start;
-    margin: 36px 0 32px;
-  }
-
-  .Intro-photo {
-    flex-basis: 48px;
-    width: 48px;
-    height: 48px;
-  }
-
-  .Intro p {
-    font-size: var(--step-0);
   }
 
   .Year,
