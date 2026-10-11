@@ -14,16 +14,16 @@
   --add-bg: rgba(31, 136, 61, 0.12);
   --remove-bg: rgba(207, 34, 46, 0.1);
 
-  --font-text: 'Source Serif 4', Georgia, serif;
+  --font-text: 'JetBrains Mono', ui-monospace, Menlo, monospace;
   --font-code: 'JetBrains Mono', ui-monospace, Menlo, monospace;
 
   /* 1.25 modular scale off a 19px reading size */
-  --step--1: 0.85rem;
-  --step-0: 1.1875rem;
-  --step-1: 1.48rem;
-  --step-2: 1.85rem;
-  --step-3: 2.32rem;
-  --step-4: clamp(2.2rem, 1.4rem + 3.2vw, 3.6rem);
+  --step--1: 0.8rem;
+  --step-0: 1rem;
+  --step-1: 1.25rem;
+  --step-2: 1.6rem;
+  --step-3: 2rem;
+  --step-4: clamp(2rem, 1.3rem + 2.8vw, 3.2rem);
 
   --measure: 42rem;
   --wide: 60rem;
@@ -81,7 +81,8 @@ body {
   color: var(--ink);
   font-family: var(--font-text);
   font-size: var(--step-0);
-  line-height: 1.6;
+  font-weight: 300;
+  line-height: 1.7;
   font-optical-sizing: auto;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -116,9 +117,9 @@ a:hover {
 
 h1, h2, h3, h4 {
   font-family: inherit;
-  font-weight: 600;
-  line-height: 1.15;
-  letter-spacing: -0.01em;
+  font-weight: 300;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
   text-wrap: balance;
   scroll-margin-top: 24px;
 }
@@ -156,8 +157,8 @@ h1, h2, h3, h4 {
 .Wordmark {
   font-family: inherit;
   font-size: 1.6rem;
-  font-weight: 700;
-  letter-spacing: -0.015em;
+  font-weight: 500;
+  letter-spacing: -0.04em;
   color: var(--ink);
   text-decoration: none;
   display: inline-flex;
@@ -257,6 +258,7 @@ h1, h2, h3, h4 {
 
 .Entry-title {
   font-size: var(--step-1);
+  font-weight: 400;
   margin: 0 0 6px;
 }
 
@@ -315,7 +317,7 @@ a.Tag:hover {
 
 .Tag.active {
   color: var(--ink);
-  font-weight: 600;
+  font-weight: 500;
 }
 
 /* The newest post gets the room a hero would: it's what most visitors came for. */
@@ -327,8 +329,8 @@ a.Tag:hover {
 
 .Entry--featured .Entry-title {
   font-size: var(--step-4);
-  font-weight: 600;
-  letter-spacing: -0.015em;
+  font-weight: 100;
+  letter-spacing: -0.04em;
   margin-bottom: 14px;
   max-width: 18ch;
 }
@@ -351,7 +353,7 @@ a.Tag:hover {
 
 .Year-label {
   font-size: var(--step-2);
-  font-weight: 400;
+  font-weight: 100;
   color: var(--ink-muted);
   margin: 0;
   padding-top: 18px;
@@ -373,7 +375,7 @@ a.Tag:hover {
 .Entry-duration {
   font-family: inherit;
   font-size: var(--step-2);
-  font-weight: 400;
+  font-weight: 100;
   color: var(--ink-muted);
   line-height: 1.15;
   white-space: nowrap;
@@ -387,6 +389,8 @@ a.Tag:hover {
 
 .PageHeader h1 {
   font-size: var(--step-4);
+  font-weight: 100;
+  letter-spacing: -0.04em;
   margin: 0 0 10px;
 }
 
@@ -426,8 +430,8 @@ a.Tag:hover {
 
 .ArticleHeader h1 {
   font-size: var(--step-4);
-  font-weight: 600;
-  letter-spacing: -0.015em;
+  font-weight: 100;
+  letter-spacing: -0.04em;
   margin: 0 0 16px;
 }
 
@@ -470,7 +474,7 @@ a.Tag:hover {
 }
 
 .post-view-content strong {
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .post-view-content hr {
@@ -499,7 +503,7 @@ a.Tag:hover {
 }
 
 .post-view-content th {
-  font-weight: 600;
+  font-weight: 500;
   border-bottom: 2px solid var(--ink);
 }
 
@@ -559,6 +563,7 @@ blockquote p:last-child {
 /* ===== Inline code ===== */
 code:not(pre code) {
   font-family: var(--font-code);
+  font-weight: 400;
   font-size: 0.82em;
   padding: 0.1em 0.35em;
   border-radius: 4px;
@@ -571,6 +576,7 @@ code:not(pre code) {
 pre.astro-code,
 pre.shiki {
   font-family: var(--font-code);
+  font-weight: 400;
   font-size: 0.8rem;
   line-height: 1.65;
   margin: 0;
@@ -726,7 +732,7 @@ pre.astro-code .line.diff.remove::before {
 .codelab-step-link.active {
   color: var(--ink);
   border-left-color: var(--raspberry);
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .codelab-step-number {
@@ -749,6 +755,7 @@ pre.astro-code .line.diff.remove::before {
 
 .codelab-step-title {
   font-size: var(--step-3);
+  font-weight: 200;
   margin: 0 0 24px;
   max-width: var(--measure);
 }
@@ -835,6 +842,7 @@ pre.astro-code .line.diff.remove::before {
 
 .NotFound h1 {
   font-size: var(--step-4);
+  font-weight: 100;
   margin: 0 0 12px;
 }
 
