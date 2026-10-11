@@ -15,6 +15,8 @@ I recently refactored some personal projects to use Temporal as the orchestrator
 
 Eventually though I started digging to see if there was a way to manage this without juggling multiple live versions of the workflow code. Enter the temporal worker controller. This post walks through an example exercise to help understand, at least at a high level, the problem the controller solves and the basic deployment pattern.
 
+> **Update (October 2026):** The Temporal Worker Controller is now Generally Available. This lab has been updated for the GA release. The biggest change is that the custom resources were renamed: `TemporalWorkerDeployment` is now `WorkerDeployment` and `TemporalConnection` is now `Connection`. If you ran through an earlier version of this lab, see [Upgrading from the Pre-GA Controller](#upgrading-from-the-pre-ga-controller) at the end.
+
 Picture this: you have an agentic workflow making expensive LLM calls. Each research step costs real money and takes real time. Three steps in, your workflow has burned through a few dollars of compute. Then someone deploys a code change. The in-flight workflow hits a non-determinism error and stops dead.
 
 Your options? Reset the workflow to a point before the change. Those LLM calls you already paid for? Gone. That work? Wasted.
@@ -242,28 +244,36 @@ The core idea is simple: multiple versions of your worker run simultaneously on 
 
 One thing to call out: all versions share the same task queue. You don't need separate queues. The Temporal server handles the routing based on the build ID each worker registers with.
 
-On Kubernetes, the [Temporal Worker Controller](https://docs.temporal.io/production-deployment/worker-deployments/kubernetes-controller) automates all of this. It's a Kubernetes operator that watches `TemporalWorkerDeployment` resources and manages the full version lifecycle: spinning up new versions, draining old ones, and cleaning up when they're done. The source is at [temporalio/temporal-worker-controller](https://github.com/temporalio/temporal-worker-controller) and the Helm charts are published to Docker Hub as OCI artifacts.
+On Kubernetes, the [Temporal Worker Controller](https://docs.temporal.io/production-deployment/worker-deployments/kubernetes-controller) automates all of this. It's a Kubernetes operator that watches `WorkerDeployment` resources and manages the full version lifecycle: spinning up new versions, draining old ones, and cleaning up when they're done. It's Generally Available with stable APIs, so this is the recommended way to run versioned workers on Kubernetes. The source is at [temporalio/temporal-worker-controller](https://github.com/temporalio/temporal-worker-controller) and the Helm charts are published to Docker Hub as OCI artifacts.
 
-When you update the image tag on a `TemporalWorkerDeployment`, the controller spins up new pods alongside old pods. Old pods drain their work and eventually get cleaned up. This is sometimes called "rainbow deployments" because you can have many versions running at once.
+When you update the image tag on a `WorkerDeployment`, the controller spins up new pods alongside old pods. Old pods drain their work and eventually get cleaned up. This is sometimes called "rainbow deployments" because you can have many versions running at once.
 
 ### Install the Worker Controller
 
-Let's get it set up. Install the CRDs and controller:
+Let's get it set up. The controller ships as two Helm charts, one for the CRDs and one for the controller itself, so the CRDs can be upgraded independently. Install the CRDs first, then the controller:
 
 ```bash
+CHART_VERSION=0.31.0
+
 helm upgrade --install temporal-worker-controller-crds \
   oci://docker.io/temporalio/temporal-worker-controller-crds \
+  --version $CHART_VERSION \
   --namespace temporal-system \
   --create-namespace \
   --wait
 
 helm upgrade --install temporal-worker-controller \
   oci://docker.io/temporalio/temporal-worker-controller \
+  --version $CHART_VERSION \
   --namespace temporal-system \
   --wait
 ```
 
-Next, deploy a `TemporalConnection` resource so the controller knows how to reach our dev server. There's a Helm chart for this in the repo:
+A note on versions: the Helm chart version and the controller (app) version are numbered separately. Chart `0.31.0` installs controller `v1.12.0`. Pass the *chart* version to `--version`; the [releases page](https://github.com/temporalio/temporal-worker-controller/releases) lists the mapping. Anything from chart `0.26.0` (controller `v1.7.0`) onward is the GA API used in this lab.
+
+The controller's validating webhook needs a TLS certificate, and the recommended way to provide one is [cert-manager](https://cert-manager.io/). The dev environment already installed cert-manager into the cluster for you, so there's nothing extra to do here.
+
+Next, deploy a `Connection` resource so the controller knows how to reach our dev server. There's a Helm chart for this in the repo:
 
 ```bash
 helm upgrade --install lab-infra ./charts/infra --namespace default
@@ -275,10 +285,10 @@ Verify everything is in place:
 
 ```bash
 kubectl get crds | grep temporal
-kubectl get temporalconnections
+kubectl get connections.temporal.io
 ```
 
-You should see `temporalworkerdeployments.temporal.io` and `temporalconnections.temporal.io` in the CRDs, and a `lab-temporal` connection resource.
+You should see `workerdeployments.temporal.io` and `connections.temporal.io` in the CRDs, and a `lab-temporal` connection resource. (You'll also spot `temporalworkerdeployments.temporal.io` and `temporalconnections.temporal.io`. Those are the deprecated pre-GA kinds, kept around only so existing clusters can migrate. You can't create new resources of those kinds.)
 
 ### Configure the Worker
 
@@ -325,17 +335,17 @@ The Worker Controller injects `TEMPORAL_DEPLOYMENT_NAME` and `TEMPORAL_WORKER_BU
 Notice the `default_versioning_behavior=VersioningBehavior.PINNED` on the config. This sets the default for all workflows registered on this worker. `PINNED` means: once a workflow starts on a particular build ID, all of its tasks get routed exclusively to workers running that same build. The code never changes underneath a running workflow.
 
 You can also set the behavior per-workflow with `@workflow.defn(versioning_behavior=VersioningBehavior.PINNED)` if you need different behaviors for different workflow types. See the [Python SDK versioning reference](https://docs.temporal.io/develop/python/versioning#pinned-vs-auto_upgrade-behaviors) for the full set of options.
-### The TemporalWorkerDeployment Chart
+
+### The WorkerDeployment Chart
 
 Take a look at `charts/worker/templates/temporal-worker-deployment.yaml` to see what the Worker Controller manages:
 
 ```yaml
 apiVersion: temporal.io/v1alpha1
-kind: TemporalWorkerDeployment
+kind: WorkerDeployment
 metadata:
   name: research-agent
 spec:
-  replicas: 1
   workerOptions:
     connectionRef:
       name: lab-temporal
@@ -345,12 +355,18 @@ spec:
   sunset:
     scaledownDelay: 5s
     deleteDelay: 10s
-  template:
-    spec:
-      containers:
-        - name: worker
-          image: "k3d-registry.localhost:5050/research-agent:v1-versioned"
+  deployment:
+    replicas: 1
+    template:
+      spec:
+        containers:
+          - name: worker
+            image: "k3d-registry.localhost:5050/research-agent:v1-versioned"
 ```
+
+Don't let the `v1alpha1` in `apiVersion` throw you. The GA release kept that API version, and the project has committed to no more breaking changes to these resources.
+
+The `deployment` block takes a standard Kubernetes `DeploymentSpec` (replicas, pod template, `minReadySeconds`, and so on). The controller stamps out one real Kubernetes Deployment per version from it. Older examples put `replicas` and `template` directly under `spec`. That form still works but is deprecated.
 
 The key fields: `rollout.strategy` controls how new versions are introduced (we'll cover `Progressive` later in the ramping section). `sunset` controls how long old version pods stick around after they stop receiving new work. The controller handles creating versioned Kubernetes Deployments, registering build IDs with Temporal, and cleaning up drained versions automatically.
 
@@ -368,9 +384,9 @@ Now rebuild and deploy V1 with versioning enabled:
 ./scripts/build-and-deploy.sh v1-versioned --versioned
 ```
 
-The `--versioned` flag tells the deploy script to use the `TemporalWorkerDeployment` chart instead of a plain Kubernetes Deployment.
+The `--versioned` flag tells the deploy script to use the `WorkerDeployment` chart instead of a plain Kubernetes Deployment.
 
-Head to the Temporal UI at [localhost:8233](http://localhost:8233) and check the **Deployments** tab. You should see your `research-agent` deployment with build ID `v1-versioned` listed. This is where you'll be able to see multiple versions coexisting once we deploy V2.
+Head to the Temporal UI at [localhost:8233](http://localhost:8233) and check the **Deployments** tab. You should see a `default/research-agent` deployment (the controller names it `<k8s namespace>/<resource name>`) with a build ID that starts with `v1-versioned`. The controller builds the build ID from the image tag plus a short hash of the pod template, so any change to the pod spec produces a new version. This is where you'll be able to see multiple versions coexisting once we deploy V2.
 
 {/* TODO: Screenshot of the Deployments tab showing v1-versioned */}
 
@@ -482,7 +498,7 @@ temporal workflow signal \
   --input '{"topic": "quantum computing", "request_id": "poll-test-1"}'
 ```
 
-The polling workflow wakes up, processes the research request on the V2 worker, and goes back to sleep. Check the Deployments tab again. It's still on `v2-versioned`. It processed the work just fine, but it didn't migrate because the history isn't large enough to trigger `is_continue_as_new_suggested()`.
+The polling workflow wakes up, processes the research request on the V2 worker, and goes back to sleep. Check the Deployments tab again. It's still on the `v2-versioned` build. It processed the work just fine, but it didn't migrate because the history isn't large enough to trigger `is_continue_as_new_suggested()`.
 
 The V2 pod is going to stick around until the history grows enough. For a workflow that processes a few requests a day, that could be a long time.
 
@@ -571,7 +587,7 @@ Now deploy another new version:
 ./scripts/build-and-deploy.sh v5-versioned --versioned
 ```
 
-Check the Deployments tab. The polling workflow is still on `v4-versioned`. Now send it a research request:
+Check the Deployments tab. The polling workflow is still on the `v4-versioned` build. Now send it a research request:
 
 ```bash
 temporal workflow signal \
@@ -580,7 +596,7 @@ temporal workflow signal \
   --input '{"topic": "quantum computing", "request_id": "poll-test-2"}'
 ```
 
-This time the workflow wakes up, sees the version change, drains, and continues-as-new onto `v5-versioned`. Check the Deployments tab again. The workflow has migrated. The old deployment should transition to Drained.
+This time the workflow wakes up, sees the version change, drains, and continues-as-new onto the `v5-versioned` build. Check the Deployments tab again. The workflow has migrated. The old deployment should transition to Drained.
 
 {/* TODO: Screenshot showing the continue-as-new chain in the Temporal UI */}
 
@@ -676,13 +692,15 @@ Every version goes through a lifecycle:
 | Draining | No new work, but existing pinned workflows are still running |
 | Drained | All work complete, safe to remove |
 
-The Worker Controller manages this automatically. When a version enters the Drained state, the controller deletes its pods and Kubernetes resources based on the sunset configuration:
+The Worker Controller manages this automatically. When a version enters the Drained state, the controller scales down and then deletes its Kubernetes resources based on the sunset configuration:
 
 ```yaml
 sunset:
-  scaledownDelay: 5m   # scale down 5 min after draining starts
-  deleteDelay: 30m      # fully remove 30 min later
+  scaledownDelay: 5m   # scale to zero 5 min after the version is drained
+  deleteDelay: 30m     # delete the Deployment 30 min after the version is drained
 ```
+
+Both delays are measured from when the version becomes Drained. If you leave them out, the defaults are 1 hour and 24 hours. In this lab we use a few seconds so you can watch it happen.
 
 ### Progressive Rollouts
 
@@ -700,24 +718,65 @@ rollout:
 
 This sends 10% of new workflow starts to the new version, waits 5 minutes, bumps to 50%, waits 10 more, then promotes to full current. If something goes wrong at 10%, you can roll back before most of your traffic is affected.
 
-You can also manage this manually with the CLI:
+Rolling back is now built in. Point the `WorkerDeployment` back at the previous build by redeploying the old image tag with the same pod template. If that build was the current version within the last hour, the controller sends 100% of traffic back to it immediately and skips the progressive steps.
+
+You can also have a version prove itself before it receives any real traffic. A **gate** is a workflow type that must run to completion on the new version before the controller starts ramping:
+
+```yaml
+rollout:
+  strategy: Progressive
+  gate:
+    workflowType: "SmokeTestWorkflow"
+  steps:
+    - rampPercentage: 10
+      pauseDuration: 5m
+```
+
+If you'd rather drive routing yourself, use `strategy: Manual`. The controller still creates and scales a Deployment for each version, but it leaves the current and ramping versions alone. You then promote with the CLI:
 
 ```bash
 # Set a ramping version at 5%
-temporal worker-deployment set-ramping-version \
-  --deployment-name research-agent \
-  --build-id v3 \
+temporal worker deployment set-ramping-version \
+  --deployment-name default/research-agent \
+  --build-id <build-id> \
   --percentage 5
 
 # Once verified, promote to current
-temporal worker-deployment set-current-version \
-  --deployment-name research-agent \
-  --build-id v3
+temporal worker deployment set-current-version \
+  --deployment-name default/research-agent \
+  --build-id <build-id>
 ```
+
+You can only change routing from the CLI if you own the deployment. The controller claims ownership by setting the deployment's *manager identity*, and the server rejects routing changes from any other identity. With any strategy other than `Manual`, you first take control with `temporal worker deployment manager-identity set --deployment-name default/research-agent --self`. When you're done, give it back with `manager-identity unset`.
 
 ### Per-Version Autoscaling
 
-The Worker Controller can attach separate HPAs to each version's pods using the `WorkerResourceTemplate` CRD. This means V1 can scale down as its workload drains while V2 scales up to handle new traffic. The controller can even use Temporal-specific metrics like `approximate_backlog_count` for smarter scaling decisions.
+The Worker Controller can attach a separate HPA (or PodDisruptionBudget, KEDA `ScaledObject`, etc.) to each version's pods using the `WorkerResourceTemplate` CRD. You write the template once, and the controller stamps out a copy for every version:
+
+```yaml
+apiVersion: temporal.io/v1alpha1
+kind: WorkerResourceTemplate
+metadata:
+  name: research-agent-hpa
+spec:
+  workerDeploymentRef:
+    name: research-agent
+  template:
+    apiVersion: autoscaling/v2
+    kind: HorizontalPodAutoscaler
+    spec:
+      minReplicas: 1
+      maxReplicas: 10
+      metrics:
+        - type: Resource
+          resource:
+            name: cpu
+            target:
+              type: Utilization
+              averageUtilization: 70
+```
+
+This means V1 can scale down as its workload drains while V2 scales up to handle new traffic. You can also scale on Temporal-specific metrics like `approximate_backlog_count` for smarter scaling decisions. If you use an autoscaler, leave `replicas` out of the `deployment` block so the controller and the HPA don't fight over the replica count.
 
 This is the full HA picture: versioned deployments with independent scaling, progressive rollouts, and automatic cleanup. No more all-or-nothing deploys.
 
@@ -732,15 +791,30 @@ Here's what we covered:
 | Rainbow deployments | Multiple worker versions run simultaneously on the same task queue |
 | Continue-as-new migration | Long-running workflows detect version changes and migrate with AUTO_UPGRADE |
 | Sleeping workflow caveat | Idle workflows need a signal or timer to notice version changes |
-| Progressive rollouts | Ramp traffic gradually for safer deployments |
+| Progressive rollouts | Ramp traffic gradually, gate on a smoke-test workflow, and roll back by redeploying a previous build |
 
 The finished code is on the [main branch](https://github.com/mikeacjones/temporal-safe-deploys-lab). The starter branch has everything you need to follow along from scratch.
 
 For a real-world example of all these patterns in production, check out [Building a Reddit Bot on Temporal](/post/2026/reddit-bot-temporal-journey/) where I use worker versioning, continue-as-new migration, and the wake-up signal pattern in a 24/7 bot.
 
+### Upgrading from the Pre-GA Controller
+
+If you have a cluster that's still running a pre-GA version of the controller (chart `0.25.x` or earlier), the upgrade is mostly a rename:
+
+| Pre-GA | GA |
+|---|---|
+| `TemporalWorkerDeployment` | `WorkerDeployment` |
+| `TemporalConnection` | `Connection` |
+| `WorkerResourceTemplate.spec.temporalWorkerDeploymentRef` | `WorkerResourceTemplate.spec.workerDeploymentRef` |
+
+Upgrade the CRDs chart first, then the controller chart. Then change `kind:` in your manifests and re-apply. **Keep the resource names exactly the same.** The Temporal Worker Deployment name is derived from `<namespace>/<name>`, so renaming the resource creates a brand-new deployment. The controller hands ownership from the old resources to the new ones without interrupting your workers. Don't roll the CRDs chart back after migrating. The full steps are in the [CRD rename migration guide](https://github.com/temporalio/temporal-worker-controller/blob/main/docs/migration-crd-rename.md).
+
+For a throwaway environment like this lab, the easiest path is to tear it down and start fresh.
+
 ### Further Reading
 
 - [Worker Versioning docs](https://docs.temporal.io/production-deployment/worker-deployments/worker-versioning)
 - [Temporal Worker Controller](https://docs.temporal.io/production-deployment/worker-deployments/kubernetes-controller)
+- [Worker Controller configuration reference](https://github.com/temporalio/temporal-worker-controller/blob/main/docs/configuration.md)
 - [Safe Deployment Guide](https://docs.temporal.io/develop/safe-deployments)
 - [Python SDK Versioning Reference](https://docs.temporal.io/develop/python/versioning)
