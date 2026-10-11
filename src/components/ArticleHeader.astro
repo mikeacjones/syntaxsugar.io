@@ -1,0 +1,29 @@
+---
+import Chip from './Chip.astro';
+import { formatDate } from '../helpers/format';
+
+interface Props {
+  title: string;
+  date?: Date;
+  duration?: string;
+  tags?: string[];
+  linkTags?: boolean;
+}
+
+const { title, date, duration, tags = [], linkTags = true } = Astro.props;
+---
+
+<header class="ArticleHeader">
+  <h1>{title}</h1>
+  {(date || tags.length > 0) && (
+    <div class="ArticleHeader-meta">
+      {date && <time datetime={date.toISOString().slice(0, 10)}>{formatDate(date)}</time>}
+      {duration && <span>{duration} to complete</span>}
+      {tags.length > 0 && (
+        <span class="Entry-tags">
+          {tags.map((tag) => linkTags ? <Chip tag={tag} /> : <span class="Tag Tag--static">{tag}</span>)}
+        </span>
+      )}
+    </div>
+  )}
+</header>

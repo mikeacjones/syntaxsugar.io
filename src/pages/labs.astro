@@ -1,24 +1,20 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import LabCard from '../components/LabCard.astro';
-import Chip from '../components/Chip.astro';
 import { getCollection } from 'astro:content';
 
 const mdxLabs = await getCollection('labs', ({ data }) => data.published === true);
 const claatLabs = await getCollection('claatLabs', ({ data }) => data.published === true);
 
 const allLabs = [
-  ...mdxLabs.map((lab) => {
-    const parts = lab.id.replace(/\/index$/, '').split('/');
-    return {
-      title: lab.data.title,
-      date: lab.data.date,
-      shortDescription: lab.data.shortDescription,
-      categories: lab.data.categories,
-      duration: lab.data.duration,
-      url: `/lab/${parts[0]}/${parts.slice(1).join('/')}/`,
-    };
-  }),
+  ...mdxLabs.map((lab) => ({
+    title: lab.data.title,
+    date: lab.data.date,
+    shortDescription: lab.data.shortDescription,
+    categories: lab.data.categories,
+    duration: lab.data.duration,
+    url: `/lab/${lab.id.replace(/\/index$/, '')}/`,
+  })),
   ...claatLabs.map((lab) => ({
     title: lab.data.title,
     date: lab.data.date,
@@ -30,24 +26,15 @@ const allLabs = [
 ];
 
 allLabs.sort((a, b) => b.date.getTime() - a.date.getTime());
-const allCategories = [...new Set(allLabs.flatMap((lab) => lab.categories))];
 ---
 
-<BaseLayout title="Labs" description="Guided labs and hands-on tutorials">
-  <div class="labs-header">
+<BaseLayout title="Labs" description="Hands-on, step-by-step labs you run on your own machine.">
+  <header class="PageHeader">
     <h1>Labs</h1>
-    <p>Guided, hands-on tutorials that walk you through a specific concept or task.</p>
-  </div>
+    <p>Step-by-step exercises you run on your own machine. Each one builds something, breaks it, and then fixes it properly.</p>
+  </header>
 
-  <h3 class="category-tags-label">categories:</h3>
-  <div class="category-tags">
-    <Chip tag="All Labs" href="/labs" active />
-    {allCategories.map((cat) => (
-      <Chip tag={cat} href={`/labs?category=${cat.replace(/(\s|_|-)+/g, '-').toLowerCase()}`} />
-    ))}
-  </div>
-
-  <div class="LabCards">
+  <div class="Year-entries Labs">
     {allLabs.map((lab) => (
       <LabCard
         title={lab.title}

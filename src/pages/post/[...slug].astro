@@ -1,6 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import Chip from '../../components/Chip.astro';
+import ArticleHeader from '../../components/ArticleHeader.astro';
 import CodeBlock from '../../components/CodeBlock.astro';
 import ZoomableImage from '../../components/ZoomableImage.astro';
 import { getCollection, render } from 'astro:content';
@@ -20,22 +20,11 @@ export async function getStaticPaths() {
 const { post } = Astro.props;
 const { Content } = await render(post);
 
-const formattedDate = post.data.date.toLocaleDateString('en-US', {
-  year: 'numeric',
-  month: 'long',
-  day: 'numeric',
-});
 ---
 
 <BaseLayout title={post.data.title} description={post.data.shortDescription}>
   <div class="post-view">
-    <div class="post-view-title">
-      <h1>{post.data.title}</h1>
-    </div>
-    <div class="post-view-date">{formattedDate}</div>
-    <div class="post-view-tags">
-      {post.data.tags.map((tag: string) => <Chip tag={tag} />)}
-    </div>
+    <ArticleHeader title={post.data.title} date={post.data.date} tags={post.data.tags} />
     <div class="post-view-content">
       <Content />
     </div>

@@ -1,0 +1,20 @@
+---
+const path = Astro.url.pathname;
+
+const links = [
+  { href: '/', label: 'Writing', active: path === '/' || path.startsWith('/post/') || path.startsWith('/tag/') },
+  { href: '/labs', label: 'Labs', active: path.startsWith('/labs') || path.startsWith('/lab/') || path.startsWith('/lab-content/') },
+  { href: '/dw-cookbook', label: 'DataWeave cookbook', active: path.startsWith('/dw-cookbook') },
+];
+---
+
+<header class="Masthead">
+  <a class="Wordmark" href="/" aria-label="syntax sugar, home">
+    <span>syntax</span><span class="Wordmark-cube" aria-hidden="true"></span><span>sugar</span>
+  </a>
+  <nav class="Masthead-nav" aria-label="Primary">
+    {links.map((link) => (
+      <a href={link.href} aria-current={link.active ? 'page' : undefined}>{link.label}</a>
+    ))}
+  </nav>
+</header>

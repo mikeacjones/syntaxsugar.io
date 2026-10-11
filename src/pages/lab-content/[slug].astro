@@ -1,6 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import Chip from '../../components/Chip.astro';
+import ArticleHeader from '../../components/ArticleHeader.astro';
 import CodeBlock from '../../components/CodeBlock.astro';
 import ZoomableImage from '../../components/ZoomableImage.astro';
 import { getCollection } from 'astro:content';
@@ -20,27 +20,17 @@ export async function getStaticPaths() {
 const { lab } = Astro.props;
 const parsed = await parseClaatHtml(lab.id, LAB_CONTENT_DIR);
 
-const formattedDate = lab.data.date.toLocaleDateString('en-US', {
-  year: 'numeric',
-  month: 'long',
-  day: 'numeric',
-});
 ---
 
 <BaseLayout title={lab.data.title} description={lab.data.shortDescription}>
   <div class="post-view">
-    <div class="post-view-title">
-      <h1>{lab.data.title}</h1>
-    </div>
-    <div class="post-view-date">
-      {formattedDate}
-      {lab.data.duration && <span> &middot; {lab.data.duration}</span>}
-    </div>
-    <div class="post-view-tags">
-      {lab.data.categories.map((cat: string) => (
-        <Chip tag={cat} href={`/labs?category=${cat.replace(/(\s|_|-)+/g, '-').toLowerCase()}`} />
-      ))}
-    </div>
+    <ArticleHeader
+      title={lab.data.title}
+      date={lab.data.date}
+      duration={lab.data.duration}
+      tags={lab.data.categories}
+      linkTags={false}
+    />
 
     {parsed && (
       <div class="codelab-wrapper">

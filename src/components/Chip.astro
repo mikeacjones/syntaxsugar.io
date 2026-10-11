@@ -1,4 +1,6 @@
 ---
+import { tagSlug } from '../helpers/format';
+
 interface Props {
   tag: string;
   active?: boolean;
@@ -6,10 +8,7 @@ interface Props {
 }
 
 const { tag, active = false, href } = Astro.props;
-const tagSlug = tag.replace(/(\s|_|-)+/g, '-').toLowerCase();
-const chipHref = href ?? `/tag/${tagSlug}`;
+const chipHref = href ?? `/tag/${tagSlug(tag)}`;
 ---
 
-<span class:list={['Chip', { active }]}>
-  <a class="Chip-link" href={chipHref}>{tag}</a>
-</span>
+<a class:list={['Tag', { active }]} href={chipHref} aria-current={active ? 'page' : undefined}>{tag}</a>

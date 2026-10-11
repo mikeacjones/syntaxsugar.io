@@ -1,6 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import Chip from '../../components/Chip.astro';
+import ArticleHeader from '../../components/ArticleHeader.astro';
 import CodeBlock from '../../components/CodeBlock.astro';
 import ZoomableImage from '../../components/ZoomableImage.astro';
 import { getCollection, render } from 'astro:content';
@@ -19,27 +19,17 @@ export async function getStaticPaths() {
 const { lab } = Astro.props;
 const { Content } = await render(lab);
 
-const formattedDate = lab.data.date.toLocaleDateString('en-US', {
-  year: 'numeric',
-  month: 'long',
-  day: 'numeric',
-});
 ---
 
 <BaseLayout title={lab.data.title} description={lab.data.shortDescription}>
   <div class="post-view">
-    <div class="post-view-title">
-      <h1>{lab.data.title}</h1>
-    </div>
-    <div class="post-view-date">
-      {formattedDate}
-      {lab.data.duration && <span> &middot; {lab.data.duration}</span>}
-    </div>
-    <div class="post-view-tags">
-      {lab.data.categories.map((cat: string) => (
-        <Chip tag={cat} href={`/labs?category=${cat.replace(/(\s|_|-)+/g, '-').toLowerCase()}`} />
-      ))}
-    </div>
+    <ArticleHeader
+      title={lab.data.title}
+      date={lab.data.date}
+      duration={lab.data.duration}
+      tags={lab.data.categories}
+      linkTags={false}
+    />
 
     <div class="codelab-wrapper">
       <nav class="codelab-steps-nav" id="lab-steps-nav"></nav>
@@ -97,7 +87,7 @@ const formattedDate = lab.data.date.toLocaleDateString('en-US', {
 
       var section = document.createElement('section');
       section.className = 'codelab-step' + (s === 0 ? ' active' : '');
-      section.id = 'step-' + s;
+      section.id = 'lab-step-' + (s + 1);
 
       var topNav = document.createElement('div');
       topNav.className = 'codelab-step-nav codelab-step-nav-top';
@@ -141,20 +131,20 @@ const formattedDate = lab.data.date.toLocaleDateString('en-US', {
         var prevBot = document.createElement('button');
         prevBot.className = 'codelab-nav-btn codelab-prev';
         prevBot.setAttribute('data-target', s - 1);
-        prevBot.innerHTML = '&larr; Previous';
+        prevBot.textContent = 'Back: ' + steps[s - 1].title;
         botNav.appendChild(prevBot);
       }
       if (s < steps.length - 1) {
         var nextBot = document.createElement('button');
         nextBot.className = 'codelab-nav-btn codelab-next';
         nextBot.setAttribute('data-target', s + 1);
-        nextBot.innerHTML = 'Next &rarr;';
+        nextBot.textContent = 'Next: ' + steps[s + 1].title;
         botNav.appendChild(nextBot);
       } else {
         var doneBot = document.createElement('a');
         doneBot.className = 'codelab-nav-btn codelab-next';
         doneBot.href = '/labs';
-        doneBot.innerHTML = 'Done &check;';
+        doneBot.textContent = 'Finish and see all labs';
         botNav.appendChild(doneBot);
       }
       section.appendChild(botNav);
@@ -165,15 +155,46 @@ const formattedDate = lab.data.date.toLocaleDateString('en-US', {
 
     var navLinks = nav.querySelectorAll('.codelab-step-link');
 
-    function goToStep(index) {
+    function goToStep(index, scroll) {
       for (var i = 0; i < sections.length; i++) {
         sections[i].classList.toggle('active', i === index);
       }
       for (var j = 0; j < navLinks.length; j++) {
         navLinks[j].classList.toggle('active', j === index);
       }
-      document.querySelector('.codelab-wrapper').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      history.replaceState(null, '', index === 0 ? location.pathname : '#step-' + (index + 1));
+      if (scroll !== false) {
+        document.querySelector('.codelab-wrapper').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
     }
+
+    // Steps are deep-linkable as #step-N (1-based), so a reader can share or reload their place.
+    // A heading anchor inside a hidden step (e.g. #some-section) opens that step first.
+    function openHash(hash) {
+      var stepMatch = /^#step-(\d+)$/.exec(hash);
+      if (stepMatch) {
+        var index = parseInt(stepMatch[1], 10) - 1;
+        if (index >= 0 && index < sections.length) goToStep(index, false);
+        return;
+      }
+      var target = hash.length > 1 && document.getElementById(decodeURIComponent(hash.slice(1)));
+      if (!target) return;
+      for (var i = 0; i < sections.length; i++) {
+        if (sections[i].contains(target)) {
+          goToStep(i, false);
+          history.replaceState(null, '', hash);
+          target.scrollIntoView({ block: 'start' });
+          return;
+        }
+      }
+    }
+    openHash(location.hash);
+    labContent.addEventListener('click', function(e) {
+      var link = e.target.closest && e.target.closest('a[href^="#"]');
+      if (!link) return;
+      e.preventDefault();
+      openHash(link.getAttribute('href'));
+    });
 
     for (var i = 0; i < navLinks.length; i++) {
       (function(link) {

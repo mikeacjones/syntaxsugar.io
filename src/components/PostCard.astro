@@ -1,5 +1,6 @@
 ---
 import Chip from './Chip.astro';
+import { formatDate } from '../helpers/format';
 
 interface Props {
   title: string;
@@ -7,23 +8,17 @@ interface Props {
   shortDescription: string;
   tags: string[];
   url: string;
+  featured?: boolean;
 }
 
-const { title, date, shortDescription, tags, url } = Astro.props;
-
-const formattedDate = date.toLocaleDateString('en-US', {
-  year: 'numeric',
-  month: 'long',
-  day: 'numeric',
-});
+const { title, date, shortDescription, tags, url, featured = false } = Astro.props;
 ---
 
-<div class="PostCard">
-  <a href={url} class="PostCard-link" aria-label={title}></a>
-  <div class="PostCard-title">{title}</div>
-  <div class="PostCard-date">{formattedDate}</div>
-  <div class="PostCard-description">{shortDescription}</div>
-  <div class="PostCard-tags">
-    {tags.map((tag) => <Chip tag={tag} />)}
+<article class:list={['Entry', { 'Entry--featured': featured }]}>
+  <h2 class="Entry-title"><a href={url}>{title}</a></h2>
+  <p class="Entry-summary">{shortDescription}</p>
+  <div class="Entry-meta">
+    <time datetime={date.toISOString().slice(0, 10)}>{formatDate(date)}</time>
+    <span class="Entry-tags">{tags.map((tag) => <Chip tag={tag} />)}</span>
   </div>
-</div>
+</article>

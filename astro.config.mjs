@@ -38,7 +38,7 @@ export default defineConfig({
   ],
   markdown: {
     shikiConfig: {
-      theme: 'material-theme-palenight',
+      themes: { light: 'github-light', dark: 'material-theme-palenight' },
       wrap: true,
       langs: [...Object.keys(bundledLanguages), dataWeaveLang, ramlLang],
       transformers: [transformerNotationDiff()],
