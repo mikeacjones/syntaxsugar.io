@@ -4,7 +4,7 @@ date: 2026-04-07
 shortDescription: "Learn how to safely deploy workflow code changes using Temporal's Worker Versioning on Kubernetes, without patching and without losing expensive in-flight work."
 categories: ["Temporal", "Kubernetes", "Worker Versioning"]
 published: true
-duration: "60 min"
+duration: "75 min"
 ---
 
 ## What We're Building
@@ -35,6 +35,7 @@ Here's what we'll cover:
 | Long-Running Workflows | Migrate a polling workflow to a new version with continue-as-new |
 | Sleeping Workflows | Handle the caveat where idle workflows don't notice version changes |
 | Scaling & Ramping | Understand the full HA story with progressive rollouts |
+| Per-Version Autoscaling | Scale each version on its own Temporal backlog with KEDA |
 
 ### What You'll Need
 
@@ -279,7 +280,7 @@ Next, deploy a `Connection` resource so the controller knows how to reach our de
 helm upgrade --install lab-infra ./charts/infra --namespace default
 ```
 
-Take a look at `charts/infra/templates/temporal-connection.yaml` if you're curious. It points at `temporal-lab-devenv:7233` which is the dev environment container's hostname on the shared Docker network. The k3d cluster and devenv container are on the same network, so the pods can reach Temporal by container name.
+Take a look at `charts/infra/templates/connection.yaml` if you're curious. It points at `temporal-lab-devenv:7233` which is the dev environment container's hostname on the shared Docker network. The k3d cluster and devenv container are on the same network, so the pods can reach Temporal by container name.
 
 Verify everything is in place:
 
@@ -338,7 +339,7 @@ You can also set the behavior per-workflow with `@workflow.defn(versioning_behav
 
 ### The WorkerDeployment Chart
 
-Take a look at `charts/worker/templates/temporal-worker-deployment.yaml` to see what the Worker Controller manages:
+Take a look at `charts/worker/templates/worker-deployment.yaml` to see what the Worker Controller manages:
 
 ```yaml
 apiVersion: temporal.io/v1alpha1
@@ -680,7 +681,7 @@ Like I said, I'm not sure if this is a blessed pattern or if there are edge case
 
 ## Scaling and Ramping
 
-Everything so far has been hands-on. This section is conceptual, covering the broader HA story that Worker Versioning enables.
+Everything so far has been hands-on. This section is conceptual, covering the broader HA story that Worker Versioning enables. We'll get back to the terminal for autoscaling after it.
 
 ### Version Lifecycle
 
@@ -749,36 +750,222 @@ temporal worker deployment set-current-version \
 
 You can only change routing from the CLI if you own the deployment. The controller claims ownership by setting the deployment's *manager identity*, and the server rejects routing changes from any other identity. With any strategy other than `Manual`, you first take control with `temporal worker deployment manager-identity set --deployment-name default/research-agent --self`. When you're done, give it back with `manager-identity unset`.
 
-### Per-Version Autoscaling
+## Per-Version Autoscaling
 
-The Worker Controller can attach a separate HPA (or PodDisruptionBudget, KEDA `ScaledObject`, etc.) to each version's pods using the `WorkerResourceTemplate` CRD. You write the template once, and the controller stamps out a copy for every version:
+Back to hands-on. So far every version has run a fixed number of pods. In production you want each version to scale with its own load: the new version grows as traffic shifts to it, and the old version shrinks as its pinned workflows finish. Sizing them together, with one autoscaler on the whole task queue, gets both wrong.
+
+The Worker Controller does this with a `WorkerResourceTemplate`. You write one template, and the controller stamps out a copy for every version and points each copy at that version's Deployment. The template can hold an HPA, a PodDisruptionBudget, a VPA, or a [KEDA](https://keda.sh/) `ScaledObject`. We'll use KEDA, because its Temporal scaler asks the Temporal server directly how many tasks are waiting for one specific version. You don't need a metrics pipeline in between.
+
+### Install KEDA
+
+Install KEDA from its Helm chart. Per-version scaling needs KEDA 2.20.0 or later:
+
+```bash
+helm repo add kedacore https://kedacore.github.io/charts
+helm repo update kedacore
+
+helm upgrade --install keda kedacore/keda \
+  --version 2.21.0 \
+  --namespace keda \
+  --create-namespace \
+  --wait
+```
+
+KEDA serves Kubernetes' external metrics API, and a cluster can only have one provider for it. If you already run prometheus-adapter in a real cluster, you have to choose one or the other.
+
+### Let the Controller Create ScaledObjects
+
+The controller only creates resource kinds that are on its allow-list, and by default the list holds just `HorizontalPodAutoscaler`. The repo includes a values file that adds `ScaledObject`, in `config/worker-controller-keda.yaml`:
+
+```yaml
+workerResourceTemplate:
+  allowedResources:
+    - kinds: ["HorizontalPodAutoscaler"]
+      apiGroups: ["autoscaling"]
+      resources: ["horizontalpodautoscalers"]
+    - kinds: ["ScaledObject"]
+      apiGroups: ["keda.sh"]
+      resources: ["scaledobjects"]
+```
+
+The list replaces the chart's default, which is why it repeats the HPA entry. Upgrade the controller with it, keeping the rest of your values:
+
+```bash
+helm upgrade temporal-worker-controller \
+  oci://docker.io/temporalio/temporal-worker-controller \
+  --version $CHART_VERSION \
+  --namespace temporal-system \
+  --reuse-values \
+  -f config/worker-controller-keda.yaml \
+  --wait
+```
+
+If you've opened a new shell since installing the controller, set `CHART_VERSION=0.31.0` again first.
+
+### The Autoscaler Template
+
+The worker chart already contains the template, in `charts/worker/templates/worker-autoscaler.yaml`. It's switched off until you turn it on. Here it is with the values filled in:
 
 ```yaml
 apiVersion: temporal.io/v1alpha1
 kind: WorkerResourceTemplate
 metadata:
-  name: research-agent-hpa
+  name: research-agent-keda
 spec:
   workerDeploymentRef:
     name: research-agent
   template:
-    apiVersion: autoscaling/v2
-    kind: HorizontalPodAutoscaler
+    apiVersion: keda.sh/v1alpha1
+    kind: ScaledObject
     spec:
-      minReplicas: 1
-      maxReplicas: 10
-      metrics:
-        - type: Resource
-          resource:
-            name: cpu
-            target:
-              type: Utilization
-              averageUtilization: 70
+      scaleTargetRef: {}
+      minReplicaCount: 1
+      maxReplicaCount: 5
+      pollingInterval: 5
+      advanced:
+        horizontalPodAutoscalerConfig:
+          behavior:
+            scaleDown:
+              stabilizationWindowSeconds: 30
+      triggers:
+        - type: temporal
+          metadata:
+            endpoint: "temporal-lab-devenv:7233"
+            enableTLS: "false"
+            taskQueue: research-agent
+            queueTypes: activity
+            targetQueueSize: "5"
+            namespace: ""
+            workerDeploymentName: ""
+            workerDeploymentBuildId: ""
 ```
 
-This means V1 can scale down as its workload drains while V2 scales up to handle new traffic. You can also scale on Temporal-specific metrics like `approximate_backlog_count` for smarter scaling decisions. If you use an autoscaler, leave `replicas` out of the `deployment` block so the controller and the HPA don't fight over the replica count.
+The empty values are deliberate. They tell the controller to fill those fields in for each version:
 
-This is the full HA picture: versioned deployments with independent scaling, progressive rollouts, and automatic cleanup. No more all-or-nothing deploys.
+- `scaleTargetRef: {}` becomes a reference to that version's Deployment.
+- `namespace`, `workerDeploymentName` and `workerDeploymentBuildId` scope the backlog query to that one version. The controller fills in `default`, `default/research-agent` and the version's build ID. The webhook rejects the template if you set any of them yourself.
+
+The other settings:
+
+- `queueTypes: activity` counts the activity backlog, because that's where the work piles up. Workflow tasks come and go quickly.
+- `targetQueueSize: "5"` aims for about five waiting tasks per pod. With 22 tasks waiting, KEDA asks for five pods.
+- `enableTLS: "false"` is needed because the scaler uses TLS by default and our dev server doesn't. For Temporal Cloud you'd leave TLS on and pass an API key through a KEDA `TriggerAuthentication`.
+- `minReplicaCount` stays at 1 or higher. A version only gets promoted once Temporal sees its workers polling, so a version scaled to zero would never finish rolling out.
+- `pollingInterval` and the 30-second scale-down window are short so you can watch the whole cycle in a couple of minutes. Each poll costs one Temporal API call, so production values are usually longer.
+
+Turn it on in `charts/worker/values.yaml`:
+
+```yaml
+autoscaling:
+  enabled: false  # [!code --]
+  enabled: true   # [!code ++]
+  minReplicas: 1
+  maxReplicas: 5
+  targetQueueSize: 5
+```
+
+With autoscaling enabled, the chart leaves `replicas` out of the `deployment` block, so the controller and the autoscaler don't both try to set the pod count.
+
+### Give Each Worker a Limit
+
+There's one problem before we try it. The Python SDK lets each worker run up to 100 activities at once, and our "LLM calls" are just sleeps. A single pod would absorb any load we throw at it, no backlog would build, and nothing would scale.
+
+Real workers hit a limit long before that, whether it's CPU, memory or an API rate limit. To give ours one, open `src/worker.py` and cap it at two activities at a time:
+
+```python
+worker = Worker(
+    client,
+    task_queue=TASK_QUEUE,
+    workflows=[ResearchWorkflow, ResearchPollingWorkflow],
+    activities=[
+        plan_research,
+        execute_research_step,
+        synthesize_findings,
+        fact_check,
+    ],
+    max_concurrent_activities=2,  # [!code ++]
+    deployment_config=WorkerDeploymentConfig(
+        # ...unchanged
+    ),
+)
+```
+
+Once a pod is running two activities, Temporal keeps further tasks in the queue, and that queue is the backlog KEDA scales on.
+
+### Deploy and Load It
+
+Deploy a new version with both changes:
+
+```bash
+./scripts/build-and-deploy.sh v6-versioned --versioned
+```
+
+Once it's current, look at what the controller created:
+
+```bash
+kubectl get scaledobjects
+kubectl get hpa
+```
+
+Each version has its own `ScaledObject`, and KEDA has created an HPA behind each one. The names end in a short version of the build ID, such as `...-keda-v6-8f71df48`. You might also see one for the version your `research-polling` workflow is still pinned to. That version is still running, so it gets an autoscaler too.
+
+Open a second terminal into the dev environment so you can watch the autoscalers:
+
+```bash
+docker exec -it temporal-lab-devenv bash
+kubectl get hpa -w
+```
+
+Back in the first terminal, start 30 research workflows at once:
+
+```bash
+for i in $(seq 1 30); do
+  temporal workflow start \
+    --task-queue research-agent \
+    --type ResearchWorkflow \
+    --input "\"topic $i\"" \
+    --workflow-id batch-a-$i > /dev/null
+done
+```
+
+Within about ten seconds, the v6 HPA's target jumps to around `28/5`: 28 activity tasks waiting, against a target of 5 per pod. Its replica count climbs to 5. With five pods running two activities each, the backlog drains in under a minute. Thirty seconds after it hits zero, the HPA starts removing pods again. The workflows are now parked at the `proceed` signal gate, so they don't need a worker.
+
+### Two Versions, Two Autoscalers
+
+Now for the reason to scale per version. Leave batch A parked on v6 and deploy another version:
+
+```bash
+./scripts/build-and-deploy.sh v7-versioned --versioned
+```
+
+v7 becomes current and gets its own `ScaledObject`. v6 moves to Draining, because the 30 parked workflows are pinned to it. Start a second batch, which lands on v7:
+
+```bash
+for i in $(seq 1 30); do
+  temporal workflow start \
+    --task-queue research-agent \
+    --type ResearchWorkflow \
+    --input "\"topic $i\"" \
+    --workflow-id batch-b-$i > /dev/null
+done
+```
+
+Only the v7 HPA reacts. Now release batch A by signalling every workflow in it at once:
+
+```bash
+temporal workflow signal \
+  --query 'WorkflowId STARTS_WITH "batch-a-"' \
+  --name proceed \
+  --yes
+```
+
+The 30 synthesis activities can only run on v6 workers, so v6's backlog jumps and its HPA scales v6 back up. v7 is unaffected. A shared autoscaler would have spread that capacity across both versions and given most of it to the wrong one.
+
+When batch A finishes, nothing is left pinned to v6. Temporal checks for drained versions periodically, so it can take a few minutes for v6 to show as Drained. After that, the controller scales v6 down, deletes its Deployment, and deletes its `ScaledObject` with it.
+
+In production you'd tune these settings for real traffic. The Temporal API rate limit caps how many `ScaledObject`s can poll how often. Some teams also prefer an HPA on Temporal Cloud metrics through Prometheus. The Worker Controller's [scaling recommendations](https://github.com/temporalio/temporal-worker-controller/blob/main/docs/scaling-recommendations.md) compare the two approaches and the trade-offs.
+
+This is the full HA picture: versioned deployments that scale independently, progressive rollouts, and automatic cleanup. No more all-or-nothing deploys.
 
 ## Wrapping Up
 
@@ -792,6 +979,7 @@ Here's what we covered:
 | Continue-as-new migration | Long-running workflows detect version changes and migrate with AUTO_UPGRADE |
 | Sleeping workflow caveat | Idle workflows need a signal or timer to notice version changes |
 | Progressive rollouts | Ramp traffic gradually, gate on a smoke-test workflow, and roll back by redeploying a previous build |
+| Per-version autoscaling | One KEDA `ScaledObject` per version, each scaling on that version's backlog |
 
 The finished code is on the [main branch](https://github.com/mikeacjones/temporal-safe-deploys-lab). The starter branch has everything you need to follow along from scratch.
 
@@ -816,5 +1004,7 @@ For a throwaway environment like this lab, the easiest path is to tear it down a
 - [Worker Versioning docs](https://docs.temporal.io/production-deployment/worker-deployments/worker-versioning)
 - [Temporal Worker Controller](https://docs.temporal.io/production-deployment/worker-deployments/kubernetes-controller)
 - [Worker Controller configuration reference](https://github.com/temporalio/temporal-worker-controller/blob/main/docs/configuration.md)
+- [Worker Controller scaling recommendations](https://github.com/temporalio/temporal-worker-controller/blob/main/docs/scaling-recommendations.md)
+- [KEDA Temporal scaler](https://keda.sh/docs/latest/scalers/temporal/)
 - [Safe Deployment Guide](https://docs.temporal.io/develop/safe-deployments)
 - [Python SDK Versioning Reference](https://docs.temporal.io/develop/python/versioning)
