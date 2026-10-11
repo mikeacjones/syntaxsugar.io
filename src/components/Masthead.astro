@@ -4,7 +4,6 @@ const path = Astro.url.pathname;
 const links = [
   { href: '/', label: 'Writing', active: path === '/' || path.startsWith('/post/') || path.startsWith('/tag/') },
   { href: '/labs', label: 'Labs', active: path.startsWith('/labs') || path.startsWith('/lab/') || path.startsWith('/lab-content/') },
-  { href: '/dw-cookbook', label: 'DataWeave cookbook', active: path.startsWith('/dw-cookbook') },
 ];
 ---
 
