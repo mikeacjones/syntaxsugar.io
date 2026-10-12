@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="description" content="I spent 2 years building workarounds to keep a Reddit bot running reliably. This is the story of evolving from a fragile Python script, to a homegrown durability layer, to durable Temporal workflows; and what I learned about correctness under failure along the way."><meta name="color-scheme" content="light dark"><meta name="theme-color" content="#f6f5f9" media="(prefers-color-scheme: light)"><meta name="theme-color" content="#15111c" media="(prefers-color-scheme: dark)"><title>Building a Reddit Bot on Temporal | syntax sugar</title><!-- Favicons --><link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="icon" type="image/x-icon" href="/favicon.ico"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="manifest" href="/site.webmanifest"><link rel="mask-icon" href="/safari-pinned-tab.svg" color="#52307c"><!-- Google Fonts --><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap" rel="stylesheet"><!-- Sitemap --><link rel="sitemap" href="/sitemap-index.xml"><link rel="stylesheet" href="/_astro/index.UqV7Rssh.css"></head> <body> <a class="SkipLink" href="#main">Skip to content</a> <header class="Masthead"> <a class="Wordmark" href="/" aria-label="syntax sugar, home"> <span>syntax</span><span class="Wordmark-cube" aria-hidden="true"></span><span>sugar</span> </a> <nav class="Masthead-nav" aria-label="Primary"> <a href="/" aria-current="page">Writing</a><a href="/labs">Labs</a> </nav> </header> <main id="main">  <div class="post-view"> <header class="ArticleHeader"> <h1>Building a Reddit Bot on Temporal</h1> <div class="ArticleHeader-meta"> <time datetime="2026-03-29">March 29, 2026</time>  <span class="Entry-tags"> <a class="Tag" href="/tag/temporal">temporal</a><a class="Tag" href="/tag/python">python</a><a class="Tag" href="/tag/reddit">reddit</a><a class="Tag" href="/tag/durability">durability</a><a class="Tag" href="/tag/distributed-systems">distributed-systems</a> </span> </div> </header> <div class="post-view-content"> <p><img src="/_astro/gandalf-no-memory.DFpqvCHL_vTObn.jpg" alt="Me opening my blog's codebase after 3 years" loading="lazy" decoding="async" fetchpriority="auto" width="500" height="607"></p>
+<!DOCTYPE html><html lang="en"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="description" content="I spent 2 years building workarounds to keep a Reddit bot running reliably. This is the story of evolving from a fragile Python script, to a homegrown durability layer, to durable Temporal workflows; and what I learned about correctness under failure along the way."><meta name="color-scheme" content="light dark"><meta name="theme-color" content="#f7f7fb" media="(prefers-color-scheme: light)"><meta name="theme-color" content="#141414" media="(prefers-color-scheme: dark)"><title>Building a Reddit Bot on Temporal | syntax sugar</title><!-- Favicons --><link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="icon" type="image/x-icon" href="/favicon.ico"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="manifest" href="/site.webmanifest"><link rel="mask-icon" href="/safari-pinned-tab.svg" color="#444ce7"><!-- Google Fonts --><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap" rel="stylesheet"><!-- Sitemap --><link rel="sitemap" href="/sitemap-index.xml"><link rel="stylesheet" href="/_astro/index.Dy1HT-c2.css"></head> <body> <a class="SkipLink" href="#main">Skip to content</a> <header class="Masthead"> <a class="Wordmark" href="/" aria-label="syntax sugar, home"> <span>syntax</span><span class="Wordmark-cube" aria-hidden="true"></span><span>sugar</span> </a> <nav class="Masthead-nav" aria-label="Primary"> <a href="/" aria-current="page">Writing</a><a href="/labs">Labs</a> </nav> </header> <main id="main">  <div class="post-view"> <header class="ArticleHeader"> <h1>Building a Reddit Bot on Temporal</h1> <div class="ArticleHeader-meta"> <time datetime="2026-03-29">March 29, 2026</time>  <span class="Entry-tags"> <a class="Tag" href="/tag/temporal">temporal</a><a class="Tag" href="/tag/python">python</a><a class="Tag" href="/tag/reddit">reddit</a><a class="Tag" href="/tag/durability">durability</a><a class="Tag" href="/tag/distributed-systems">distributed-systems</a> </span> </div> </header> <div class="post-view-content"> <p><img src="/_astro/gandalf-no-memory.DFpqvCHL_vTObn.jpg" alt="Me opening my blog's codebase after 3 years" loading="lazy" decoding="async" fetchpriority="auto" width="500" height="607"></p>
 <p>Yeah.. it’s been a minute. Life, work, the usual suspects. But I recently ported my Reddit bot to Temporal,and I think the journey is worth sharing; especially if you’ve ever tried to keep a long-running process alive and <em>correct</em> in the real world.</p>
 <p>Let’s talk about building a Reddit bot that tracks trade confirmations, the many ways it broke, and how <a href="https://temporal.io" rel="noreferrer" target="_blank">Temporal</a> finally made it dependable.</p>
 <hr/>
@@ -16,7 +16,30 @@
 <hr/>
 <h1 id="phase-1-the-naive-script">Phase 1: The Naive Script</h1>
 <p>The first version was about what you’d expect: a single <code>bot.py</code>, roughly 450 lines, deployed on an EC2 instance.</p>
-<p><img src="/_astro/naive-arch.Uk16C9m-_19DKCs.svg" alt="Phase 1 Architecture" loading="lazy" decoding="async" fetchpriority="auto" width="1043" height="488"></p>
+<pre><code class="language-mermaid">flowchart TB
+  accTitle: Phase 1 architecture
+  accDescr: One Python process on EC2 streams comments from the Reddit API and increments flair without idempotency.
+  subgraph proc[&quot;ONE PYTHON PROCESS · EC2&quot;]
+    direction TB
+    bot[&quot;bot.py&lt;br/&gt;~450 lines&quot;]
+    stream[&quot;PRAW&lt;br/&gt;stream.comments()&quot;]
+    flair[&quot;increment_flair()&lt;br/&gt;save() after the write&quot;]
+  end
+  secrets[&quot;AWS Secrets&lt;br/&gt;Manager&quot;]
+  reddit[&quot;Reddit API&quot;]
+  pushover[&quot;Pushover&quot;]
+
+  secrets -- &quot;credentials&quot; --&gt; bot
+  bot --&gt; stream
+  bot --&gt; flair
+  stream -- &quot;blocking&lt;br/&gt;infinite loop&quot; --&gt; reddit
+  flair -- &quot;double-increments&lt;br/&gt;on restart&quot; --&gt; reddit
+  bot -. &quot;crash alert&quot; .-&gt; pushover
+
+  class bot,stream app
+  class flair pain
+  class secrets,reddit,pushover external
+</code></pre>
 <p>The core of it was PRAW’s <code>stream.comments()</code>, a blocking generator that yields new comments as they appear:</p>
 <pre class="astro-code astro-code-themes github-light material-theme-palenight" style="background-color:#fff;--shiki-dark-bg:#292D3E;color:#24292e;--shiki-dark:#babed8;overflow-x:auto;white-space:pre-wrap;word-wrap:break-word" tabindex="0" data-language="python"><code><span class="line"><span style="color:#D73A49;--shiki-light-font-style:inherit;--shiki-dark:#89DDFF;--shiki-dark-font-style:italic">import</span><span style="color:#24292E;--shiki-dark:#BABED8"> praw</span></span>
 <span class="line"></span>
@@ -45,7 +68,36 @@
 <span class="line"><span style="color:#24292E;--shiki-dark:#BABED8">    comment</span><span style="color:#24292E;--shiki-dark:#89DDFF">.</span><span style="color:#24292E;--shiki-dark:#82AAFF">reply</span><span style="color:#24292E;--shiki-dark:#89DDFF">(</span><span style="color:#D73A49;--shiki-dark:#C792EA">f</span><span style="color:#032F62;--shiki-dark:#C3E88D">&quot;Trade confirmed! ...&quot;</span><span style="color:#24292E;--shiki-dark:#89DDFF">)</span></span></code></pre>
 <hr/>
 <h1 id="everything-that-went-wrong">Everything That Went Wrong</h1>
-<p><img src="/_astro/failure-points.D6tDLl1N_19DKCs.svg" alt="Failure Points" loading="lazy" decoding="async" fetchpriority="auto" width="1662" height="294"></p>
+<pre><code class="language-mermaid">flowchart TB
+  accTitle: Failure points
+  accDescr: Six ways the bot process failed, grouped into Reddit API, process, and correctness problems.
+  bot[&quot;Bot process&quot;]
+  subgraph api[&quot;REDDIT API&quot;]
+    direction TB
+    lazy[&quot;Lazy-loaded objects&lt;br/&gt;fail mid-outage&quot;]
+    stream[&quot;stream.comments()&lt;br/&gt;silently stops&quot;]
+  end
+  subgraph proc[&quot;PROCESS&quot;]
+    direction TB
+    crash[&quot;Crash loses&lt;br/&gt;all state&quot;]
+    deploy[&quot;Deploy = restart&lt;br/&gt;no zero-downtime&quot;]
+  end
+  subgraph correct[&quot;CORRECTNESS&quot;]
+    direction TB
+    double[&quot;save() after write&lt;br/&gt;double-increments&quot;]
+    dedup[&quot;301-item dedup&lt;br/&gt;misses comments&quot;]
+  end
+
+  bot --&gt; api
+  bot --&gt; proc
+  bot --&gt; correct
+  lazy ~~~ stream
+  crash ~~~ deploy
+  double ~~~ dedup
+
+  class bot app
+  class lazy,stream,crash,deploy,double,dedup pain
+</code></pre>
 <p>Let me walk through the fun ways this broke in the real world..</p>
 <h2 id="reddit-api-outages">Reddit API Outages</h2>
 <p>Reddit’s API goes down. Regularly. When it does, PRAW’s <code>stream.comments()</code> doesn’t always fail cleanly. Sometimes the internal listing generator just… stops yielding items. Silently. The bot looks like it’s running, but it’s processing nothing.</p>
@@ -65,7 +117,37 @@
 <hr/>
 <h1 id="phase-2-my-homegrown-durability-layer">Phase 2: My Homegrown Durability Layer</h1>
 <p>After getting burned enough times, I built <a href="https://github.com/mikeacjones/praw-bot-wrapper" rel="noreferrer" target="_blank">praw-bot-wrapper</a>; a custom library that wraps PRAW’s streams with error recovery:</p>
-<p><img src="/_astro/praw-wrapper-arch.BmI0b6QR_19DKCs.svg" alt="praw-bot-wrapper Architecture" loading="lazy" decoding="async" fetchpriority="auto" width="1389" height="548"></p>
+<pre><code class="language-mermaid">flowchart TB
+  accTitle: praw-bot-wrapper architecture
+  accDescr: A while-True loop iterates PRAW streams, resets them with backoff on errors, and dedups in memory; four gaps remain.
+  subgraph wrapper[&quot;PRAW-BOT-WRAPPER&quot;]
+    direction TB
+    loop[&quot;while True&quot;]
+    stream[&quot;Stream&lt;br/&gt;iteration&quot;]
+    handler[&quot;Your handler&quot;]
+    reset[&quot;Reset streams&lt;br/&gt;+ backoff&quot;]
+    dedup[&quot;BoundedSet(301)&lt;br/&gt;in-memory dedup&quot;]
+  end
+  subgraph missing[&quot;STILL MISSING&quot;]
+    direction TB
+    checkpoint[&quot;No persistent&lt;br/&gt;checkpoint&quot;]
+    retry[&quot;No retry for&lt;br/&gt;business logic&quot;]
+    single[&quot;Single instance&lt;br/&gt;only&quot;]
+    window[&quot;301-item window&lt;br/&gt;too small&quot;]
+  end
+
+  loop --&gt; stream
+  stream -- &quot;success&quot; --&gt; handler
+  stream -- &quot;PRAWException&quot; --&gt; reset
+  reset -- &quot;retry&quot; --&gt; loop
+  handler --&gt; dedup
+  checkpoint ~~~ single
+  retry ~~~ window
+  dedup ~~~ missing
+
+  class loop,stream,handler,reset,dedup app
+  class checkpoint,retry,single,window pain
+</code></pre>
 <pre class="astro-code astro-code-themes github-light material-theme-palenight" style="background-color:#fff;--shiki-dark-bg:#292D3E;color:#24292e;--shiki-dark:#babed8;overflow-x:auto;white-space:pre-wrap;word-wrap:break-word" tabindex="0" data-language="python"><code><span class="line"><span style="color:#D73A49;--shiki-light-font-style:inherit;--shiki-dark:#89DDFF;--shiki-dark-font-style:italic">from</span><span style="color:#24292E;--shiki-dark:#BABED8"> praw_bot_wrapper </span><span style="color:#D73A49;--shiki-light-font-style:inherit;--shiki-dark:#89DDFF;--shiki-dark-font-style:italic">import</span><span style="color:#24292E;--shiki-dark:#BABED8"> Bot</span></span>
 <span class="line"></span>
 <span class="line"><span style="color:#24292E;--shiki-dark:#BABED8">bot </span><span style="color:#D73A49;--shiki-dark:#89DDFF">=</span><span style="color:#24292E;--shiki-dark:#82AAFF"> Bot</span><span style="color:#24292E;--shiki-dark:#89DDFF">(</span><span style="color:#24292E;--shiki-dark:#82AAFF">reddit</span><span style="color:#24292E;--shiki-dark:#89DDFF">)</span></span>
@@ -123,7 +205,50 @@
 <p>I’d heared about <a href="https://temporal.io" rel="noreferrer" target="_blank">Temporal</a>. Durable execution, automatic retries, workflow state that survives crashes. It sounded almost too good to be true, but I was tired of fighting the durability problem myself, so I decided to give it a shot.</p>
 <p><strong>Fair warning:</strong> this was my first Temporal project. In point of fact, this was my “lets learn about Temporal” for my interview project 😎 I’m still learning the patterns, still figuring out the best way to structure things. What I’m sharing here is what worked for me, not necessarily best practices. But even as a beginner, the difference is dramatic.</p>
 <p>I replaced my bot with a set of <strong>durable workflows</strong>:</p>
-<p><img src="/_astro/temporal-arch.Cjiowaeg_19DKCs.svg" alt="Temporal Architecture" loading="lazy" decoding="async" fetchpriority="auto" width="1674" height="637"></p>
+<pre><code class="language-mermaid">flowchart TB
+  accTitle: Temporal architecture
+  accDescr: A polling workflow starts one confirmation workflow per comment, which validates, asks the singleton flair coordinator for increments, and replies. Activities call the Reddit API with retry policies.
+  subgraph worker[&quot;TEMPORAL WORKER&quot;]
+    direction TB
+    subgraph schedules[&quot;SCHEDULES&quot;]
+      direction LR
+      monthly[&quot;MonthlyPost&quot;]
+      lock[&quot;LockSubmissions&quot;]
+    end
+    poll[&quot;CommentPollingWorkflow&lt;br/&gt;long-running&quot;]
+    confirm[&quot;ProcessConfirmationWorkflow&lt;br/&gt;one per comment&quot;]
+    coord[&quot;FlairCoordinatorWorkflow&lt;br/&gt;singleton&quot;]
+    subgraph activities[&quot;ACTIVITIES · RETRIED&quot;]
+      direction LR
+      fetch[&quot;fetch_new_comments&quot;]
+      validate[&quot;validate&quot;]
+      flair[&quot;get_flair&lt;br/&gt;set_flair&quot;]
+      reply[&quot;reply&quot;]
+    end
+  end
+  reddit[&quot;Reddit API&quot;]
+
+  poll -- &quot;① poll&quot; --&gt; fetch
+  poll -- &quot;② child workflow&lt;br/&gt;per confirmation&quot; --&gt; confirm
+  confirm -- &quot;③&quot; --&gt; validate
+  confirm -- &quot;④ increment flair&lt;br/&gt;(Update)&quot; --&gt; coord
+  coord -- &quot;⑤&quot; --&gt; flair
+  confirm -- &quot;⑥&quot; --&gt; reply
+  activities -- &quot;retry policies&quot; --&gt; reddit
+  schedules ~~~ poll
+
+  class monthly,lock,poll,confirm,coord workflow
+  class fetch,validate,flair,reply activity
+  class reddit external
+</code></pre>
+<ol>
+<li>The polling workflow fetches new comments from Reddit.</li>
+<li>Each confirmation becomes its own child workflow, with the comment ID as its workflow ID.</li>
+<li>The confirmation workflow validates the trade.</li>
+<li>It asks the flair coordinator to increment both users’ flair.</li>
+<li>The coordinator reads a user’s flair once, then serializes the writes.</li>
+<li>The confirmation workflow replies with the new counts.</li>
+</ol>
 
 
 
@@ -232,7 +357,26 @@
 <hr/>
 <h1 id="the-hardest-bug-flair-double-increment">The Hardest Bug: Flair Double-Increment</h1>
 <p>This bug plagued me through both Phase 1 and Phase 2. The core issue: <code>increment_flair</code> reads the current count, adds 1, and writes it back. If anything goes wrong and the operation retries, it reads the <em>already-incremented</em> value and increments again.</p>
-<p><img src="/_astro/flair-coordinator.IgG39WYj_19DKCs.svg" alt="Flair Coordinator Sequence" loading="lazy" decoding="async" fetchpriority="auto" width="900" height="528"></p>
+<pre><code class="language-mermaid">sequenceDiagram
+  accTitle: Flair coordinator sequence
+  accDescr: Two workflows increment the same user&#39;s flair; the coordinator serializes them, reuses its cached count, and answers a retried request from its results.
+  participant A as Workflow A
+  participant B as Workflow B
+  participant FC as FlairCoordinator
+  participant R as Reddit API
+  A-&gt;&gt;FC: increment u/x (req abc)
+  B-&gt;&gt;FC: increment u/x (req def)
+  Note over FC: u/x is busy, so req def waits
+  FC-&gt;&gt;R: get_flair(u/x)
+  R--&gt;&gt;FC: 5
+  FC-&gt;&gt;R: set_flair(u/x, 6)
+  FC--&gt;&gt;A: done (6)
+  Note over FC: req def uses the cached 6,&lt;br/&gt;not a stale read
+  FC-&gt;&gt;R: set_flair(u/x, 7)
+  FC--&gt;&gt;B: done (7)
+  A-&gt;&gt;FC: retry (req abc)
+  FC--&gt;&gt;A: cached result (6)
+</code></pre>
 <p>The solution was the <strong>FlairCoordinatorWorkflow</strong>, a durable singleton that serializes all flair updates. It uses Temporal’s <code>update</code> mechanism so that confirmation workflows can request flair increments and wait for the result.</p>
 <pre class="astro-code astro-code-themes github-light material-theme-palenight" style="background-color:#fff;--shiki-dark-bg:#292D3E;color:#24292e;--shiki-dark:#babed8;overflow-x:auto;white-space:pre-wrap;word-wrap:break-word" tabindex="0" data-language="python"><code><span class="line"><span style="color:#6F42C1;--shiki-dark:#89DDFF">@</span><span style="color:#6F42C1;--shiki-dark:#82AAFF">workflow</span><span style="color:#6F42C1;--shiki-dark:#89DDFF">.</span><span style="color:#6F42C1;--shiki-dark:#82AAFF">defn</span></span>
 <span class="line"><span style="color:#D73A49;--shiki-dark:#C792EA">class</span><span style="color:#6F42C1;--shiki-dark:#FFCB6B"> FlairCoordinatorWorkflow</span><span style="color:#24292E;--shiki-dark:#89DDFF">:</span></span>
@@ -283,7 +427,39 @@
 <hr/>
 <h1 id="deploying-with-rainbow-deployments">Deploying with Rainbow Deployments</h1>
 <p>The final piece of the puzzle: deployments. In the old world, deploying a code change meant restarting the bot, which meant losing all in-flight state. With Temporal’s worker versioning and the <a href="https://github.com/temporalio/temporal-worker-controller" rel="noreferrer" target="_blank">Temporal Worker Controller</a> on k3s, I now have zero-downtime deployments:</p>
-<p><img src="/_astro/rainbow-deploy.BzSmsQ-O_19DKCs.svg" alt="Rainbow Deployment Architecture" loading="lazy" decoding="async" fetchpriority="auto" width="1296" height="420"></p>
+<pre><code class="language-mermaid">flowchart TB
+  accTitle: Rainbow deployment architecture
+  accDescr: A GitHub push triggers a self-hosted runner that builds an image and runs a Helm upgrade; the Temporal Worker Controller routes new work to v2 while v1 drains.
+  gh[&quot;GitHub push&quot;]
+  runner[&quot;Self-hosted&lt;br/&gt;GitHub runner&quot;]
+  registry[&quot;Local registry&quot;]
+  subgraph k3s[&quot;K3S CLUSTER&quot;]
+    direction TB
+    controller[&quot;Temporal Worker&lt;br/&gt;Controller&quot;]
+    subgraph v1[&quot;v1 · DRAINING&quot;]
+      old[&quot;Old worker pods&lt;br/&gt;finish in-flight work&quot;]
+    end
+    subgraph v2[&quot;v2 · CURRENT&quot;]
+      new[&quot;New worker pods&lt;br/&gt;take all new work&quot;]
+    end
+  end
+  temporal[(&quot;Temporal&quot;)]
+
+  gh -- &quot;①&quot; --&gt; runner
+  runner -- &quot;② build + push&lt;br/&gt;image:sha&quot; --&gt; registry
+  runner -- &quot;③ helm upgrade&quot; --&gt; controller
+  controller -- &quot;④ route new&lt;br/&gt;work to v2&quot; --&gt; temporal
+  controller -. &quot;scales down&lt;br/&gt;when drained&quot; .-&gt; old
+  old -- &quot;⑤ finish&lt;br/&gt;in-flight&quot; --&gt; temporal
+  new -- &quot;poll&quot; --&gt; temporal
+  old -. &quot;⑥ continue-as-new&quot; .-&gt; new
+
+  class gh,runner,registry resource
+  class controller controller
+  class old retired
+  class new pods
+  class temporal temporal
+</code></pre>
 <p>The flow:</p>
 <ol>
 <li>Push code to GitHub</li>
@@ -373,4 +549,4 @@
 <table><thead><tr><th></th><th>Before Temporal</th><th>After Temporal</th></tr></thead><tbody><tr><td><strong>Architecture</strong></td><td>Single <code>bot.py</code></td><td>5 workflows, 12 activities</td></tr><tr><td><strong>Error handling</strong></td><td>~42% of codebase, didn’t work perfectly</td><td>~15%, Temporal handles the rest</td></tr><tr><td><strong>Score accuracy</strong></td><td>Double-counts on crash</td><td>Guaranteed exactly-once</td></tr><tr><td><strong>Missed trades</strong></td><td>After long outages</td><td>Never</td></tr><tr><td><strong>Deployments</strong></td><td>SSH + restart</td><td>Zero-downtime, automated</td></tr><tr><td><strong>Recovery</strong></td><td>Manual restart</td><td>Automatic</td></tr><tr><td><strong>Observability</strong></td><td>Pushover alert on crash</td><td>Full workflow visibility</td></tr></tbody></table>
 <p>I spent 2 years building workarounds for problems that Temporal solves out of the box. The homegrown wrapper kept the bot alive, but Temporal made it <strong>correct</strong>. And that’s the difference that matters; users on these trade subreddits are trusting the bot with their reputation. “It mostly works” isn’t a great approach.</p>
 <p>If you’re running any kind of long-lived process that needs to survive the real world, like API outages, crashes, deployments, et al; I’d strongly recommend giving Temporal a look. Even as a beginner, the ramp-up was worth it.</p>
-<p>The bot’s source code is on <a href="https://github.com/mikeacjones/reddit-trade-confirmation-bot" rel="noreferrer" target="_blank">GitHub</a> if you want to dig into the details.</p> </div> </div> <script type="module" src="/_astro/CodeBlock.astro_astro_type_script_index_0_lang.DUA4PhpD.js"></script> <script type="module">function o(){const a=document.querySelector(".post-view-content");if(!a)return;a.querySelectorAll("img").forEach(e=>{e.dataset.zoomable!=="true"&&(e.dataset.zoomable="true",e.style.cursor="pointer",e.addEventListener("click",()=>{const t=document.createElement("div");t.className="zoomable-overlay";const n=document.createElement("img");n.src=e.src,n.alt=e.alt,t.appendChild(n),document.body.appendChild(t),t.addEventListener("click",()=>{t.remove()}),document.addEventListener("keydown",function d(r){r.key==="Escape"&&(t.remove(),document.removeEventListener("keydown",d))})}))})}document.readyState==="loading"?document.addEventListener("DOMContentLoaded",o):o();document.addEventListener("astro:page-load",o);</script>  </main> <footer class="SiteFooter"> <div class="About"> <img src="/images/profilePicture.png" alt="Michael Jones" width="44" height="44" loading="lazy"> <p>Written by Michael Jones, mostly about Temporal and durable execution, with older posts on MuleSoft and DataWeave.</p> </div> <nav aria-label="Elsewhere"> <a href="https://github.com/mikeacjones" target="_blank" rel="noreferrer">GitHub</a> <a href="https://www.linkedin.com/in/michael-jones-5a870678" target="_blank" rel="noreferrer">LinkedIn</a> <a href="https://stackoverflow.com/users/10890536/michael-jones" target="_blank" rel="noreferrer">Stack Overflow</a> <a href="/sitemap-index.xml">Sitemap</a> </nav> </footer> </body></html>
+<p>The bot’s source code is on <a href="https://github.com/mikeacjones/reddit-trade-confirmation-bot" rel="noreferrer" target="_blank">GitHub</a> if you want to dig into the details.</p> </div> </div> <script type="module" src="/_astro/CodeBlock.astro_astro_type_script_index_0_lang.CtkjkfEA.js"></script> <script type="module">function o(){const a=document.querySelector(".post-view-content");if(!a)return;a.querySelectorAll("img").forEach(e=>{e.dataset.zoomable!=="true"&&(e.dataset.zoomable="true",e.style.cursor="pointer",e.addEventListener("click",()=>{const t=document.createElement("div");t.className="zoomable-overlay";const n=document.createElement("img");n.src=e.src,n.alt=e.alt,t.appendChild(n),document.body.appendChild(t),t.addEventListener("click",()=>{t.remove()}),document.addEventListener("keydown",function d(r){r.key==="Escape"&&(t.remove(),document.removeEventListener("keydown",d))})}))})}document.readyState==="loading"?document.addEventListener("DOMContentLoaded",o):o();document.addEventListener("astro:page-load",o);</script> <script type="module" src="/_astro/Mermaid.astro_astro_type_script_index_0_lang.B3Hn6hcL.js"></script>  </main> <footer class="SiteFooter"> <div class="About"> <img src="/images/profilePicture.png" alt="Michael Jones" width="44" height="44" loading="lazy"> <p>Written by Michael Jones, mostly about Temporal and durable execution, with older posts on MuleSoft and DataWeave.</p> </div> <nav aria-label="Elsewhere"> <a href="https://github.com/mikeacjones" target="_blank" rel="noreferrer">GitHub</a> <a href="https://www.linkedin.com/in/michael-jones-5a870678" target="_blank" rel="noreferrer">LinkedIn</a> <a href="https://stackoverflow.com/users/10890536/michael-jones" target="_blank" rel="noreferrer">Stack Overflow</a> <a href="/sitemap-index.xml">Sitemap</a> </nav> </footer> </body></html>
