@@ -1,15 +1,19 @@
 /* ===== Design Tokens =====
-   Plum (#52307c) is the site's original brand color (mask icon, confetti).
-   Raspberry is reserved for the sugar cube in the wordmark and the current-page mark. */
+   Colors borrow from the Temporal brand palette (temporal.io): space black,
+   ultraviolet, purple, and the green "live" accent. --accent is for links and
+   interactive text; --mark is the flash color for the sugar cube, the
+   current-page underline, and focus rings. --flash is the brand gradient. */
 :root {
-  --paper: #f6f5f9;
-  --surface: #ecebf2;
-  --ink: #1d1828;
-  --ink-muted: #625b70;
-  --rule: #dcd7e5;
-  --plum: #52307c;
-  --plum-soft: rgba(82, 48, 124, 0.09);
-  --raspberry: #c8245f;
+  --paper: #f7f7fb;
+  --surface: #ecedf7;
+  --ink: #141414;
+  --ink-muted: #5b6478;
+  --rule: #dcdef0;
+  --accent: #444ce7;
+  --accent-soft: rgba(68, 76, 231, 0.12);
+  --mark: #444ce7;
+  --flash: linear-gradient(90deg, #b664ff 0%, #444ce7 100%);
+  --glow: none;
   --code-bg: #ffffff;
   --add-bg: rgba(31, 136, 61, 0.12);
   --remove-bg: rgba(207, 34, 46, 0.1);
@@ -34,31 +38,35 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
-    --paper: #15111c;
-    --surface: #1f1929;
-    --ink: #e9e4f2;
-    --ink-muted: #a49cb3;
-    --rule: #352d42;
-    --plum: #c3a6ee;
-    --plum-soft: rgba(195, 166, 238, 0.12);
-    --raspberry: #ff6f9f;
-    --code-bg: #1b1624;
-    --add-bg: rgba(63, 185, 80, 0.16);
+    --paper: #141414;
+    --surface: #1a1830;
+    --ink: #f8fafc;
+    --ink-muted: #92a4c3;
+    --rule: #243349;
+    --accent: #a5a9f5;
+    --accent-soft: rgba(97, 105, 237, 0.28);
+    --mark: #1ff1a5;
+    --flash: linear-gradient(90deg, #b664ff 0%, #444ce7 55%, #1ff1a5 100%);
+    --glow: radial-gradient(ellipse 80% 520px at 50% -120px, rgba(68, 76, 231, 0.22), transparent 70%);
+    --code-bg: #171626;
+    --add-bg: rgba(31, 241, 165, 0.12);
     --remove-bg: rgba(248, 81, 73, 0.14);
   }
 }
 
 :root[data-theme='dark'] {
-  --paper: #15111c;
-  --surface: #1f1929;
-  --ink: #e9e4f2;
-  --ink-muted: #a49cb3;
-  --rule: #352d42;
-  --plum: #c3a6ee;
-  --plum-soft: rgba(195, 166, 238, 0.12);
-  --raspberry: #ff6f9f;
-  --code-bg: #1b1624;
-  --add-bg: rgba(63, 185, 80, 0.16);
+  --paper: #141414;
+  --surface: #1a1830;
+  --ink: #f8fafc;
+  --ink-muted: #92a4c3;
+  --rule: #243349;
+  --accent: #a5a9f5;
+  --accent-soft: rgba(97, 105, 237, 0.28);
+  --mark: #1ff1a5;
+  --flash: linear-gradient(90deg, #b664ff 0%, #444ce7 55%, #1ff1a5 100%);
+  --glow: radial-gradient(ellipse 80% 520px at 50% -120px, rgba(68, 76, 231, 0.22), transparent 70%);
+  --code-bg: #171626;
+  --add-bg: rgba(31, 241, 165, 0.12);
   --remove-bg: rgba(248, 81, 73, 0.14);
 }
 
@@ -77,7 +85,7 @@ html {
 
 body {
   margin: 0;
-  background: var(--paper);
+  background: var(--glow) no-repeat, var(--paper);
   color: var(--ink);
   font-family: var(--font-text);
   font-size: var(--step-0);
@@ -100,7 +108,7 @@ main {
 }
 
 a {
-  color: var(--plum);
+  color: var(--accent);
   text-decoration-thickness: 1px;
   text-underline-offset: 0.18em;
 }
@@ -110,7 +118,7 @@ a:hover {
 }
 
 :focus-visible {
-  outline: 2px solid var(--raspberry);
+  outline: 2px solid var(--mark);
   outline-offset: 3px;
   border-radius: 2px;
 }
@@ -125,7 +133,7 @@ h1, h2, h3, h4 {
 }
 
 ::selection {
-  background: var(--plum-soft);
+  background: var(--accent-soft);
 }
 
 .SkipLink {
@@ -170,7 +178,7 @@ h1, h2, h3, h4 {
   width: 0.36em;
   height: 0.36em;
   margin: 0 0.1em 0.04em;
-  background: var(--raspberry);
+  background: var(--mark);
   border-radius: 2px;
   transform: rotate(12deg);
   transition: transform 300ms ease;
@@ -201,7 +209,7 @@ h1, h2, h3, h4 {
 
 .Masthead-nav a[aria-current='page'] {
   color: var(--ink);
-  border-bottom-color: var(--raspberry);
+  border-bottom-color: var(--mark);
 }
 
 /* ===== Footer ===== */
@@ -268,7 +276,7 @@ h1, h2, h3, h4 {
 }
 
 .Entry-title a:hover {
-  color: var(--plum);
+  color: var(--accent);
   text-decoration: underline;
   text-decoration-thickness: 2px;
 }
@@ -311,7 +319,7 @@ h1, h2, h3, h4 {
 }
 
 a.Tag:hover {
-  color: var(--plum);
+  color: var(--accent);
   text-decoration: underline;
 }
 
@@ -323,6 +331,7 @@ a.Tag:hover {
 /* The newest post gets the room a hero would: it's what most visitors came for. */
 .Entry--featured {
   border-top: 3px solid var(--ink);
+  border-image: var(--flash) 1;
   margin-top: 48px;
   padding: 28px 0 40px;
 }
@@ -510,7 +519,7 @@ a.Tag:hover {
 blockquote {
   margin: 1.5em 0;
   padding: 2px 0 2px 20px;
-  border-left: 3px solid var(--plum);
+  border-left: 3px solid var(--accent);
   color: var(--ink);
 }
 
@@ -534,7 +543,7 @@ blockquote p:last-child {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 50px;
+  padding: clamp(12px, 4vw, 50px);
   z-index: 100;
   background: rgba(10, 8, 14, 0.88);
 }
@@ -543,6 +552,35 @@ blockquote p:last-child {
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
+}
+
+/* ===== Mermaid diagrams =====
+   A dark Temporal-style card in both page themes (see Mermaid.astro). */
+.mermaid-diagram {
+  width: min(var(--code), 100vw - 2 * var(--gutter));
+  margin: 1.5em 0;
+  padding: 1.25rem;
+  overflow-x: auto;
+  border-radius: var(--radius);
+  border: 1px solid #243349;
+  background: #141414;
+  cursor: zoom-in;
+}
+
+.mermaid-diagram svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto;
+}
+
+.zoomable-overlay .mermaid-diagram-zoomed {
+  width: auto;
+  max-width: 100%;
+  max-height: 100%;
+  margin: 0;
+  overflow: auto;
+  cursor: default;
 }
 
 .embedVideo-container {
@@ -731,7 +769,7 @@ pre.astro-code .line.diff.remove::before {
 
 .codelab-step-link.active {
   color: var(--ink);
-  border-left-color: var(--raspberry);
+  border-left-color: var(--mark);
   font-weight: 500;
 }
 
@@ -777,7 +815,8 @@ pre.astro-code .line.diff.remove::before {
   margin-left: 8px;
 }
 
-.codelab-step-content .code-wrapper {
+.codelab-step-content .code-wrapper,
+.codelab-step-content .mermaid-diagram {
   width: 100%;
 }
 
@@ -811,8 +850,8 @@ pre.astro-code .line.diff.remove::before {
 }
 
 .codelab-nav-btn:hover {
-  border-color: var(--plum);
-  color: var(--plum);
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .codelab-next {
@@ -829,8 +868,8 @@ pre.astro-code .line.diff.remove::before {
 
 .codelab-next:only-child:hover,
 .codelab-prev + .codelab-next:hover {
-  background: var(--plum);
-  border-color: var(--plum);
+  background: var(--accent);
+  border-color: var(--accent);
   color: var(--paper);
 }
 
@@ -873,7 +912,7 @@ pre.astro-code .line.diff.remove::before {
   }
 
   .codelab-step-link.active {
-    border-bottom-color: var(--raspberry);
+    border-bottom-color: var(--mark);
   }
 }
 

@@ -9,7 +9,39 @@ An extremely common pattern today involves managed file transfers. The scenario 
 
 Let's consider a managed file transfer architecture like this:
 
-![mft-diagram.svg](mft-diagram.svg)
+```mermaid
+flowchart TB
+  accTitle: Managed file transfer architecture
+  accDescr: A scheduler or UI starts a job through the MFT Job Async API, which queues a task. The MFT Task Processor picks it up, reads its configuration from the secured MFT Config API, and transfers files to SFTP, S3, or cloud storage.
+  trigger["External scheduler<br/>or UI"]
+  jobs["MFT Job Async API<br/>experience layer"]
+  queue[("Task queue")]
+  processor["MFT Task Processor<br/>process layer"]
+  config["MFT Config API<br/>system layer · secured"]
+  db[("Credentials<br/>+ mappings")]
+  sftp["SFTP"]
+  s3["Amazon S3"]
+  gcs["Cloud storage"]
+
+  trigger -- "① start job" --> jobs
+  jobs -- "② publish task" --> queue
+  queue -- "③ consume" --> processor
+  processor -- "④ fetch config" --> config
+  config --> db
+  processor -- "⑤ transfer files" --> s3
+  processor --> sftp
+  processor --> gcs
+
+  class trigger,queue,db resource
+  class jobs,processor,config app
+  class sftp,s3,gcs external
+```
+
+1. An external scheduler or UI starts a job through the asynchronous job API.
+2. The job API publishes a task event.
+3. The MFT Task Processor consumes the task.
+4. It fetches the transfer's configuration (credentials and mappings) from the secured config API.
+5. It moves the files to or from the target systems.
 
 With this approach, we now have a configurable file transfer agent (the MFT Task Processor) which utilizes an API for configuration; this flexible approach allows us to quickly build a process layer that we can control without touching code.
 

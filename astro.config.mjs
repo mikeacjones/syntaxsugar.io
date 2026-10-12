@@ -37,6 +37,9 @@ export default defineConfig({
     sitemap(),
   ],
   markdown: {
+    // Mermaid fences are left as plain <pre><code class="language-mermaid">
+    // and rendered client-side by the Mermaid component.
+    syntaxHighlight: { type: 'shiki', excludeLangs: ['math', 'mermaid'] },
     shikiConfig: {
       themes: { light: 'github-light', dark: 'material-theme-palenight' },
       wrap: true,

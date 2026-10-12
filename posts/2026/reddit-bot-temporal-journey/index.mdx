@@ -33,7 +33,31 @@ Sounds straightforward, right? It really isn't. The bot has to run 24/7, never m
 
 The first version was about what you'd expect: a single `bot.py`, roughly 450 lines, deployed on an EC2 instance.
 
-![Phase 1 Architecture](naive-arch.svg)
+```mermaid
+flowchart TB
+  accTitle: Phase 1 architecture
+  accDescr: One Python process on EC2 streams comments from the Reddit API and increments flair without idempotency.
+  subgraph proc["ONE PYTHON PROCESS · EC2"]
+    direction TB
+    bot["bot.py<br/>~450 lines"]
+    stream["PRAW<br/>stream.comments()"]
+    flair["increment_flair()<br/>save() after the write"]
+  end
+  secrets["AWS Secrets<br/>Manager"]
+  reddit["Reddit API"]
+  pushover["Pushover"]
+
+  secrets -- "credentials" --> bot
+  bot --> stream
+  bot --> flair
+  stream -- "blocking<br/>infinite loop" --> reddit
+  flair -- "double-increments<br/>on restart" --> reddit
+  bot -. "crash alert" .-> pushover
+
+  class bot,stream app
+  class flair pain
+  class secrets,reddit,pushover external
+```
 
 The core of it was PRAW's `stream.comments()`, a blocking generator that yields new comments as they appear:
 
@@ -74,7 +98,37 @@ def process_confirmation(comment):
 
 # Everything That Went Wrong
 
-![Failure Points](failure-points.svg)
+```mermaid
+flowchart TB
+  accTitle: Failure points
+  accDescr: Six ways the bot process failed, grouped into Reddit API, process, and correctness problems.
+  bot["Bot process"]
+  subgraph api["REDDIT API"]
+    direction TB
+    lazy["Lazy-loaded objects<br/>fail mid-outage"]
+    stream["stream.comments()<br/>silently stops"]
+  end
+  subgraph proc["PROCESS"]
+    direction TB
+    crash["Crash loses<br/>all state"]
+    deploy["Deploy = restart<br/>no zero-downtime"]
+  end
+  subgraph correct["CORRECTNESS"]
+    direction TB
+    double["save() after write<br/>double-increments"]
+    dedup["301-item dedup<br/>misses comments"]
+  end
+
+  bot --> api
+  bot --> proc
+  bot --> correct
+  lazy ~~~ stream
+  crash ~~~ deploy
+  double ~~~ dedup
+
+  class bot app
+  class lazy,stream,crash,deploy,double,dedup pain
+```
 
 Let me walk through the fun ways this broke in the real world..
 
@@ -104,7 +158,38 @@ The root issue: `increment_flair` is **not idempotent**, and the "I processed th
 
 After getting burned enough times, I built [praw-bot-wrapper](https://github.com/mikeacjones/praw-bot-wrapper); a custom library that wraps PRAW's streams with error recovery:
 
-![praw-bot-wrapper Architecture](praw-wrapper-arch.svg)
+```mermaid
+flowchart TB
+  accTitle: praw-bot-wrapper architecture
+  accDescr: A while-True loop iterates PRAW streams, resets them with backoff on errors, and dedups in memory; four gaps remain.
+  subgraph wrapper["PRAW-BOT-WRAPPER"]
+    direction TB
+    loop["while True"]
+    stream["Stream<br/>iteration"]
+    handler["Your handler"]
+    reset["Reset streams<br/>+ backoff"]
+    dedup["BoundedSet(301)<br/>in-memory dedup"]
+  end
+  subgraph missing["STILL MISSING"]
+    direction TB
+    checkpoint["No persistent<br/>checkpoint"]
+    retry["No retry for<br/>business logic"]
+    single["Single instance<br/>only"]
+    window["301-item window<br/>too small"]
+  end
+
+  loop --> stream
+  stream -- "success" --> handler
+  stream -- "PRAWException" --> reset
+  reset -- "retry" --> loop
+  handler --> dedup
+  checkpoint ~~~ single
+  retry ~~~ window
+  dedup ~~~ missing
+
+  class loop,stream,handler,reset,dedup app
+  class checkpoint,retry,single,window pain
+```
 
 ```python
 from praw_bot_wrapper import Bot
@@ -150,7 +235,50 @@ I'd heared about [Temporal](https://temporal.io). Durable execution, automatic r
 
 I replaced my bot with a set of **durable workflows**:
 
-![Temporal Architecture](temporal-arch.svg)
+```mermaid
+flowchart TB
+  accTitle: Temporal architecture
+  accDescr: A polling workflow starts one confirmation workflow per comment, which validates, asks the singleton flair coordinator for increments, and replies. Activities call the Reddit API with retry policies.
+  subgraph worker["TEMPORAL WORKER"]
+    direction TB
+    subgraph schedules["SCHEDULES"]
+      direction LR
+      monthly["MonthlyPost"]
+      lock["LockSubmissions"]
+    end
+    poll["CommentPollingWorkflow<br/>long-running"]
+    confirm["ProcessConfirmationWorkflow<br/>one per comment"]
+    coord["FlairCoordinatorWorkflow<br/>singleton"]
+    subgraph activities["ACTIVITIES · RETRIED"]
+      direction LR
+      fetch["fetch_new_comments"]
+      validate["validate"]
+      flair["get_flair<br/>set_flair"]
+      reply["reply"]
+    end
+  end
+  reddit["Reddit API"]
+
+  poll -- "① poll" --> fetch
+  poll -- "② child workflow<br/>per confirmation" --> confirm
+  confirm -- "③" --> validate
+  confirm -- "④ increment flair<br/>(Update)" --> coord
+  coord -- "⑤" --> flair
+  confirm -- "⑥" --> reply
+  activities -- "retry policies" --> reddit
+  schedules ~~~ poll
+
+  class monthly,lock,poll,confirm,coord workflow
+  class fetch,validate,flair,reply activity
+  class reddit external
+```
+
+1. The polling workflow fetches new comments from Reddit.
+2. Each confirmation becomes its own child workflow, with the comment ID as its workflow ID.
+3. The confirmation workflow validates the trade.
+4. It asks the flair coordinator to increment both users' flair.
+5. The coordinator reads a user's flair once, then serializes the writes.
+6. The confirmation workflow replies with the new counts.
 
 | Workflow | What It Does |
 |----------|-------------|
@@ -254,7 +382,27 @@ That screenshot is the actual bot running. You can see the polling workflows run
 
 This bug plagued me through both Phase 1 and Phase 2. The core issue: `increment_flair` reads the current count, adds 1, and writes it back. If anything goes wrong and the operation retries, it reads the *already-incremented* value and increments again.
 
-![Flair Coordinator Sequence](flair-coordinator.svg)
+```mermaid
+sequenceDiagram
+  accTitle: Flair coordinator sequence
+  accDescr: Two workflows increment the same user's flair; the coordinator serializes them, reuses its cached count, and answers a retried request from its results.
+  participant A as Workflow A
+  participant B as Workflow B
+  participant FC as FlairCoordinator
+  participant R as Reddit API
+  A->>FC: increment u/x (req abc)
+  B->>FC: increment u/x (req def)
+  Note over FC: u/x is busy, so req def waits
+  FC->>R: get_flair(u/x)
+  R-->>FC: 5
+  FC->>R: set_flair(u/x, 6)
+  FC-->>A: done (6)
+  Note over FC: req def uses the cached 6,<br/>not a stale read
+  FC->>R: set_flair(u/x, 7)
+  FC-->>B: done (7)
+  A->>FC: retry (req abc)
+  FC-->>A: cached result (6)
+```
 
 The solution was the **FlairCoordinatorWorkflow**, a durable singleton that serializes all flair updates. It uses Temporal's `update` mechanism so that confirmation workflows can request flair increments and wait for the result.
 
@@ -314,7 +462,40 @@ This is the kind of problem that Temporal makes *solvable*. You need a durable s
 
 The final piece of the puzzle: deployments. In the old world, deploying a code change meant restarting the bot, which meant losing all in-flight state. With Temporal's worker versioning and the [Temporal Worker Controller](https://github.com/temporalio/temporal-worker-controller) on k3s, I now have zero-downtime deployments:
 
-![Rainbow Deployment Architecture](rainbow-deploy.svg)
+```mermaid
+flowchart TB
+  accTitle: Rainbow deployment architecture
+  accDescr: A GitHub push triggers a self-hosted runner that builds an image and runs a Helm upgrade; the Temporal Worker Controller routes new work to v2 while v1 drains.
+  gh["GitHub push"]
+  runner["Self-hosted<br/>GitHub runner"]
+  registry["Local registry"]
+  subgraph k3s["K3S CLUSTER"]
+    direction TB
+    controller["Temporal Worker<br/>Controller"]
+    subgraph v1["v1 · DRAINING"]
+      old["Old worker pods<br/>finish in-flight work"]
+    end
+    subgraph v2["v2 · CURRENT"]
+      new["New worker pods<br/>take all new work"]
+    end
+  end
+  temporal[("Temporal")]
+
+  gh -- "①" --> runner
+  runner -- "② build + push<br/>image:sha" --> registry
+  runner -- "③ helm upgrade" --> controller
+  controller -- "④ route new<br/>work to v2" --> temporal
+  controller -. "scales down<br/>when drained" .-> old
+  old -- "⑤ finish<br/>in-flight" --> temporal
+  new -- "poll" --> temporal
+  old -. "⑥ continue-as-new" .-> new
+
+  class gh,runner,registry resource
+  class controller controller
+  class old retired
+  class new pods
+  class temporal temporal
+```
 
 The flow:
 

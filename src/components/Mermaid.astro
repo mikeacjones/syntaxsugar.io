@@ -1,0 +1,154 @@
+---
+// This component injects a client-side script that renders ```mermaid fences
+// (left unhighlighted by Shiki, see astro.config.mjs) as Temporal-themed
+// diagrams on a dark card, following the temporal-toolkit-demo-buildkit
+// diagram guide. Mermaid is only downloaded on pages that have a diagram.
+//
+// Flowcharts get these role classes for free; tag nodes with `class X role`:
+//   temporal    UV       Temporal itself (server, Cloud)
+//   workflow    purple   Workflows
+//   controller  purple   Temporal Worker Controller
+//   activity    green    Activities / units of work
+//   external    cyan     Third-party services and APIs
+//   app         slate    Plain application code (no Temporal)
+//   pain        pink     Failure modes and gaps (red is reserved for real errors)
+//   resource    indigo   Declarative resources, CI, supporting infra (dashed)
+//   retired     slate    Something being drained or retired (dashed)
+//   pods        cyan     Running workloads (pods)
+//   keda, prom  green, pink  Scaling signals, as in the buildkit's K8s demo
+---
+
+<script>
+  const ROLE_CLASSDEFS: Record<string, string> = {
+    temporal: 'fill:#141414,stroke:#444ce7,stroke-width:2px,color:#f8fafc',
+    workflow: 'fill:#141414,stroke:#b664ff,stroke-width:2px,color:#f8fafc',
+    controller: 'fill:#141414,stroke:#b664ff,stroke-width:2px,color:#f8fafc',
+    activity: 'fill:#141414,stroke:#1ff1a5,stroke-width:2px,color:#f8fafc',
+    external: 'fill:#141414,stroke:#4fd8ff,stroke-width:2px,color:#f8fafc',
+    app: 'fill:#141414,stroke:#92a4c3,stroke-width:2px,color:#f8fafc',
+    pain: 'fill:#141414,stroke:#ff6bff,stroke-width:2px,color:#f8fafc',
+    resource: 'fill:#141414,stroke:#7f86f1,stroke-width:1px,stroke-dasharray:4 3,color:#cacbf9',
+    retired: 'fill:#141414,stroke:#465a78,stroke-width:1px,stroke-dasharray:4 3,color:#92a4c3',
+    pods: 'fill:#141414,stroke:#4fd8ff,stroke-width:2px,color:#f8fafc',
+    keda: 'fill:#141414,stroke:#1ff1a5,stroke-width:2px,color:#f8fafc',
+    prom: 'fill:#141414,stroke:#ff6bff,stroke-width:2px,color:#f8fafc',
+  };
+
+  const FONT = '"JetBrains Mono", ui-monospace, Menlo, monospace';
+
+  // Appends any role classDef the diagram doesn't define itself.
+  function withRoleClasses(source: string): string {
+    if (!/^\s*(%%.*\n\s*)*(flowchart|graph)\b/.test(source)) return source;
+    const defs = Object.entries(ROLE_CLASSDEFS)
+      .filter(([name]) => !new RegExp(`classDef\\s+${name}\\b`).test(source))
+      .map(([name, style]) => `  classDef ${name} ${style}`);
+    return `${source}\n${defs.join('\n')}`;
+  }
+
+  function zoom(figure: HTMLElement) {
+    const svg = figure.querySelector('svg');
+    if (!svg) return;
+    const overlay = document.createElement('div');
+    overlay.className = 'zoomable-overlay';
+    const card = document.createElement('div');
+    card.className = 'mermaid-diagram mermaid-diagram-zoomed';
+    // Show the diagram at its natural size; the card scrolls if it's bigger
+    // than the screen.
+    const copy = svg.cloneNode(true) as SVGSVGElement;
+    copy.style.width = `${svg.viewBox.baseVal.width}px`;
+    copy.style.maxWidth = 'none';
+    card.appendChild(copy);
+    card.addEventListener('click', (e) => e.stopPropagation());
+    overlay.appendChild(card);
+    document.body.appendChild(overlay);
+
+    function close() {
+      overlay.remove();
+      document.removeEventListener('keydown', onKey);
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') close();
+    }
+    overlay.addEventListener('click', close);
+    document.addEventListener('keydown', onKey);
+  }
+
+  let counter = 0;
+
+  async function renderMermaid() {
+    const blocks = Array.from(
+      document.querySelectorAll<HTMLElement>('pre > code.language-mermaid'),
+    ).filter((code) => code.dataset.rendered !== 'true');
+    if (blocks.length === 0) return;
+
+    // Mermaid sizes boxes from measured text, so the webfont must be ready
+    // first or labels get clipped.
+    await document.fonts.load(`15px ${FONT}`).catch(() => {});
+    await document.fonts.ready;
+
+    const { default: mermaid } = await import('mermaid');
+    mermaid.initialize({
+      startOnLoad: false,
+      securityLevel: 'strict',
+      theme: 'base',
+      fontFamily: FONT,
+      flowchart: { nodeSpacing: 40, rankSpacing: 60, padding: 18 },
+      sequence: { mirrorActors: false, actorMargin: 60 },
+      themeVariables: {
+        fontFamily: FONT,
+        fontSize: '15px',
+        background: '#141414',
+        primaryColor: '#141414',
+        primaryTextColor: '#f8fafc',
+        primaryBorderColor: '#444ce7',
+        lineColor: '#1ff1a5',
+        textColor: '#f8fafc',
+        clusterBkg: '#1a1830',
+        clusterBorder: '#465a78',
+        titleColor: '#cacbf9',
+        edgeLabelBackground: '#141414',
+        // Sequence diagrams
+        actorBkg: '#141414',
+        actorBorder: '#444ce7',
+        actorTextColor: '#f8fafc',
+        actorLineColor: '#465a78',
+        signalColor: '#1ff1a5',
+        signalTextColor: '#f8fafc',
+        labelBoxBkgColor: '#141414',
+        labelBoxBorderColor: '#465a78',
+        labelTextColor: '#f8fafc',
+        loopTextColor: '#cacbf9',
+        noteBkgColor: '#1a1830',
+        noteBorderColor: '#465a78',
+        noteTextColor: '#cacbf9',
+        activationBkgColor: '#211b4e',
+        activationBorderColor: '#444ce7',
+        sequenceNumberColor: '#141414',
+      },
+    });
+
+    for (const code of blocks) {
+      code.dataset.rendered = 'true';
+      const pre = code.parentElement!;
+      const source = code.textContent ?? '';
+      try {
+        const { svg } = await mermaid.render(`mermaid-${++counter}`, withRoleClasses(source));
+        const figure = document.createElement('figure');
+        figure.className = 'mermaid-diagram';
+        figure.innerHTML = svg;
+        figure.addEventListener('click', () => zoom(figure));
+        pre.replaceWith(figure);
+      } catch (err) {
+        // Leave the source visible so a broken diagram is obvious.
+        console.error('Mermaid failed to render a diagram', err);
+      }
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', renderMermaid);
+  } else {
+    renderMermaid();
+  }
+  document.addEventListener('astro:page-load', renderMermaid);
+</script>
