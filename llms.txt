@@ -2,7 +2,7 @@
 
 > Michael Jones writes about durable execution, Temporal, distributed systems, and integration engineering.
 
-A personal blog by Michael Jones. Recent posts cover Temporal, durable execution, and Temporal Cloud; older posts cover MuleSoft and DataWeave. Every post and Markdown lab below links to a plain Markdown copy. The full text of every post is in [llms-full.txt](https://syntaxsugar.io/llms-full.txt).
+A personal blog by Michael Jones. Recent posts cover Temporal, durable execution, and Temporal Cloud; older posts cover MuleSoft and DataWeave. Every post, Markdown lab, and course lesson below links to a plain Markdown copy. The full text of every post is in [llms-full.txt](https://syntaxsugar.io/llms-full.txt).
 
 ## Posts
 
@@ -23,6 +23,29 @@ A personal blog by Michael Jones. Recent posts cover Temporal, durable execution
 - [Connect to Azure SQL using Azure AD Authentication](https://syntaxsugar.io/lab-content/connect-to-azure-sql-using-azure-ad-authentication/): This will walk you through setting up a project to connect to an Azure SQL instance using Azure AD authentication.
 - [Anypoint MQ Notification Demo](https://syntaxsugar.io/lab-content/async-notification-api-workshop/): In this example, you will build a MuleSoft application using multiple queues to facilitate notifications to multiple channels.
 - [CICD with GitHub Actions](https://syntaxsugar.io/lab-content/cicd-github-actions/): In this example, you will build a MuleSoft application with automated deployment to Sandbox and Production environments, using a secrets vault as well as environment based properties file.
+
+## Courses
+
+- [Wordflow: Learn Temporal by Building a Word Game](https://syntaxsugar.io/course/wordflow/index.md): A hands-on Temporal course: build the backend of a timed word game one concept at a time, from your first Workflow through Signals, Updates, Timers, Entity Workflows, Continue-As-New, and versioning.
+  - [00 · Setup](https://syntaxsugar.io/course/wordflow/00-setup/index.md): Get the Temporal Service, the web app, and the Temporal UI running, and find your way around the project.
+  - [01 · Your first Workflow](https://syntaxsugar.io/course/wordflow/01-first-workflow/index.md): Clicking a puzzle starts a Workflow that creates a new game and returns the board.
+  - [02 · Activities](https://syntaxsugar.io/course/wordflow/02-activities/index.md): The Workflow loads its own puzzle, so the API only passes a puzzle ID.
+  - [03 · Signals and Queries](https://syntaxsugar.io/course/wordflow/03-signals-and-queries/index.md): The game stays open while you play. You send guesses to it and read the board from it.
+  - [04 · Updates](https://syntaxsugar.io/course/wordflow/04-updates/index.md): Every guess gets an immediate answer, and a new game returns its board as soon as it's ready.
+  - [05 · Durable Timers](https://syntaxsugar.io/course/wordflow/05-timers/index.md): Each game has a clock. When it runs out, the game ends. Players can add 30 seconds, twice.
+  - [06 · Entity Workflows](https://syntaxsugar.io/course/wordflow/06-entity-workflows/index.md): Players can join. Each player is a Workflow that holds their points and stats.
+  - [07 · Child Workflows](https://syntaxsugar.io/course/wordflow/07-child-workflows/index.md): A player's games belong to them. Finishing a game adds its score to the player's points and stats.
+  - [08 · Workflow to Workflow](https://syntaxsugar.io/course/wordflow/08-workflow-to-workflow/index.md): Hints. The first two are free. After that, each costs a player 10 points, paid by the Player Workflow.
+  - [09 · Signal-with-Start](https://syntaxsugar.io/course/wordflow/09-signal-with-start/index.md): A global leaderboard that every player's finished games feed into.
+  - [10 · Continue-As-New](https://syntaxsugar.io/course/wordflow/10-continue-as-new/index.md): Player and leaderboard Workflows can run forever without their histories growing forever.
+  - [11 · Retries in depth](https://syntaxsugar.io/course/wordflow/11-retries/index.md): A real word that isn't in the puzzle earns a bonus. Checking it means calling an unreliable dictionary service, and the game must handle every way it fails.
+  - [12 · Determinism and replay](https://syntaxsugar.io/course/wordflow/12-determinism-and-replay/index.md): Understand exactly why changing Workflow code can break running Workflows, and catch it before you deploy.
+  - [13 · Versioning](https://syntaxsugar.io/course/wordflow/13-versioning/index.md): Announce every new game in the feed, without breaking the games that are already running.
+  - [Extra · Saga](https://syntaxsugar.io/course/wordflow/saga/index.md): Players can gift points to each other. If the gift can't be delivered, the sender gets their points back.
+  - [Extra · Pick First](https://syntaxsugar.io/course/wordflow/pick-first/index.md): The dictionary has two regions, and each is slow at random. Ask both, use whichever answers first, and cancel the other.
+  - [Extra · Approval](https://syntaxsugar.io/course/wordflow/approval/index.md): Players submit new puzzles. Every word is checked against the dictionary at once, then a person approves or rejects the puzzle before it's published.
+  - [Extra · Schedules](https://syntaxsugar.io/course/wordflow/schedules/index.md): A puzzle of the day, announced in the feed on a schedule.
+  - [Wordflow contract](https://syntaxsugar.io/course/wordflow/contract/index.md): Every language branch implements the same HTTP API and uses the same Temporal names. The web app in web/ only knows about the HTTP API.
 
 ## Optional
 

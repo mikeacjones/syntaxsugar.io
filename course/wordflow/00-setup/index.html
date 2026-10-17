@@ -1,0 +1,283 @@
+<!DOCTYPE html><html lang="en"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="description" content="Get the Temporal Service, the web app, and the Temporal UI running, and find your way around the project."><meta name="color-scheme" content="light dark"><meta name="theme-color" content="#f7f7fb" media="(prefers-color-scheme: light)"><meta name="theme-color" content="#141414" media="(prefers-color-scheme: dark)"><title>00 · Setup · Wordflow Temporal Course | syntax sugar</title><link rel="canonical" href="https://syntaxsugar.io/course/wordflow/00-setup/"><meta name="author" content="Michael Jones"><!-- Social cards --><meta property="og:site_name" content="syntax sugar"><meta property="og:type" content="article"><meta property="og:title" content="00 · Setup · Wordflow Temporal Course"><meta property="og:description" content="Get the Temporal Service, the web app, and the Temporal UI running, and find your way around the project."><meta property="og:url" content="https://syntaxsugar.io/course/wordflow/00-setup/"><meta property="og:image" content="https://syntaxsugar.io/images/profilePicture.png"><meta property="og:image:alt" content="Michael Jones"><meta property="article:published_time" content="2026-10-17T00:00:00.000Z"><meta property="article:author" content="Michael Jones"><meta property="article:tag" content="Temporal"><meta property="article:tag" content="Course"><meta property="article:tag" content="Go"><meta name="twitter:card" content="summary"><meta name="twitter:title" content="00 · Setup · Wordflow Temporal Course"><meta name="twitter:description" content="Get the Temporal Service, the web app, and the Temporal UI running, and find your way around the project."><meta name="twitter:image" content="https://syntaxsugar.io/images/profilePicture.png"><!-- Structured data --><script type="application/ld+json">{"@context":"https://schema.org","@type":["TechArticle","LearningResource"],"name":"00 · Setup · Wordflow Temporal Course","headline":"00 · Setup","description":"Get the Temporal Service, the web app, and the Temporal UI running, and find your way around the project.","datePublished":"2026-10-17T00:00:00.000Z","keywords":"Temporal, Course, Go","url":"https://syntaxsugar.io/course/wordflow/00-setup/","mainEntityOfPage":"https://syntaxsugar.io/course/wordflow/00-setup/","image":"https://syntaxsugar.io/images/profilePicture.png","author":{"@type":"Person","name":"Michael Jones","url":"https://syntaxsugar.io/","sameAs":["https://github.com/mikeacjones","https://www.linkedin.com/in/michael-jones-5a870678"]},"publisher":{"@type":"Person","name":"Michael Jones","url":"https://syntaxsugar.io/","sameAs":["https://github.com/mikeacjones","https://www.linkedin.com/in/michael-jones-5a870678"]},"learningResourceType":"Lesson","position":1,"isPartOf":{"@type":"Course","name":"Wordflow: Learn Temporal by Building a Word Game","url":"https://syntaxsugar.io/course/wordflow/"},"programmingLanguage":["Go"]}</script><script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Labs","item":"https://syntaxsugar.io/labs"},{"@type":"ListItem","position":2,"name":"Wordflow Temporal Course","item":"https://syntaxsugar.io/course/wordflow/"},{"@type":"ListItem","position":3,"name":"00 · Setup · Wordflow Temporal Course","item":"https://syntaxsugar.io/course/wordflow/00-setup/"}]}</script><!-- Feeds and machine-readable copies --><link rel="alternate" type="application/rss+xml" title="syntax sugar" href="/rss.xml"><link rel="alternate" type="text/plain" title="llms.txt" href="/llms.txt"><link rel="alternate" type="text/markdown" href="/course/wordflow/00-setup/index.md"><!-- Favicons --><link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="icon" type="image/x-icon" href="/favicon.ico"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="manifest" href="/site.webmanifest"><link rel="mask-icon" href="/safari-pinned-tab.svg" color="#444ce7"><!-- Google Fonts --><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap" rel="stylesheet"><!-- Sitemap --><link rel="sitemap" href="/sitemap-index.xml"><link rel="stylesheet" href="/_astro/_lesson_.CsZGQl8N.css"></head> <body> <a class="SkipLink" href="#main">Skip to content</a> <header class="Masthead"> <a class="Wordmark" href="/" aria-label="syntax sugar, home"> <span>syntax</span><span class="Wordmark-cube" aria-hidden="true"></span><span>sugar</span> </a> <nav class="Masthead-nav" aria-label="Primary"> <a href="/">Writing</a><a href="/labs" aria-current="page">Labs</a> </nav> </header> <main id="main">  <div class="post-view"> <p class="CourseCrumb"><a href="/course/wordflow/">Wordflow Temporal Course</a> · Lessons</p> <header class="ArticleHeader"> <h1>00 · Setup</h1>  </header> <div class="codelab-wrapper"> <nav class="codelab-steps-nav CourseNav" aria-label="Wordflow Temporal Course lessons" data-course="wordflow"> <a class="codelab-step-link" href="/course/wordflow/">
+Overview
+</a>  <span class="CourseNav-section">Lessons</span> <a class="codelab-step-link active" href="/course/wordflow/00-setup/" data-lesson="00-setup" aria-current="page"> <span class="codelab-step-label">00 · Setup</span> </a><a class="codelab-step-link" href="/course/wordflow/01-first-workflow/" data-lesson="01-first-workflow"> <span class="codelab-step-label">01 · Your first Workflow</span> </a><a class="codelab-step-link" href="/course/wordflow/02-activities/" data-lesson="02-activities"> <span class="codelab-step-label">02 · Activities</span> </a><a class="codelab-step-link" href="/course/wordflow/03-signals-and-queries/" data-lesson="03-signals-and-queries"> <span class="codelab-step-label">03 · Signals and Queries</span> </a><a class="codelab-step-link" href="/course/wordflow/04-updates/" data-lesson="04-updates"> <span class="codelab-step-label">04 · Updates</span> </a><a class="codelab-step-link" href="/course/wordflow/05-timers/" data-lesson="05-timers"> <span class="codelab-step-label">05 · Durable Timers</span> </a><a class="codelab-step-link" href="/course/wordflow/06-entity-workflows/" data-lesson="06-entity-workflows"> <span class="codelab-step-label">06 · Entity Workflows</span> </a><a class="codelab-step-link" href="/course/wordflow/07-child-workflows/" data-lesson="07-child-workflows"> <span class="codelab-step-label">07 · Child Workflows</span> </a><a class="codelab-step-link" href="/course/wordflow/08-workflow-to-workflow/" data-lesson="08-workflow-to-workflow"> <span class="codelab-step-label">08 · Workflow to Workflow</span> </a><a class="codelab-step-link" href="/course/wordflow/09-signal-with-start/" data-lesson="09-signal-with-start"> <span class="codelab-step-label">09 · Signal-with-Start</span> </a><a class="codelab-step-link" href="/course/wordflow/10-continue-as-new/" data-lesson="10-continue-as-new"> <span class="codelab-step-label">10 · Continue-As-New</span> </a><a class="codelab-step-link" href="/course/wordflow/11-retries/" data-lesson="11-retries"> <span class="codelab-step-label">11 · Retries in depth</span> </a><a class="codelab-step-link" href="/course/wordflow/12-determinism-and-replay/" data-lesson="12-determinism-and-replay"> <span class="codelab-step-label">12 · Determinism and replay</span> </a><a class="codelab-step-link" href="/course/wordflow/13-versioning/" data-lesson="13-versioning"> <span class="codelab-step-label">13 · Versioning</span> </a> <span class="CourseNav-section">Optional exercises</span> <a class="codelab-step-link" href="/course/wordflow/saga/" data-lesson="saga"> <span class="codelab-step-label">Saga</span> </a><a class="codelab-step-link" href="/course/wordflow/pick-first/" data-lesson="pick-first"> <span class="codelab-step-label">Pick First</span> </a><a class="codelab-step-link" href="/course/wordflow/approval/" data-lesson="approval"> <span class="codelab-step-label">Approval</span> </a><a class="codelab-step-link" href="/course/wordflow/schedules/" data-lesson="schedules"> <span class="codelab-step-label">Schedules</span> </a> <span class="CourseNav-section">Reference</span> <a class="codelab-step-link" href="/course/wordflow/contract/" data-lesson="contract"> <span class="codelab-step-label">API and Temporal names</span> </a> </nav> <div class="codelab-content"> <div class="post-view-content" data-course-lesson="00-setup"> <p><strong>Goal:</strong> get the Temporal Service, the web app, and the Temporal UI running, and find your way around the project.</p>
+<h2 id="whats-running">What’s running</h2>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Process</th><th>Command</th><th>Port</th><th>What it does</th></tr></thead><tbody><tr><td>Temporal Service</td><td><code>make temporal</code></td><td>7233, UI on 8233</td><td>Stores Workflow state and hands out work. A dev server that keeps its data in <code>.temporal/</code>.</td></tr><tr><td>Web app and API</td><td><code>make server</code></td><td>8080</td><td>The game UI, the HTTP API, and fake external services.</td></tr><tr><td>Worker</td><td><code>make worker</code></td><td></td><td>Runs your Workflow and Activity code. You build it in Lesson 1.</td></tr></tbody></table>
+<p>The Temporal Service never runs your code. It records what happened and puts tasks on a Task Queue. Your Worker polls that queue, runs the code, and reports back.</p>
+<h2 id="project-layout">Project layout</h2>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Path</th><th>Owner</th><th>What</th></tr></thead><tbody><tr><td><code>app/</code></td><td>you</td><td>Everything you write: Workflows, Activities, the Worker, and the API functions that call Temporal.</td></tr><tr><td><code>solutions/NN/</code></td><td>course</td><td>The finished <code>app/</code> after each lesson.</td></tr><tr><td><code>internal/</code></td><td>course</td><td>Game rules, puzzle storage, HTTP routing, fake services. You call these; you don’t change them.</td></tr><tr><td><code>web/</code></td><td>course</td><td>The browser app.</td></tr><tr><td><code>puzzles/</code></td><td>course</td><td>One JSON file per puzzle.</td></tr><tr><td><code>course/</code></td><td>course</td><td>These lessons.</td></tr></tbody></table>
+<h2 id="build-it">Build it</h2>
+<div class="CourseLang" data-lang="go" data-label="Go">
+<h3 id="1-start-the-temporal-service">1. Start the Temporal Service</h3>
+<p>The Codespace installs the Temporal CLI. In a terminal:</p>
+<pre class="astro-code astro-code-themes github-light material-theme-palenight" style="background-color:#fff;--shiki-dark-bg:#292D3E;color:#24292e;--shiki-dark:#babed8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="sh"><code><span class="line"><span style="color:#6F42C1;--shiki-dark:#FFCB6B">make</span><span style="color:#032F62;--shiki-dark:#C3E88D"> temporal</span></span></code></pre>
+<p>Leave it running. Open the <strong>Ports</strong> tab and open port <strong>8233</strong> to see the Temporal UI.</p>
+<h3 id="2-start-the-web-app">2. Start the web app</h3>
+<p>In a second terminal:</p>
+<pre class="astro-code astro-code-themes github-light material-theme-palenight" style="background-color:#fff;--shiki-dark-bg:#292D3E;color:#24292e;--shiki-dark:#babed8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="sh"><code><span class="line"><span style="color:#6F42C1;--shiki-dark:#FFCB6B">make</span><span style="color:#032F62;--shiki-dark:#C3E88D"> server</span></span></code></pre>
+<p>Port <strong>8080</strong> opens in your browser.</p>
+<h3 id="3-look-around">3. Look around</h3>
+<pre class="astro-code astro-code-themes github-light material-theme-palenight" style="background-color:#fff;--shiki-dark-bg:#292D3E;color:#24292e;--shiki-dark:#babed8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="plaintext"><code><span class="line"><span>app/</span></span>
+<span class="line"><span>  api/api.go          # one method per endpoint; all return ErrNotImplemented</span></span>
+<span class="line"><span>  cmd/server/main.go  # starts the web app; you add a Temporal Client in Lesson 1</span></span>
+<span class="line"><span>  cmd/worker/main.go  # you build the Worker in Lesson 1</span></span>
+<span class="line"><span>internal/</span></span>
+<span class="line"><span>  game/               # game rules: State, Player, Leaderboard</span></span>
+<span class="line"><span>  puzzles/            # reads puzzles/*.json</span></span>
+<span class="line"><span>  httpapi/            # routes, JSON, error mapping</span></span>
+<span class="line"><span>  services/           # fake dictionary and feed</span></span></code></pre>
+<p>Open <code>app/api/api.go</code>. Each method is one endpoint and names the lesson that builds it. The HTTP layer in <code>internal/httpapi</code> decodes the request, calls your method, and turns its result or error into a response.</p>
+<p>Skim <code>internal/game/game.go</code>. Its functions take the current time as an argument instead of calling <code>time.Now()</code>. You’ll see why in Lesson 1.</p>
+<h3 id="4-useful-commands">4. Useful commands</h3>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Command</th><th>What</th></tr></thead><tbody><tr><td><code>make worker</code> / <code>make server</code></td><td>Run your code in <code>app/</code>.</td></tr><tr><td><code>make worker S=05</code></td><td>Run Lesson 5’s solution.</td></tr><tr><td><code>make build</code></td><td>Compile and vet everything.</td></tr><tr><td><code>make clean-workflows</code></td><td>Terminate every running Workflow.</td></tr><tr><td><code>make reset-temporal</code></td><td>Delete all Temporal data (stop <code>make temporal</code> first).</td></tr><tr><td><code>temporal workflow list</code></td><td>List Workflows from the terminal.</td></tr></tbody></table>
+</div>
+<h2 id="check-it">Check it</h2>
+<ul class="contains-task-list">
+<li class="task-list-item">
+<p><input type="checkbox" disabled> The Temporal UI opens on port 8233 and shows the <code>default</code> namespace with no Workflows.</p>
+<p><img alt="Temporal UI with no Workflows" loading="lazy" decoding="async" fetchpriority="auto" width="2160" height="1500" src="/_astro/temporal-ui-empty.CopNFhUe_1uKy4k.png" ></p>
+</li>
+<li class="task-list-item">
+<p><input type="checkbox" disabled> The web app opens on port 8080 and lists five puzzles.</p>
+</li>
+<li class="task-list-item">
+<p><input type="checkbox" disabled> Clicking a puzzle shows <strong>Not built yet. This arrives in Lesson 1.</strong></p>
+</li>
+<li class="task-list-item">
+<p><input type="checkbox" disabled> The <strong>External services</strong> panel shows the dictionary mode and an empty feed.</p>
+<p><img alt="The starter web app" loading="lazy" decoding="async" fetchpriority="auto" width="1650" height="1350" src="/_astro/app-starter.ApeyfcRt_1oRUFy.png" ></p>
+</li>
+</ul>
+<h2 id="working-through-the-course">Working through the course</h2>
+<ul>
+<li>Keep three terminals open: <code>make temporal</code>, <code>make server</code>, and <code>make worker</code>.</li>
+<li>Restart the Worker after changing Workflow or Activity code. Restart the server after changing API code.</li>
+<li>Games from earlier lessons keep running with the code they started on. If the Worker logs errors about old Workflows, end them with <code>make clean-workflows</code>. Lesson 12 explains why this happens.</li>
+<li>To compare with the finished code, run <code>make worker S=NN</code> and <code>make server S=NN</code>.</li>
+<li><code>make reset-temporal</code> (with <code>make temporal</code> stopped) deletes every Workflow and starts fresh.</li>
+<li>The course site starts with the Codespace. If it isn’t on port 8000, run <code>make course</code>.</li>
+</ul> </div> <p class="CourseSource"> <a href="https://github.com/mikeacjones/temporal-course-wordflow/blob/main/course/00-setup/README.md" target="_blank" rel="noreferrer">Edit this lesson on GitHub</a> </p> <div class="codelab-step-nav">  <a class="codelab-nav-btn codelab-next" href="/course/wordflow/01-first-workflow/">Next: 01 · Your first Workflow</a> </div> </div> </div> </div> <script type="module" src="/_astro/CodeBlock.astro_astro_type_script_index_0_lang.CtkjkfEA.js"></script> <script type="module">function o(){const a=document.querySelector(".post-view-content");if(!a)return;a.querySelectorAll("img").forEach(e=>{e.dataset.zoomable!=="true"&&(e.dataset.zoomable="true",e.style.cursor="pointer",e.addEventListener("click",()=>{const t=document.createElement("div");t.className="zoomable-overlay";const n=document.createElement("img");n.src=e.src,n.alt=e.alt,t.appendChild(n),document.body.appendChild(t),t.addEventListener("click",()=>{t.remove()}),document.addEventListener("keydown",function d(r){r.key==="Escape"&&(t.remove(),document.removeEventListener("keydown",d))})}))})}document.readyState==="loading"?document.addEventListener("DOMContentLoaded",o):o();document.addEventListener("astro:page-load",o);</script> <script>
+  (function () {
+    var nav = document.querySelector('.CourseNav');
+    if (!nav) return;
+    var course = nav.getAttribute('data-course');
+    var LANG_KEY = 'course:lang';
+
+    // On narrow screens the nav is a scrolling row; bring the current lesson into view.
+    var active = nav.querySelector('.active');
+    if (active && nav.scrollWidth > nav.clientWidth) nav.scrollLeft = active.offsetLeft - 16;
+    var TICKS_KEY = 'course:' + course + ':ticks';
+
+    function load(key, fallback) {
+      try {
+        var value = JSON.parse(localStorage.getItem(key));
+        return value == null ? fallback : value;
+      } catch (e) {
+        return fallback;
+      }
+    }
+
+    function save(key, value) {
+      try {
+        localStorage.setItem(key, JSON.stringify(value));
+      } catch (e) {}
+    }
+
+    // Language tabs: each run of adjacent .CourseLang panels gets one tab bar.
+    var panels = Array.prototype.slice.call(document.querySelectorAll('.CourseLang'));
+    var groups = [];
+    panels.forEach(function (panel) {
+      var group = groups[groups.length - 1];
+      if (group && group[group.length - 1].nextElementSibling === panel) group.push(panel);
+      else groups.push([panel]);
+    });
+
+    var tabBars = [];
+    function selectLang(lang) {
+      tabBars.forEach(function (bar) {
+        var group = bar.group;
+        var match = group.some(function (p) { return p.dataset.lang === lang; }) ? lang : group[0].dataset.lang;
+        group.forEach(function (p) { p.hidden = p.dataset.lang !== match; });
+        bar.querySelectorAll('button').forEach(function (b) {
+          b.setAttribute('aria-selected', String(b.dataset.lang === match));
+          b.tabIndex = b.dataset.lang === match ? 0 : -1;
+        });
+      });
+    }
+
+    groups.forEach(function (group, g) {
+      var bar = document.createElement('div');
+      bar.className = 'CourseLang-tabs';
+      bar.setAttribute('role', 'tablist');
+      bar.setAttribute('aria-label', 'Language');
+      bar.group = group;
+      group.forEach(function (panel, i) {
+        var id = 'lang-' + g + '-' + panel.dataset.lang;
+        var button = document.createElement('button');
+        button.type = 'button';
+        button.setAttribute('role', 'tab');
+        button.id = id + '-tab';
+        button.setAttribute('aria-controls', id);
+        button.dataset.lang = panel.dataset.lang;
+        button.textContent = panel.dataset.label;
+        button.addEventListener('click', function () {
+          save(LANG_KEY, panel.dataset.lang);
+          selectLang(panel.dataset.lang);
+        });
+        bar.appendChild(button);
+        panel.id = id;
+        panel.setAttribute('role', 'tabpanel');
+        panel.setAttribute('aria-labelledby', id + '-tab');
+      });
+      bar.addEventListener('keydown', function (e) {
+        if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+        var buttons = Array.prototype.slice.call(bar.querySelectorAll('button'));
+        var i = buttons.indexOf(document.activeElement);
+        var next = buttons[(i + (e.key === 'ArrowRight' ? 1 : buttons.length - 1)) % buttons.length];
+        next.focus();
+        next.click();
+      });
+      group[0].before(bar);
+      tabBars.push(bar);
+    });
+    if (tabBars.length) selectLang(load(LANG_KEY, null));
+
+    // Checklists. Ticks are stored per lesson as an array of booleans.
+    var lesson = document.querySelector('[data-course-lesson]');
+    var ticks = load(TICKS_KEY, {});
+
+    function markNav() {
+      nav.querySelectorAll('[data-lesson]').forEach(function (link) {
+        var saved = ticks[link.dataset.lesson];
+        var done = saved && saved.total > 0 && saved.done === saved.total;
+        link.classList.toggle('done', !!done);
+      });
+    }
+
+    if (lesson) {
+      var slug = lesson.getAttribute('data-course-lesson');
+      var boxes = Array.prototype.slice.call(lesson.querySelectorAll('input[type=checkbox]'));
+      var saved = (ticks[slug] && ticks[slug].boxes) || [];
+      var update = function () {
+        var state = boxes.map(function (b) { return b.checked; });
+        ticks[slug] = { boxes: state, done: state.filter(Boolean).length, total: state.length };
+        save(TICKS_KEY, ticks);
+        markNav();
+      };
+      boxes.forEach(function (box, i) {
+        box.disabled = false;
+        box.checked = !!saved[i];
+        var item = box.closest('li');
+        if (item) item.classList.toggle('checked', box.checked);
+        box.addEventListener('change', function () {
+          if (item) item.classList.toggle('checked', box.checked);
+          update();
+        });
+      });
+      if (boxes.length && !ticks[slug]) update();
+    }
+    markNav();
+  })();
+</script>  </main> <footer class="SiteFooter"> <div class="About"> <img src="/images/profilePicture.png" alt="Michael Jones" width="44" height="44" loading="lazy"> <p>Written by Michael Jones, mostly about Temporal and durable execution, with older posts on MuleSoft and DataWeave.</p> </div> <nav aria-label="Elsewhere"> <a href="https://github.com/mikeacjones" target="_blank" rel="noreferrer">GitHub</a> <a href="https://www.linkedin.com/in/michael-jones-5a870678" target="_blank" rel="noreferrer">LinkedIn</a> <a href="https://stackoverflow.com/users/10890536/michael-jones" target="_blank" rel="noreferrer">Stack Overflow</a> <a href="/rss.xml">RSS</a> <a href="/sitemap-index.xml">Sitemap</a> </nav> </footer> </body></html>

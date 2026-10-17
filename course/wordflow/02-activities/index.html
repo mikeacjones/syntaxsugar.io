@@ -1,0 +1,261 @@
+<!DOCTYPE html><html lang="en"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="description" content="The Workflow loads its own puzzle, so the API only passes a puzzle ID."><meta name="color-scheme" content="light dark"><meta name="theme-color" content="#f7f7fb" media="(prefers-color-scheme: light)"><meta name="theme-color" content="#141414" media="(prefers-color-scheme: dark)"><title>02 · Activities · Wordflow Temporal Course | syntax sugar</title><link rel="canonical" href="https://syntaxsugar.io/course/wordflow/02-activities/"><meta name="author" content="Michael Jones"><!-- Social cards --><meta property="og:site_name" content="syntax sugar"><meta property="og:type" content="article"><meta property="og:title" content="02 · Activities · Wordflow Temporal Course"><meta property="og:description" content="The Workflow loads its own puzzle, so the API only passes a puzzle ID."><meta property="og:url" content="https://syntaxsugar.io/course/wordflow/02-activities/"><meta property="og:image" content="https://syntaxsugar.io/images/profilePicture.png"><meta property="og:image:alt" content="Michael Jones"><meta property="article:published_time" content="2026-10-17T00:00:00.000Z"><meta property="article:author" content="Michael Jones"><meta property="article:tag" content="Temporal"><meta property="article:tag" content="Course"><meta property="article:tag" content="Go"><meta name="twitter:card" content="summary"><meta name="twitter:title" content="02 · Activities · Wordflow Temporal Course"><meta name="twitter:description" content="The Workflow loads its own puzzle, so the API only passes a puzzle ID."><meta name="twitter:image" content="https://syntaxsugar.io/images/profilePicture.png"><!-- Structured data --><script type="application/ld+json">{"@context":"https://schema.org","@type":["TechArticle","LearningResource"],"name":"02 · Activities · Wordflow Temporal Course","headline":"02 · Activities","description":"The Workflow loads its own puzzle, so the API only passes a puzzle ID.","datePublished":"2026-10-17T00:00:00.000Z","keywords":"Temporal, Course, Go","url":"https://syntaxsugar.io/course/wordflow/02-activities/","mainEntityOfPage":"https://syntaxsugar.io/course/wordflow/02-activities/","image":"https://syntaxsugar.io/images/profilePicture.png","author":{"@type":"Person","name":"Michael Jones","url":"https://syntaxsugar.io/","sameAs":["https://github.com/mikeacjones","https://www.linkedin.com/in/michael-jones-5a870678"]},"publisher":{"@type":"Person","name":"Michael Jones","url":"https://syntaxsugar.io/","sameAs":["https://github.com/mikeacjones","https://www.linkedin.com/in/michael-jones-5a870678"]},"learningResourceType":"Lesson","position":3,"isPartOf":{"@type":"Course","name":"Wordflow: Learn Temporal by Building a Word Game","url":"https://syntaxsugar.io/course/wordflow/"},"programmingLanguage":["Go"]}</script><script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Labs","item":"https://syntaxsugar.io/labs"},{"@type":"ListItem","position":2,"name":"Wordflow Temporal Course","item":"https://syntaxsugar.io/course/wordflow/"},{"@type":"ListItem","position":3,"name":"02 · Activities · Wordflow Temporal Course","item":"https://syntaxsugar.io/course/wordflow/02-activities/"}]}</script><!-- Feeds and machine-readable copies --><link rel="alternate" type="application/rss+xml" title="syntax sugar" href="/rss.xml"><link rel="alternate" type="text/plain" title="llms.txt" href="/llms.txt"><link rel="alternate" type="text/markdown" href="/course/wordflow/02-activities/index.md"><!-- Favicons --><link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="icon" type="image/x-icon" href="/favicon.ico"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="manifest" href="/site.webmanifest"><link rel="mask-icon" href="/safari-pinned-tab.svg" color="#444ce7"><!-- Google Fonts --><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap" rel="stylesheet"><!-- Sitemap --><link rel="sitemap" href="/sitemap-index.xml"><link rel="stylesheet" href="/_astro/_lesson_.CsZGQl8N.css"></head> <body> <a class="SkipLink" href="#main">Skip to content</a> <header class="Masthead"> <a class="Wordmark" href="/" aria-label="syntax sugar, home"> <span>syntax</span><span class="Wordmark-cube" aria-hidden="true"></span><span>sugar</span> </a> <nav class="Masthead-nav" aria-label="Primary"> <a href="/">Writing</a><a href="/labs" aria-current="page">Labs</a> </nav> </header> <main id="main">  <div class="post-view"> <p class="CourseCrumb"><a href="/course/wordflow/">Wordflow Temporal Course</a> · Lessons</p> <header class="ArticleHeader"> <h1>02 · Activities</h1>  </header> <div class="codelab-wrapper"> <nav class="codelab-steps-nav CourseNav" aria-label="Wordflow Temporal Course lessons" data-course="wordflow"> <a class="codelab-step-link" href="/course/wordflow/">
+Overview
+</a>  <span class="CourseNav-section">Lessons</span> <a class="codelab-step-link" href="/course/wordflow/00-setup/" data-lesson="00-setup"> <span class="codelab-step-label">00 · Setup</span> </a><a class="codelab-step-link" href="/course/wordflow/01-first-workflow/" data-lesson="01-first-workflow"> <span class="codelab-step-label">01 · Your first Workflow</span> </a><a class="codelab-step-link active" href="/course/wordflow/02-activities/" data-lesson="02-activities" aria-current="page"> <span class="codelab-step-label">02 · Activities</span> </a><a class="codelab-step-link" href="/course/wordflow/03-signals-and-queries/" data-lesson="03-signals-and-queries"> <span class="codelab-step-label">03 · Signals and Queries</span> </a><a class="codelab-step-link" href="/course/wordflow/04-updates/" data-lesson="04-updates"> <span class="codelab-step-label">04 · Updates</span> </a><a class="codelab-step-link" href="/course/wordflow/05-timers/" data-lesson="05-timers"> <span class="codelab-step-label">05 · Durable Timers</span> </a><a class="codelab-step-link" href="/course/wordflow/06-entity-workflows/" data-lesson="06-entity-workflows"> <span class="codelab-step-label">06 · Entity Workflows</span> </a><a class="codelab-step-link" href="/course/wordflow/07-child-workflows/" data-lesson="07-child-workflows"> <span class="codelab-step-label">07 · Child Workflows</span> </a><a class="codelab-step-link" href="/course/wordflow/08-workflow-to-workflow/" data-lesson="08-workflow-to-workflow"> <span class="codelab-step-label">08 · Workflow to Workflow</span> </a><a class="codelab-step-link" href="/course/wordflow/09-signal-with-start/" data-lesson="09-signal-with-start"> <span class="codelab-step-label">09 · Signal-with-Start</span> </a><a class="codelab-step-link" href="/course/wordflow/10-continue-as-new/" data-lesson="10-continue-as-new"> <span class="codelab-step-label">10 · Continue-As-New</span> </a><a class="codelab-step-link" href="/course/wordflow/11-retries/" data-lesson="11-retries"> <span class="codelab-step-label">11 · Retries in depth</span> </a><a class="codelab-step-link" href="/course/wordflow/12-determinism-and-replay/" data-lesson="12-determinism-and-replay"> <span class="codelab-step-label">12 · Determinism and replay</span> </a><a class="codelab-step-link" href="/course/wordflow/13-versioning/" data-lesson="13-versioning"> <span class="codelab-step-label">13 · Versioning</span> </a> <span class="CourseNav-section">Optional exercises</span> <a class="codelab-step-link" href="/course/wordflow/saga/" data-lesson="saga"> <span class="codelab-step-label">Saga</span> </a><a class="codelab-step-link" href="/course/wordflow/pick-first/" data-lesson="pick-first"> <span class="codelab-step-label">Pick First</span> </a><a class="codelab-step-link" href="/course/wordflow/approval/" data-lesson="approval"> <span class="codelab-step-label">Approval</span> </a><a class="codelab-step-link" href="/course/wordflow/schedules/" data-lesson="schedules"> <span class="codelab-step-label">Schedules</span> </a> <span class="CourseNav-section">Reference</span> <a class="codelab-step-link" href="/course/wordflow/contract/" data-lesson="contract"> <span class="codelab-step-label">API and Temporal names</span> </a> </nav> <div class="codelab-content"> <div class="post-view-content" data-course-lesson="02-activities"> <p><strong>Goal:</strong> the Workflow loads its own puzzle, so the API only passes a puzzle ID.</p>
+<h2 id="concepts">Concepts</h2>
+<p><strong>Activity.</strong> A normal function for work that touches the outside world: files, databases, HTTP calls. Workflows can’t do this work directly because it isn’t deterministic. A Workflow asks for an Activity to run. A Worker runs it, and the result is recorded in the Event History. When the Workflow is re-run, it reads the recorded result instead of calling the Activity again.</p>
+<p><strong>Timeouts.</strong> Every Activity needs a <strong>Start-To-Close</strong> timeout: the longest one attempt may take. If an attempt runs longer, it fails and Temporal retries it.</p>
+<p><strong>Retries.</strong> Failed Activities are retried automatically. The default policy retries forever, waiting 1 s, then 2 s, 4 s, and so on, up to 100 s between attempts. Retries don’t add events to the history. You see one <code>ActivityTaskStarted</code> event that records the final attempt number.</p>
+<p><strong>Non-retryable errors.</strong> Some failures will never succeed on retry. Asking for a puzzle that doesn’t exist is one. Mark these errors <strong>non-retryable</strong> and the Activity fails at once.</p>
+<p><strong>Dependencies.</strong> Activities get their dependencies, such as the puzzle store, when the Worker starts. Workflows never touch them.</p>
+<h2 id="patterns">Patterns</h2>
+<ul>
+<li><a href="https://docs.temporal.io/design-patterns/non-retryable-errors" rel="noreferrer" target="_blank">Non-Retryable Errors</a></li>
+<li><a href="https://docs.temporal.io/design-patterns/activity-dependency-injection" rel="noreferrer" target="_blank">Activity Dependency Injection</a> (first look; Lesson 8 goes further)</li>
+</ul>
+<h2 id="what-youll-build">What you’ll build</h2>
+<ul>
+<li>A <code>LoadPuzzle</code> Activity that reads from the puzzle store. A missing puzzle is a non-retryable error.</li>
+<li><code>GameWorkflow</code> takes <code>{puzzleId}</code> and calls <code>LoadPuzzle</code> with a 5-second Start-To-Close timeout.</li>
+<li>The Worker registers the Activity with a puzzle store.</li>
+<li><code>StartGame</code> passes the puzzle ID instead of the puzzle.</li>
+</ul>
+<h2 id="build-it">Build it</h2>
+<div class="CourseLang" data-lang="go" data-label="Go">
+<h3 id="1-the-activity">1. The Activity</h3>
+<p>Create <code>app/activities/puzzles.go</code>:</p>
+<pre class="astro-code astro-code-themes github-light material-theme-palenight" style="background-color:#fff;--shiki-dark-bg:#292D3E;color:#24292e;--shiki-dark:#babed8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="go"><code><span class="line"><span style="color:#6A737D;--shiki-light-font-style:inherit;--shiki-dark:#676E95;--shiki-dark-font-style:italic">// Package activities holds code that talks to the outside world.</span></span>
+<span class="line"><span style="color:#D73A49;--shiki-dark:#89DDFF">package</span><span style="color:#6F42C1;--shiki-dark:#FFCB6B"> activities</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#D73A49;--shiki-light-font-style:inherit;--shiki-dark:#89DDFF;--shiki-dark-font-style:italic">import</span><span style="color:#24292E;--shiki-dark:#89DDFF"> (</span></span>
+<span class="line"><span style="color:#032F62;--shiki-dark:#89DDFF">	"</span><span style="color:#6F42C1;--shiki-dark:#FFCB6B">context</span><span style="color:#032F62;--shiki-dark:#89DDFF">"</span></span>
+<span class="line"><span style="color:#032F62;--shiki-dark:#89DDFF">	"</span><span style="color:#6F42C1;--shiki-dark:#FFCB6B">errors</span><span style="color:#032F62;--shiki-dark:#89DDFF">"</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#032F62;--shiki-dark:#89DDFF">	"</span><span style="color:#6F42C1;--shiki-dark:#FFCB6B">go.temporal.io/sdk/temporal</span><span style="color:#032F62;--shiki-dark:#89DDFF">"</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#032F62;--shiki-dark:#89DDFF">	"</span><span style="color:#6F42C1;--shiki-dark:#FFCB6B">wordflow/internal/game</span><span style="color:#032F62;--shiki-dark:#89DDFF">"</span></span>
+<span class="line"><span style="color:#032F62;--shiki-dark:#89DDFF">	"</span><span style="color:#6F42C1;--shiki-dark:#FFCB6B">wordflow/internal/puzzles</span><span style="color:#032F62;--shiki-dark:#89DDFF">"</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#89DDFF">)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D;--shiki-light-font-style:inherit;--shiki-dark:#676E95;--shiki-dark-font-style:italic">// PuzzleActivities gets its dependencies when the Worker starts.</span></span>
+<span class="line"><span style="color:#D73A49;--shiki-dark:#89DDFF">type</span><span style="color:#6F42C1;--shiki-dark:#FFCB6B"> PuzzleActivities</span><span style="color:#D73A49;--shiki-dark:#89DDFF"> struct</span><span style="color:#24292E;--shiki-dark:#89DDFF"> {</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#BABED8">	Store </span><span style="color:#D73A49;--shiki-dark:#89DDFF">*</span><span style="color:#6F42C1;--shiki-dark:#FFCB6B">puzzles</span><span style="color:#24292E;--shiki-dark:#89DDFF">.</span><span style="color:#6F42C1;--shiki-dark:#FFCB6B">Store</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#89DDFF">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#D73A49;--shiki-dark:#89DDFF">func</span><span style="color:#24292E;--shiki-dark:#89DDFF"> (</span><span style="color:#E36209;--shiki-light-font-style:inherit;--shiki-dark:#BABED8;--shiki-dark-font-style:italic">a </span><span style="color:#D73A49;--shiki-dark:#89DDFF">*</span><span style="color:#6F42C1;--shiki-dark:#FFCB6B">PuzzleActivities</span><span style="color:#24292E;--shiki-dark:#89DDFF">)</span><span style="color:#6F42C1;--shiki-dark:#82AAFF"> LoadPuzzle</span><span style="color:#24292E;--shiki-dark:#89DDFF">(</span><span style="color:#E36209;--shiki-light-font-style:inherit;--shiki-dark:#BABED8;--shiki-dark-font-style:italic">ctx</span><span style="color:#6F42C1;--shiki-dark:#FFCB6B"> context</span><span style="color:#24292E;--shiki-dark:#89DDFF">.</span><span style="color:#6F42C1;--shiki-dark:#FFCB6B">Context</span><span style="color:#24292E;--shiki-dark:#89DDFF">,</span><span style="color:#E36209;--shiki-light-font-style:inherit;--shiki-dark:#BABED8;--shiki-dark-font-style:italic"> puzzleID</span><span style="color:#D73A49;--shiki-dark:#C792EA"> string</span><span style="color:#24292E;--shiki-dark:#89DDFF">)</span><span style="color:#24292E;--shiki-dark:#89DDFF"> (</span><span style="color:#6F42C1;--shiki-dark:#FFCB6B">game</span><span style="color:#24292E;--shiki-dark:#89DDFF">.</span><span style="color:#6F42C1;--shiki-dark:#FFCB6B">Puzzle</span><span style="color:#24292E;--shiki-dark:#89DDFF">,</span><span style="color:#D73A49;--shiki-dark:#C792EA"> error</span><span style="color:#24292E;--shiki-dark:#89DDFF">)</span><span style="color:#24292E;--shiki-dark:#89DDFF"> {</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#BABED8">	puzzle</span><span style="color:#24292E;--shiki-dark:#89DDFF">,</span><span style="color:#24292E;--shiki-dark:#BABED8"> err </span><span style="color:#D73A49;--shiki-dark:#89DDFF">:=</span><span style="color:#24292E;--shiki-dark:#BABED8"> a</span><span style="color:#24292E;--shiki-dark:#89DDFF">.</span><span style="color:#24292E;--shiki-dark:#BABED8">Store</span><span style="color:#24292E;--shiki-dark:#89DDFF">.</span><span style="color:#6F42C1;--shiki-dark:#82AAFF">Get</span><span style="color:#24292E;--shiki-dark:#89DDFF">(</span><span style="color:#24292E;--shiki-dark:#BABED8">puzzleID</span><span style="color:#24292E;--shiki-dark:#89DDFF">)</span></span>
+<span class="line"><span style="color:#D73A49;--shiki-light-font-style:inherit;--shiki-dark:#89DDFF;--shiki-dark-font-style:italic">	if</span><span style="color:#24292E;--shiki-dark:#BABED8"> errors</span><span style="color:#24292E;--shiki-dark:#89DDFF">.</span><span style="color:#6F42C1;--shiki-dark:#82AAFF">Is</span><span style="color:#24292E;--shiki-dark:#89DDFF">(</span><span style="color:#24292E;--shiki-dark:#BABED8">err</span><span style="color:#24292E;--shiki-dark:#89DDFF">,</span><span style="color:#24292E;--shiki-dark:#BABED8"> puzzles</span><span style="color:#24292E;--shiki-dark:#89DDFF">.</span><span style="color:#24292E;--shiki-dark:#BABED8">ErrNotFound</span><span style="color:#24292E;--shiki-dark:#89DDFF">)</span><span style="color:#24292E;--shiki-dark:#89DDFF"> {</span></span>
+<span class="line"><span style="color:#D73A49;--shiki-light-font-style:inherit;--shiki-dark:#89DDFF;--shiki-dark-font-style:italic">		return</span><span style="color:#6F42C1;--shiki-dark:#FFCB6B"> game</span><span style="color:#24292E;--shiki-dark:#89DDFF">.</span><span style="color:#6F42C1;--shiki-dark:#FFCB6B">Puzzle</span><span style="color:#24292E;--shiki-dark:#89DDFF">{},</span><span style="color:#24292E;--shiki-dark:#BABED8"> temporal</span><span style="color:#24292E;--shiki-dark:#89DDFF">.</span><span style="color:#6F42C1;--shiki-dark:#82AAFF">NewNonRetryableApplicationError</span><span style="color:#24292E;--shiki-dark:#89DDFF">(</span><span style="color:#032F62;--shiki-dark:#89DDFF">"</span><span style="color:#032F62;--shiki-dark:#C3E88D">no puzzle named </span><span style="color:#032F62;--shiki-dark:#89DDFF">"</span><span style="color:#D73A49;--shiki-dark:#89DDFF">+</span><span style="color:#24292E;--shiki-dark:#BABED8">puzzleID</span><span style="color:#24292E;--shiki-dark:#89DDFF">,</span><span style="color:#032F62;--shiki-dark:#89DDFF"> "</span><span style="color:#032F62;--shiki-dark:#C3E88D">puzzle_not_found</span><span style="color:#032F62;--shiki-dark:#89DDFF">"</span><span style="color:#24292E;--shiki-dark:#89DDFF">,</span><span style="color:#24292E;--shiki-dark:#BABED8"> err</span><span style="color:#24292E;--shiki-dark:#89DDFF">)</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#89DDFF">	}</span></span>
+<span class="line"><span style="color:#D73A49;--shiki-light-font-style:inherit;--shiki-dark:#89DDFF;--shiki-dark-font-style:italic">	return</span><span style="color:#24292E;--shiki-dark:#BABED8"> puzzle</span><span style="color:#24292E;--shiki-dark:#89DDFF">,</span><span style="color:#24292E;--shiki-dark:#BABED8"> err</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#89DDFF">}</span></span></code></pre>
+<ul>
+<li>Activities are plain Go. They take a normal <code>context.Context</code>.</li>
+<li>Methods on a struct are a simple way to give Activities their dependencies. The Activity type name is the method name, <code>LoadPuzzle</code>.</li>
+<li>Any other error is retryable. An application error has a message and a type, and both show up in the Temporal UI.</li>
+</ul>
+<h3 id="2-pass-an-id-not-a-puzzle">2. Pass an ID, not a puzzle</h3>
+<p>In <code>app/shared/shared.go</code>, change the input. You can also remove the <code>internal/game</code> import, since nothing else uses it yet:</p>
+<pre class="astro-code astro-code-themes github-light material-theme-palenight" style="background-color:#fff;--shiki-dark-bg:#292D3E;color:#24292e;--shiki-dark:#babed8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="go"><code><span class="line"><span style="color:#D73A49;--shiki-dark:#89DDFF">type</span><span style="color:#6F42C1;--shiki-dark:#FFCB6B"> GameInput</span><span style="color:#D73A49;--shiki-dark:#89DDFF"> struct</span><span style="color:#24292E;--shiki-dark:#89DDFF"> {</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#BABED8">	PuzzleID </span><span style="color:#D73A49;--shiki-dark:#C792EA">string</span><span style="color:#032F62;--shiki-dark:#89DDFF"> `</span><span style="color:#032F62;--shiki-dark:#C3E88D">json:"puzzleId"</span><span style="color:#032F62;--shiki-dark:#89DDFF">`</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#89DDFF">}</span></span></code></pre>
+<h3 id="3-call-the-activity-from-the-workflow">3. Call the Activity from the Workflow</h3>
+<p>Replace <code>app/workflows/game.go</code>:</p>
+<pre class="astro-code astro-code-themes github-light material-theme-palenight" style="background-color:#fff;--shiki-dark-bg:#292D3E;color:#24292e;--shiki-dark:#babed8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="go"><code><span class="line"><span style="color:#D73A49;--shiki-dark:#89DDFF">package</span><span style="color:#6F42C1;--shiki-dark:#FFCB6B"> workflows</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#D73A49;--shiki-light-font-style:inherit;--shiki-dark:#89DDFF;--shiki-dark-font-style:italic">import</span><span style="color:#24292E;--shiki-dark:#89DDFF"> (</span></span>
+<span class="line"><span style="color:#032F62;--shiki-dark:#89DDFF">	"</span><span style="color:#6F42C1;--shiki-dark:#FFCB6B">time</span><span style="color:#032F62;--shiki-dark:#89DDFF">"</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#032F62;--shiki-dark:#89DDFF">	"</span><span style="color:#6F42C1;--shiki-dark:#FFCB6B">go.temporal.io/sdk/workflow</span><span style="color:#032F62;--shiki-dark:#89DDFF">"</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#032F62;--shiki-dark:#89DDFF">	"</span><span style="color:#6F42C1;--shiki-dark:#FFCB6B">wordflow/app/activities</span><span style="color:#032F62;--shiki-dark:#89DDFF">"</span></span>
+<span class="line"><span style="color:#032F62;--shiki-dark:#89DDFF">	"</span><span style="color:#6F42C1;--shiki-dark:#FFCB6B">wordflow/app/shared</span><span style="color:#032F62;--shiki-dark:#89DDFF">"</span></span>
+<span class="line"><span style="color:#032F62;--shiki-dark:#89DDFF">	"</span><span style="color:#6F42C1;--shiki-dark:#FFCB6B">wordflow/internal/game</span><span style="color:#032F62;--shiki-dark:#89DDFF">"</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#89DDFF">)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D;--shiki-light-font-style:inherit;--shiki-dark:#676E95;--shiki-dark-font-style:italic">// GameWorkflow loads a puzzle and returns the first view of a new game.</span></span>
+<span class="line"><span style="color:#D73A49;--shiki-dark:#89DDFF">func</span><span style="color:#6F42C1;--shiki-dark:#82AAFF"> GameWorkflow</span><span style="color:#24292E;--shiki-dark:#89DDFF">(</span><span style="color:#E36209;--shiki-light-font-style:inherit;--shiki-dark:#BABED8;--shiki-dark-font-style:italic">ctx</span><span style="color:#6F42C1;--shiki-dark:#FFCB6B"> workflow</span><span style="color:#24292E;--shiki-dark:#89DDFF">.</span><span style="color:#6F42C1;--shiki-dark:#FFCB6B">Context</span><span style="color:#24292E;--shiki-dark:#89DDFF">,</span><span style="color:#E36209;--shiki-light-font-style:inherit;--shiki-dark:#BABED8;--shiki-dark-font-style:italic"> input</span><span style="color:#6F42C1;--shiki-dark:#FFCB6B"> shared</span><span style="color:#24292E;--shiki-dark:#89DDFF">.</span><span style="color:#6F42C1;--shiki-dark:#FFCB6B">GameInput</span><span style="color:#24292E;--shiki-dark:#89DDFF">)</span><span style="color:#24292E;--shiki-dark:#89DDFF"> (</span><span style="color:#6F42C1;--shiki-dark:#FFCB6B">game</span><span style="color:#24292E;--shiki-dark:#89DDFF">.</span><span style="color:#6F42C1;--shiki-dark:#FFCB6B">View</span><span style="color:#24292E;--shiki-dark:#89DDFF">,</span><span style="color:#D73A49;--shiki-dark:#C792EA"> error</span><span style="color:#24292E;--shiki-dark:#89DDFF">)</span><span style="color:#24292E;--shiki-dark:#89DDFF"> {</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#BABED8">	gameID </span><span style="color:#D73A49;--shiki-dark:#89DDFF">:=</span><span style="color:#24292E;--shiki-dark:#BABED8"> workflow</span><span style="color:#24292E;--shiki-dark:#89DDFF">.</span><span style="color:#6F42C1;--shiki-dark:#82AAFF">GetInfo</span><span style="color:#24292E;--shiki-dark:#89DDFF">(</span><span style="color:#24292E;--shiki-dark:#BABED8">ctx</span><span style="color:#24292E;--shiki-dark:#89DDFF">).</span><span style="color:#24292E;--shiki-dark:#BABED8">WorkflowExecution</span><span style="color:#24292E;--shiki-dark:#89DDFF">.</span><span style="color:#24292E;--shiki-dark:#BABED8">ID</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#BABED8">	puzzle</span><span style="color:#24292E;--shiki-dark:#89DDFF">,</span><span style="color:#24292E;--shiki-dark:#BABED8"> err </span><span style="color:#D73A49;--shiki-dark:#89DDFF">:=</span><span style="color:#6F42C1;--shiki-dark:#82AAFF"> loadPuzzle</span><span style="color:#24292E;--shiki-dark:#89DDFF">(</span><span style="color:#24292E;--shiki-dark:#BABED8">ctx</span><span style="color:#24292E;--shiki-dark:#89DDFF">,</span><span style="color:#24292E;--shiki-dark:#BABED8"> input</span><span style="color:#24292E;--shiki-dark:#89DDFF">.</span><span style="color:#24292E;--shiki-dark:#BABED8">PuzzleID</span><span style="color:#24292E;--shiki-dark:#89DDFF">)</span></span>
+<span class="line"><span style="color:#D73A49;--shiki-light-font-style:inherit;--shiki-dark:#89DDFF;--shiki-dark-font-style:italic">	if</span><span style="color:#24292E;--shiki-dark:#BABED8"> err </span><span style="color:#D73A49;--shiki-dark:#89DDFF">!=</span><span style="color:#005CC5;--shiki-dark:#89DDFF"> nil</span><span style="color:#24292E;--shiki-dark:#89DDFF"> {</span></span>
+<span class="line"><span style="color:#D73A49;--shiki-light-font-style:inherit;--shiki-dark:#89DDFF;--shiki-dark-font-style:italic">		return</span><span style="color:#6F42C1;--shiki-dark:#FFCB6B"> game</span><span style="color:#24292E;--shiki-dark:#89DDFF">.</span><span style="color:#6F42C1;--shiki-dark:#FFCB6B">View</span><span style="color:#24292E;--shiki-dark:#89DDFF">{},</span><span style="color:#24292E;--shiki-dark:#BABED8"> err</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#89DDFF">	}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#BABED8">	state </span><span style="color:#D73A49;--shiki-dark:#89DDFF">:=</span><span style="color:#24292E;--shiki-dark:#BABED8"> game</span><span style="color:#24292E;--shiki-dark:#89DDFF">.</span><span style="color:#6F42C1;--shiki-dark:#82AAFF">NewState</span><span style="color:#24292E;--shiki-dark:#89DDFF">(</span><span style="color:#24292E;--shiki-dark:#BABED8">gameID</span><span style="color:#24292E;--shiki-dark:#89DDFF">,</span><span style="color:#032F62;--shiki-dark:#89DDFF"> ""</span><span style="color:#24292E;--shiki-dark:#89DDFF">,</span><span style="color:#24292E;--shiki-dark:#BABED8"> puzzle</span><span style="color:#24292E;--shiki-dark:#89DDFF">,</span><span style="color:#24292E;--shiki-dark:#BABED8"> workflow</span><span style="color:#24292E;--shiki-dark:#89DDFF">.</span><span style="color:#6F42C1;--shiki-dark:#82AAFF">Now</span><span style="color:#24292E;--shiki-dark:#89DDFF">(</span><span style="color:#24292E;--shiki-dark:#BABED8">ctx</span><span style="color:#24292E;--shiki-dark:#89DDFF">))</span></span>
+<span class="line"><span style="color:#D73A49;--shiki-light-font-style:inherit;--shiki-dark:#89DDFF;--shiki-dark-font-style:italic">	return</span><span style="color:#24292E;--shiki-dark:#BABED8"> state</span><span style="color:#24292E;--shiki-dark:#89DDFF">.</span><span style="color:#6F42C1;--shiki-dark:#82AAFF">View</span><span style="color:#24292E;--shiki-dark:#89DDFF">(),</span><span style="color:#005CC5;--shiki-dark:#89DDFF"> nil</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#89DDFF">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#D73A49;--shiki-dark:#89DDFF">func</span><span style="color:#6F42C1;--shiki-dark:#82AAFF"> loadPuzzle</span><span style="color:#24292E;--shiki-dark:#89DDFF">(</span><span style="color:#E36209;--shiki-light-font-style:inherit;--shiki-dark:#BABED8;--shiki-dark-font-style:italic">ctx</span><span style="color:#6F42C1;--shiki-dark:#FFCB6B"> workflow</span><span style="color:#24292E;--shiki-dark:#89DDFF">.</span><span style="color:#6F42C1;--shiki-dark:#FFCB6B">Context</span><span style="color:#24292E;--shiki-dark:#89DDFF">,</span><span style="color:#E36209;--shiki-light-font-style:inherit;--shiki-dark:#BABED8;--shiki-dark-font-style:italic"> puzzleID</span><span style="color:#D73A49;--shiki-dark:#C792EA"> string</span><span style="color:#24292E;--shiki-dark:#89DDFF">)</span><span style="color:#24292E;--shiki-dark:#89DDFF"> (</span><span style="color:#6F42C1;--shiki-dark:#FFCB6B">game</span><span style="color:#24292E;--shiki-dark:#89DDFF">.</span><span style="color:#6F42C1;--shiki-dark:#FFCB6B">Puzzle</span><span style="color:#24292E;--shiki-dark:#89DDFF">,</span><span style="color:#D73A49;--shiki-dark:#C792EA"> error</span><span style="color:#24292E;--shiki-dark:#89DDFF">)</span><span style="color:#24292E;--shiki-dark:#89DDFF"> {</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#BABED8">	ctx </span><span style="color:#D73A49;--shiki-dark:#89DDFF">=</span><span style="color:#24292E;--shiki-dark:#BABED8"> workflow</span><span style="color:#24292E;--shiki-dark:#89DDFF">.</span><span style="color:#6F42C1;--shiki-dark:#82AAFF">WithActivityOptions</span><span style="color:#24292E;--shiki-dark:#89DDFF">(</span><span style="color:#24292E;--shiki-dark:#BABED8">ctx</span><span style="color:#24292E;--shiki-dark:#89DDFF">,</span><span style="color:#6F42C1;--shiki-dark:#FFCB6B"> workflow</span><span style="color:#24292E;--shiki-dark:#89DDFF">.</span><span style="color:#6F42C1;--shiki-dark:#FFCB6B">ActivityOptions</span><span style="color:#24292E;--shiki-dark:#89DDFF">{</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#BABED8">		StartToCloseTimeout</span><span style="color:#24292E;--shiki-dark:#89DDFF">:</span><span style="color:#005CC5;--shiki-dark:#F78C6C"> 5</span><span style="color:#D73A49;--shiki-dark:#89DDFF"> *</span><span style="color:#24292E;--shiki-dark:#BABED8"> time</span><span style="color:#24292E;--shiki-dark:#89DDFF">.</span><span style="color:#24292E;--shiki-dark:#BABED8">Second</span><span style="color:#24292E;--shiki-dark:#89DDFF">,</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#89DDFF">	})</span></span>
+<span class="line"><span style="color:#D73A49;--shiki-dark:#89DDFF">	var</span><span style="color:#24292E;--shiki-dark:#BABED8"> a </span><span style="color:#D73A49;--shiki-dark:#89DDFF">*</span><span style="color:#6F42C1;--shiki-dark:#FFCB6B">activities</span><span style="color:#24292E;--shiki-dark:#89DDFF">.</span><span style="color:#6F42C1;--shiki-dark:#FFCB6B">PuzzleActivities</span></span>
+<span class="line"><span style="color:#D73A49;--shiki-dark:#89DDFF">	var</span><span style="color:#24292E;--shiki-dark:#BABED8"> puzzle </span><span style="color:#6F42C1;--shiki-dark:#FFCB6B">game</span><span style="color:#24292E;--shiki-dark:#89DDFF">.</span><span style="color:#6F42C1;--shiki-dark:#FFCB6B">Puzzle</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#BABED8">	err </span><span style="color:#D73A49;--shiki-dark:#89DDFF">:=</span><span style="color:#24292E;--shiki-dark:#BABED8"> workflow</span><span style="color:#24292E;--shiki-dark:#89DDFF">.</span><span style="color:#6F42C1;--shiki-dark:#82AAFF">ExecuteActivity</span><span style="color:#24292E;--shiki-dark:#89DDFF">(</span><span style="color:#24292E;--shiki-dark:#BABED8">ctx</span><span style="color:#24292E;--shiki-dark:#89DDFF">,</span><span style="color:#24292E;--shiki-dark:#BABED8"> a</span><span style="color:#24292E;--shiki-dark:#89DDFF">.</span><span style="color:#24292E;--shiki-dark:#BABED8">LoadPuzzle</span><span style="color:#24292E;--shiki-dark:#89DDFF">,</span><span style="color:#24292E;--shiki-dark:#BABED8"> puzzleID</span><span style="color:#24292E;--shiki-dark:#89DDFF">).</span><span style="color:#6F42C1;--shiki-dark:#82AAFF">Get</span><span style="color:#24292E;--shiki-dark:#89DDFF">(</span><span style="color:#24292E;--shiki-dark:#BABED8">ctx</span><span style="color:#24292E;--shiki-dark:#89DDFF">,</span><span style="color:#D73A49;--shiki-dark:#89DDFF"> &#x26;</span><span style="color:#24292E;--shiki-dark:#BABED8">puzzle</span><span style="color:#24292E;--shiki-dark:#89DDFF">)</span></span>
+<span class="line"><span style="color:#D73A49;--shiki-light-font-style:inherit;--shiki-dark:#89DDFF;--shiki-dark-font-style:italic">	return</span><span style="color:#24292E;--shiki-dark:#BABED8"> puzzle</span><span style="color:#24292E;--shiki-dark:#89DDFF">,</span><span style="color:#24292E;--shiki-dark:#BABED8"> err</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#89DDFF">}</span></span></code></pre>
+<ul>
+<li><code>WithActivityOptions</code> returns a context that carries the timeout and retry policy.</li>
+<li><code>var a *activities.PuzzleActivities</code> is a nil pointer. It is only used so that <code>a.LoadPuzzle</code> gives the Activity’s name and type checking. The real struct lives in the Worker.</li>
+<li><code>ExecuteActivity</code> returns a Future. <code>Get</code> waits for the result.</li>
+<li>Returning the error fails the Workflow. Because the Activity error is non-retryable, that happens on the first attempt.</li>
+</ul>
+<h3 id="4-register-the-activity">4. Register the Activity</h3>
+<p>In <code>app/cmd/worker/main.go</code>, after <code>RegisterWorkflow</code>:</p>
+<pre class="astro-code astro-code-themes github-light material-theme-palenight" style="background-color:#fff;--shiki-dark-bg:#292D3E;color:#24292e;--shiki-dark:#babed8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="go"><code><span class="line"><span style="color:#24292E;--shiki-dark:#BABED8">	w</span><span style="color:#24292E;--shiki-dark:#89DDFF">.</span><span style="color:#6F42C1;--shiki-dark:#82AAFF">RegisterActivity</span><span style="color:#24292E;--shiki-dark:#89DDFF">(</span><span style="color:#D73A49;--shiki-dark:#89DDFF">&#x26;</span><span style="color:#6F42C1;--shiki-dark:#FFCB6B">activities</span><span style="color:#24292E;--shiki-dark:#89DDFF">.</span><span style="color:#6F42C1;--shiki-dark:#FFCB6B">PuzzleActivities</span><span style="color:#24292E;--shiki-dark:#89DDFF">{</span><span style="color:#24292E;--shiki-dark:#BABED8">Store</span><span style="color:#24292E;--shiki-dark:#89DDFF">:</span><span style="color:#24292E;--shiki-dark:#BABED8"> puzzles</span><span style="color:#24292E;--shiki-dark:#89DDFF">.</span><span style="color:#6F42C1;--shiki-dark:#82AAFF">NewStore</span><span style="color:#24292E;--shiki-dark:#89DDFF">()})</span></span></code></pre>
+<p>Add imports for <code>"wordflow/app/activities"</code> and <code>"wordflow/internal/puzzles"</code>. Registering a struct registers each of its exported methods as an Activity.</p>
+<h3 id="5-update-the-api">5. Update the API</h3>
+<p>In <code>StartGame</code>, delete the <code>a.Puzzles.Get</code> call and pass the ID:</p>
+<pre class="astro-code astro-code-themes github-light material-theme-palenight" style="background-color:#fff;--shiki-dark-bg:#292D3E;color:#24292e;--shiki-dark:#babed8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="go"><code><span class="line"><span style="color:#24292E;--shiki-dark:#BABED8">	run</span><span style="color:#24292E;--shiki-dark:#89DDFF">,</span><span style="color:#24292E;--shiki-dark:#BABED8"> err </span><span style="color:#D73A49;--shiki-dark:#89DDFF">:=</span><span style="color:#24292E;--shiki-dark:#BABED8"> a</span><span style="color:#24292E;--shiki-dark:#89DDFF">.</span><span style="color:#24292E;--shiki-dark:#BABED8">Temporal</span><span style="color:#24292E;--shiki-dark:#89DDFF">.</span><span style="color:#6F42C1;--shiki-dark:#82AAFF">ExecuteWorkflow</span><span style="color:#24292E;--shiki-dark:#89DDFF">(</span><span style="color:#24292E;--shiki-dark:#BABED8">ctx</span><span style="color:#24292E;--shiki-dark:#89DDFF">,</span><span style="color:#24292E;--shiki-dark:#BABED8"> options</span><span style="color:#24292E;--shiki-dark:#89DDFF">,</span><span style="color:#24292E;--shiki-dark:#BABED8"> workflows</span><span style="color:#24292E;--shiki-dark:#89DDFF">.</span><span style="color:#24292E;--shiki-dark:#BABED8">GameWorkflow</span><span style="color:#24292E;--shiki-dark:#89DDFF">,</span><span style="color:#6F42C1;--shiki-dark:#FFCB6B"> shared</span><span style="color:#24292E;--shiki-dark:#89DDFF">.</span><span style="color:#6F42C1;--shiki-dark:#FFCB6B">GameInput</span><span style="color:#24292E;--shiki-dark:#89DDFF">{</span><span style="color:#24292E;--shiki-dark:#BABED8">PuzzleID</span><span style="color:#24292E;--shiki-dark:#89DDFF">:</span><span style="color:#24292E;--shiki-dark:#BABED8"> req</span><span style="color:#24292E;--shiki-dark:#89DDFF">.</span><span style="color:#24292E;--shiki-dark:#BABED8">PuzzleID</span><span style="color:#24292E;--shiki-dark:#89DDFF">})</span></span></code></pre>
+<h3 id="6-run-it">6. Run it</h3>
+<p>Restart the Worker and the server. Compare with <code>solutions/02</code>.</p>
+</div>
+<h2 id="check-it">Check it</h2>
+<ul class="contains-task-list">
+<li class="task-list-item">
+<p><input type="checkbox" disabled> Starting a game works as before.</p>
+</li>
+<li class="task-list-item">
+<p><input type="checkbox" disabled> In the Temporal UI, the Workflow’s input is <code>{"puzzleId": "..."}</code>, with no answers.</p>
+</li>
+<li class="task-list-item">
+<p><input type="checkbox" disabled> The history has <code>ActivityTaskScheduled</code>, <code>ActivityTaskStarted</code>, and <code>ActivityTaskCompleted</code> for <code>LoadPuzzle</code>. The puzzle is in the completed event’s result.</p>
+</li>
+<li class="task-list-item">
+<p><input type="checkbox" disabled> Restart the Worker with <code>PUZZLES_FAIL_FIRST=2 make worker</code>. The puzzle store now fails its first two reads. Start a game. It takes about 3 seconds: a 1 s wait, then a 2 s wait, then success.</p>
+</li>
+<li class="task-list-item">
+<p><input type="checkbox" disabled> Open that Workflow. <code>ActivityTaskStarted</code> shows <code>attempt: 3</code>, and there is still only one of each Activity event. Click the Activity to see the last failure.</p>
+<p><img alt="LoadPuzzle succeeded on attempt 3" loading="lazy" decoding="async" fetchpriority="auto" width="2160" height="1500" src="/_astro/activity-retried.Dkh3BuYG_tgpiy.png" ></p>
+</li>
+<li class="task-list-item">
+<p><input type="checkbox" disabled> Start a Workflow for a puzzle that doesn’t exist (the API checks for this, so use the CLI):</p>
+<pre class="astro-code astro-code-themes github-light material-theme-palenight" style="background-color:#fff;--shiki-dark-bg:#292D3E;color:#24292e;--shiki-dark:#babed8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="sh"><code><span class="line"><span style="color:#6F42C1;--shiki-dark:#FFCB6B">temporal</span><span style="color:#032F62;--shiki-dark:#C3E88D"> workflow</span><span style="color:#032F62;--shiki-dark:#C3E88D"> start</span><span style="color:#005CC5;--shiki-dark:#C3E88D"> --type</span><span style="color:#032F62;--shiki-dark:#C3E88D"> GameWorkflow</span><span style="color:#005CC5;--shiki-dark:#C3E88D"> --task-queue</span><span style="color:#032F62;--shiki-dark:#C3E88D"> wordflow</span><span style="color:#005CC5;--shiki-dark:#BABED8"> \</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#C3E88D">  --workflow-id</span><span style="color:#032F62;--shiki-dark:#C3E88D"> bad-puzzle</span><span style="color:#005CC5;--shiki-dark:#C3E88D"> --input</span><span style="color:#032F62;--shiki-dark:#89DDFF"> '</span><span style="color:#032F62;--shiki-dark:#C3E88D">{"puzzleId":"nope"}</span><span style="color:#032F62;--shiki-dark:#89DDFF">'</span></span></code></pre>
+<p>It fails at once with <code>no puzzle named nope</code>, after one attempt.</p>
+<p><img alt="The Workflow failed with a non-retryable error" loading="lazy" decoding="async" fetchpriority="auto" width="2160" height="1500" src="/_astro/non-retryable.D2SELMj1_1GCEjM.png" ></p>
+</li>
+</ul>
+<p>Restart the Worker with plain <code>make worker</code> when you’re done.</p> </div> <p class="CourseSource"> <a href="https://github.com/mikeacjones/temporal-course-wordflow/blob/main/course/02-activities/README.md" target="_blank" rel="noreferrer">Edit this lesson on GitHub</a> </p> <div class="codelab-step-nav"> <a class="codelab-nav-btn codelab-prev" href="/course/wordflow/01-first-workflow/">Back: 01 · Your first Workflow</a> <a class="codelab-nav-btn codelab-next" href="/course/wordflow/03-signals-and-queries/">Next: 03 · Signals and Queries</a> </div> </div> </div> </div> <script type="module" src="/_astro/CodeBlock.astro_astro_type_script_index_0_lang.CtkjkfEA.js"></script> <script type="module">function o(){const a=document.querySelector(".post-view-content");if(!a)return;a.querySelectorAll("img").forEach(e=>{e.dataset.zoomable!=="true"&&(e.dataset.zoomable="true",e.style.cursor="pointer",e.addEventListener("click",()=>{const t=document.createElement("div");t.className="zoomable-overlay";const n=document.createElement("img");n.src=e.src,n.alt=e.alt,t.appendChild(n),document.body.appendChild(t),t.addEventListener("click",()=>{t.remove()}),document.addEventListener("keydown",function d(r){r.key==="Escape"&&(t.remove(),document.removeEventListener("keydown",d))})}))})}document.readyState==="loading"?document.addEventListener("DOMContentLoaded",o):o();document.addEventListener("astro:page-load",o);</script> <script>
+  (function () {
+    var nav = document.querySelector('.CourseNav');
+    if (!nav) return;
+    var course = nav.getAttribute('data-course');
+    var LANG_KEY = 'course:lang';
+
+    // On narrow screens the nav is a scrolling row; bring the current lesson into view.
+    var active = nav.querySelector('.active');
+    if (active && nav.scrollWidth > nav.clientWidth) nav.scrollLeft = active.offsetLeft - 16;
+    var TICKS_KEY = 'course:' + course + ':ticks';
+
+    function load(key, fallback) {
+      try {
+        var value = JSON.parse(localStorage.getItem(key));
+        return value == null ? fallback : value;
+      } catch (e) {
+        return fallback;
+      }
+    }
+
+    function save(key, value) {
+      try {
+        localStorage.setItem(key, JSON.stringify(value));
+      } catch (e) {}
+    }
+
+    // Language tabs: each run of adjacent .CourseLang panels gets one tab bar.
+    var panels = Array.prototype.slice.call(document.querySelectorAll('.CourseLang'));
+    var groups = [];
+    panels.forEach(function (panel) {
+      var group = groups[groups.length - 1];
+      if (group && group[group.length - 1].nextElementSibling === panel) group.push(panel);
+      else groups.push([panel]);
+    });
+
+    var tabBars = [];
+    function selectLang(lang) {
+      tabBars.forEach(function (bar) {
+        var group = bar.group;
+        var match = group.some(function (p) { return p.dataset.lang === lang; }) ? lang : group[0].dataset.lang;
+        group.forEach(function (p) { p.hidden = p.dataset.lang !== match; });
+        bar.querySelectorAll('button').forEach(function (b) {
+          b.setAttribute('aria-selected', String(b.dataset.lang === match));
+          b.tabIndex = b.dataset.lang === match ? 0 : -1;
+        });
+      });
+    }
+
+    groups.forEach(function (group, g) {
+      var bar = document.createElement('div');
+      bar.className = 'CourseLang-tabs';
+      bar.setAttribute('role', 'tablist');
+      bar.setAttribute('aria-label', 'Language');
+      bar.group = group;
+      group.forEach(function (panel, i) {
+        var id = 'lang-' + g + '-' + panel.dataset.lang;
+        var button = document.createElement('button');
+        button.type = 'button';
+        button.setAttribute('role', 'tab');
+        button.id = id + '-tab';
+        button.setAttribute('aria-controls', id);
+        button.dataset.lang = panel.dataset.lang;
+        button.textContent = panel.dataset.label;
+        button.addEventListener('click', function () {
+          save(LANG_KEY, panel.dataset.lang);
+          selectLang(panel.dataset.lang);
+        });
+        bar.appendChild(button);
+        panel.id = id;
+        panel.setAttribute('role', 'tabpanel');
+        panel.setAttribute('aria-labelledby', id + '-tab');
+      });
+      bar.addEventListener('keydown', function (e) {
+        if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+        var buttons = Array.prototype.slice.call(bar.querySelectorAll('button'));
+        var i = buttons.indexOf(document.activeElement);
+        var next = buttons[(i + (e.key === 'ArrowRight' ? 1 : buttons.length - 1)) % buttons.length];
+        next.focus();
+        next.click();
+      });
+      group[0].before(bar);
+      tabBars.push(bar);
+    });
+    if (tabBars.length) selectLang(load(LANG_KEY, null));
+
+    // Checklists. Ticks are stored per lesson as an array of booleans.
+    var lesson = document.querySelector('[data-course-lesson]');
+    var ticks = load(TICKS_KEY, {});
+
+    function markNav() {
+      nav.querySelectorAll('[data-lesson]').forEach(function (link) {
+        var saved = ticks[link.dataset.lesson];
+        var done = saved && saved.total > 0 && saved.done === saved.total;
+        link.classList.toggle('done', !!done);
+      });
+    }
+
+    if (lesson) {
+      var slug = lesson.getAttribute('data-course-lesson');
+      var boxes = Array.prototype.slice.call(lesson.querySelectorAll('input[type=checkbox]'));
+      var saved = (ticks[slug] && ticks[slug].boxes) || [];
+      var update = function () {
+        var state = boxes.map(function (b) { return b.checked; });
+        ticks[slug] = { boxes: state, done: state.filter(Boolean).length, total: state.length };
+        save(TICKS_KEY, ticks);
+        markNav();
+      };
+      boxes.forEach(function (box, i) {
+        box.disabled = false;
+        box.checked = !!saved[i];
+        var item = box.closest('li');
+        if (item) item.classList.toggle('checked', box.checked);
+        box.addEventListener('change', function () {
+          if (item) item.classList.toggle('checked', box.checked);
+          update();
+        });
+      });
+      if (boxes.length && !ticks[slug]) update();
+    }
+    markNav();
+  })();
+</script>  </main> <footer class="SiteFooter"> <div class="About"> <img src="/images/profilePicture.png" alt="Michael Jones" width="44" height="44" loading="lazy"> <p>Written by Michael Jones, mostly about Temporal and durable execution, with older posts on MuleSoft and DataWeave.</p> </div> <nav aria-label="Elsewhere"> <a href="https://github.com/mikeacjones" target="_blank" rel="noreferrer">GitHub</a> <a href="https://www.linkedin.com/in/michael-jones-5a870678" target="_blank" rel="noreferrer">LinkedIn</a> <a href="https://stackoverflow.com/users/10890536/michael-jones" target="_blank" rel="noreferrer">Stack Overflow</a> <a href="/rss.xml">RSS</a> <a href="/sitemap-index.xml">Sitemap</a> </nav> </footer> </body></html>

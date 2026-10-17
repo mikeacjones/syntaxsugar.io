@@ -1,0 +1,191 @@
+<!DOCTYPE html><html lang="en"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="description" content="Announce every new game in the feed, without breaking the games that are already running."><meta name="color-scheme" content="light dark"><meta name="theme-color" content="#f7f7fb" media="(prefers-color-scheme: light)"><meta name="theme-color" content="#141414" media="(prefers-color-scheme: dark)"><title>13 · Versioning · Wordflow Temporal Course | syntax sugar</title><link rel="canonical" href="https://syntaxsugar.io/course/wordflow/13-versioning/"><meta name="author" content="Michael Jones"><!-- Social cards --><meta property="og:site_name" content="syntax sugar"><meta property="og:type" content="article"><meta property="og:title" content="13 · Versioning · Wordflow Temporal Course"><meta property="og:description" content="Announce every new game in the feed, without breaking the games that are already running."><meta property="og:url" content="https://syntaxsugar.io/course/wordflow/13-versioning/"><meta property="og:image" content="https://syntaxsugar.io/images/profilePicture.png"><meta property="og:image:alt" content="Michael Jones"><meta property="article:published_time" content="2026-10-17T00:00:00.000Z"><meta property="article:author" content="Michael Jones"><meta property="article:tag" content="Temporal"><meta property="article:tag" content="Course"><meta property="article:tag" content="Go"><meta name="twitter:card" content="summary"><meta name="twitter:title" content="13 · Versioning · Wordflow Temporal Course"><meta name="twitter:description" content="Announce every new game in the feed, without breaking the games that are already running."><meta name="twitter:image" content="https://syntaxsugar.io/images/profilePicture.png"><!-- Structured data --><script type="application/ld+json">{"@context":"https://schema.org","@type":["TechArticle","LearningResource"],"name":"13 · Versioning · Wordflow Temporal Course","headline":"13 · Versioning","description":"Announce every new game in the feed, without breaking the games that are already running.","datePublished":"2026-10-17T00:00:00.000Z","keywords":"Temporal, Course, Go","url":"https://syntaxsugar.io/course/wordflow/13-versioning/","mainEntityOfPage":"https://syntaxsugar.io/course/wordflow/13-versioning/","image":"https://syntaxsugar.io/images/profilePicture.png","author":{"@type":"Person","name":"Michael Jones","url":"https://syntaxsugar.io/","sameAs":["https://github.com/mikeacjones","https://www.linkedin.com/in/michael-jones-5a870678"]},"publisher":{"@type":"Person","name":"Michael Jones","url":"https://syntaxsugar.io/","sameAs":["https://github.com/mikeacjones","https://www.linkedin.com/in/michael-jones-5a870678"]},"learningResourceType":"Lesson","position":14,"isPartOf":{"@type":"Course","name":"Wordflow: Learn Temporal by Building a Word Game","url":"https://syntaxsugar.io/course/wordflow/"},"programmingLanguage":["Go"]}</script><script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Labs","item":"https://syntaxsugar.io/labs"},{"@type":"ListItem","position":2,"name":"Wordflow Temporal Course","item":"https://syntaxsugar.io/course/wordflow/"},{"@type":"ListItem","position":3,"name":"13 · Versioning · Wordflow Temporal Course","item":"https://syntaxsugar.io/course/wordflow/13-versioning/"}]}</script><!-- Feeds and machine-readable copies --><link rel="alternate" type="application/rss+xml" title="syntax sugar" href="/rss.xml"><link rel="alternate" type="text/plain" title="llms.txt" href="/llms.txt"><link rel="alternate" type="text/markdown" href="/course/wordflow/13-versioning/index.md"><!-- Favicons --><link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="icon" type="image/x-icon" href="/favicon.ico"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="manifest" href="/site.webmanifest"><link rel="mask-icon" href="/safari-pinned-tab.svg" color="#444ce7"><!-- Google Fonts --><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap" rel="stylesheet"><!-- Sitemap --><link rel="sitemap" href="/sitemap-index.xml"><link rel="stylesheet" href="/_astro/_lesson_.CsZGQl8N.css"></head> <body> <a class="SkipLink" href="#main">Skip to content</a> <header class="Masthead"> <a class="Wordmark" href="/" aria-label="syntax sugar, home"> <span>syntax</span><span class="Wordmark-cube" aria-hidden="true"></span><span>sugar</span> </a> <nav class="Masthead-nav" aria-label="Primary"> <a href="/">Writing</a><a href="/labs" aria-current="page">Labs</a> </nav> </header> <main id="main">  <div class="post-view"> <p class="CourseCrumb"><a href="/course/wordflow/">Wordflow Temporal Course</a> · Lessons</p> <header class="ArticleHeader"> <h1>13 · Versioning</h1>  </header> <div class="codelab-wrapper"> <nav class="codelab-steps-nav CourseNav" aria-label="Wordflow Temporal Course lessons" data-course="wordflow"> <a class="codelab-step-link" href="/course/wordflow/">
+Overview
+</a>  <span class="CourseNav-section">Lessons</span> <a class="codelab-step-link" href="/course/wordflow/00-setup/" data-lesson="00-setup"> <span class="codelab-step-label">00 · Setup</span> </a><a class="codelab-step-link" href="/course/wordflow/01-first-workflow/" data-lesson="01-first-workflow"> <span class="codelab-step-label">01 · Your first Workflow</span> </a><a class="codelab-step-link" href="/course/wordflow/02-activities/" data-lesson="02-activities"> <span class="codelab-step-label">02 · Activities</span> </a><a class="codelab-step-link" href="/course/wordflow/03-signals-and-queries/" data-lesson="03-signals-and-queries"> <span class="codelab-step-label">03 · Signals and Queries</span> </a><a class="codelab-step-link" href="/course/wordflow/04-updates/" data-lesson="04-updates"> <span class="codelab-step-label">04 · Updates</span> </a><a class="codelab-step-link" href="/course/wordflow/05-timers/" data-lesson="05-timers"> <span class="codelab-step-label">05 · Durable Timers</span> </a><a class="codelab-step-link" href="/course/wordflow/06-entity-workflows/" data-lesson="06-entity-workflows"> <span class="codelab-step-label">06 · Entity Workflows</span> </a><a class="codelab-step-link" href="/course/wordflow/07-child-workflows/" data-lesson="07-child-workflows"> <span class="codelab-step-label">07 · Child Workflows</span> </a><a class="codelab-step-link" href="/course/wordflow/08-workflow-to-workflow/" data-lesson="08-workflow-to-workflow"> <span class="codelab-step-label">08 · Workflow to Workflow</span> </a><a class="codelab-step-link" href="/course/wordflow/09-signal-with-start/" data-lesson="09-signal-with-start"> <span class="codelab-step-label">09 · Signal-with-Start</span> </a><a class="codelab-step-link" href="/course/wordflow/10-continue-as-new/" data-lesson="10-continue-as-new"> <span class="codelab-step-label">10 · Continue-As-New</span> </a><a class="codelab-step-link" href="/course/wordflow/11-retries/" data-lesson="11-retries"> <span class="codelab-step-label">11 · Retries in depth</span> </a><a class="codelab-step-link" href="/course/wordflow/12-determinism-and-replay/" data-lesson="12-determinism-and-replay"> <span class="codelab-step-label">12 · Determinism and replay</span> </a><a class="codelab-step-link active" href="/course/wordflow/13-versioning/" data-lesson="13-versioning" aria-current="page"> <span class="codelab-step-label">13 · Versioning</span> </a> <span class="CourseNav-section">Optional exercises</span> <a class="codelab-step-link" href="/course/wordflow/saga/" data-lesson="saga"> <span class="codelab-step-label">Saga</span> </a><a class="codelab-step-link" href="/course/wordflow/pick-first/" data-lesson="pick-first"> <span class="codelab-step-label">Pick First</span> </a><a class="codelab-step-link" href="/course/wordflow/approval/" data-lesson="approval"> <span class="codelab-step-label">Approval</span> </a><a class="codelab-step-link" href="/course/wordflow/schedules/" data-lesson="schedules"> <span class="codelab-step-label">Schedules</span> </a> <span class="CourseNav-section">Reference</span> <a class="codelab-step-link" href="/course/wordflow/contract/" data-lesson="contract"> <span class="codelab-step-label">API and Temporal names</span> </a> </nav> <div class="codelab-content"> <div class="post-view-content" data-course-lesson="13-versioning"> <p><strong>Goal:</strong> announce every new game in the feed, without breaking the games that are already running.</p>
+<h2 id="concepts">Concepts</h2>
+<p><strong>Patching.</strong> Wrap the change in a version check. The first time new code reaches the check, it records a marker in the history and takes the new path. When code replays a history that has no marker, the check returns the default version and the code takes the old path. Old and new Workflows run on the same Worker, each following the code it started with.</p>
+<p><strong>Retiring a patch.</strong> Once no running Workflow can still take the old path, delete the old branch. Keep the check, with the default version as its minimum, until no running Workflow has the old marker either. Then delete the check too.</p>
+<p><strong>Rolling back.</strong> After the new code has run, histories contain the marker. The old code doesn’t expect it, so rolling back breaks those Workflows. Replay-test new histories against the old code before you rely on being able to roll back.</p>
+<p><strong>Worker Versioning.</strong> The other approach. Each Worker deployment has a version, and each Workflow is pinned to the version it started on. Old and new Workers run side by side until the old Workflows finish. There are no version checks in the code, but you run more than one Worker deployment at a time. It’s the better fit for frequent changes to short Workflows. Patching suits occasional changes to long ones. See <a href="https://docs.temporal.io/production-deployment/worker-deployments/worker-versioning" rel="noreferrer" target="_blank">Worker Versioning</a>.</p>
+<h2 id="what-youll-build">What you’ll build</h2>
+<ul>
+<li>Wrap the <code>announce</code> call from Lesson 12 in a version check called <code>announce-game</code>. Version 1 announces. The default version doesn’t.</li>
+</ul>
+<h2 id="build-it">Build it</h2>
+<div class="CourseLang" data-lang="go" data-label="Go">
+<h3 id="1-save-an-old-history">1. Save an old history</h3>
+<p>With your Lesson 12 code running, start a game as <code>alice</code> and leave it running:</p>
+<pre class="astro-code astro-code-themes github-light material-theme-palenight" style="background-color:#fff;--shiki-dark-bg:#292D3E;color:#24292e;--shiki-dark:#babed8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="sh"><code><span class="line"><span style="color:#6F42C1;--shiki-dark:#FFCB6B">make</span><span style="color:#032F62;--shiki-dark:#C3E88D"> history</span><span style="color:#032F62;--shiki-dark:#C3E88D"> ID=game-alice-3</span><span style="color:#6A737D;--shiki-light-font-style:inherit;--shiki-dark:#676E95;--shiki-dark-font-style:italic">   # use your game's ID</span></span></code></pre>
+<h3 id="2-patch-the-workflow">2. Patch the Workflow</h3>
+<p>In <code>GameWorkflow</code>, after <code>NewState</code>:</p>
+<pre class="astro-code astro-code-themes github-light material-theme-palenight" style="background-color:#fff;--shiki-dark-bg:#292D3E;color:#24292e;--shiki-dark:#babed8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="go"><code><span class="line"><span style="color:#24292E;--shiki-dark:#BABED8">	state </span><span style="color:#D73A49;--shiki-dark:#89DDFF">=</span><span style="color:#24292E;--shiki-dark:#BABED8"> game</span><span style="color:#24292E;--shiki-dark:#89DDFF">.</span><span style="color:#6F42C1;--shiki-dark:#82AAFF">NewState</span><span style="color:#24292E;--shiki-dark:#89DDFF">(</span><span style="color:#24292E;--shiki-dark:#BABED8">gameID</span><span style="color:#24292E;--shiki-dark:#89DDFF">,</span><span style="color:#24292E;--shiki-dark:#BABED8"> input</span><span style="color:#24292E;--shiki-dark:#89DDFF">.</span><span style="color:#24292E;--shiki-dark:#BABED8">PlayerID</span><span style="color:#24292E;--shiki-dark:#89DDFF">,</span><span style="color:#24292E;--shiki-dark:#BABED8"> puzzle</span><span style="color:#24292E;--shiki-dark:#89DDFF">,</span><span style="color:#24292E;--shiki-dark:#BABED8"> now</span><span style="color:#24292E;--shiki-dark:#89DDFF">)</span></span>
+<span class="line"><span style="color:#6A737D;--shiki-light-font-style:inherit;--shiki-dark:#676E95;--shiki-dark-font-style:italic">	// Games started before this change have no "announce-game" marker in their</span></span>
+<span class="line"><span style="color:#6A737D;--shiki-light-font-style:inherit;--shiki-dark:#676E95;--shiki-dark-font-style:italic">	// history, so GetVersion returns DefaultVersion and they skip the Activity.</span></span>
+<span class="line"><span style="color:#D73A49;--shiki-light-font-style:inherit;--shiki-dark:#89DDFF;--shiki-dark-font-style:italic">	if</span><span style="color:#24292E;--shiki-dark:#BABED8"> workflow</span><span style="color:#24292E;--shiki-dark:#89DDFF">.</span><span style="color:#6F42C1;--shiki-dark:#82AAFF">GetVersion</span><span style="color:#24292E;--shiki-dark:#89DDFF">(</span><span style="color:#24292E;--shiki-dark:#BABED8">ctx</span><span style="color:#24292E;--shiki-dark:#89DDFF">,</span><span style="color:#032F62;--shiki-dark:#89DDFF"> "</span><span style="color:#032F62;--shiki-dark:#C3E88D">announce-game</span><span style="color:#032F62;--shiki-dark:#89DDFF">"</span><span style="color:#24292E;--shiki-dark:#89DDFF">,</span><span style="color:#24292E;--shiki-dark:#BABED8"> workflow</span><span style="color:#24292E;--shiki-dark:#89DDFF">.</span><span style="color:#24292E;--shiki-dark:#BABED8">DefaultVersion</span><span style="color:#24292E;--shiki-dark:#89DDFF">,</span><span style="color:#005CC5;--shiki-dark:#F78C6C"> 1</span><span style="color:#24292E;--shiki-dark:#89DDFF">)</span><span style="color:#D73A49;--shiki-dark:#89DDFF"> ==</span><span style="color:#005CC5;--shiki-dark:#F78C6C"> 1</span><span style="color:#24292E;--shiki-dark:#89DDFF"> {</span></span>
+<span class="line"><span style="color:#6F42C1;--shiki-dark:#82AAFF">		announce</span><span style="color:#24292E;--shiki-dark:#89DDFF">(</span><span style="color:#24292E;--shiki-dark:#BABED8">ctx</span><span style="color:#24292E;--shiki-dark:#89DDFF">,</span><span style="color:#6F42C1;--shiki-dark:#82AAFF"> startedMessage</span><span style="color:#24292E;--shiki-dark:#89DDFF">(</span><span style="color:#24292E;--shiki-dark:#BABED8">state</span><span style="color:#24292E;--shiki-dark:#89DDFF">))</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#89DDFF">	}</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#BABED8">	state</span><span style="color:#24292E;--shiki-dark:#89DDFF">.</span><span style="color:#6F42C1;--shiki-dark:#82AAFF">SetDeadline</span><span style="color:#24292E;--shiki-dark:#89DDFF">(</span><span style="color:#24292E;--shiki-dark:#BABED8">now</span><span style="color:#24292E;--shiki-dark:#89DDFF">.</span><span style="color:#6F42C1;--shiki-dark:#82AAFF">Add</span><span style="color:#24292E;--shiki-dark:#89DDFF">(</span><span style="color:#24292E;--shiki-dark:#BABED8">puzzle</span><span style="color:#24292E;--shiki-dark:#89DDFF">.</span><span style="color:#6F42C1;--shiki-dark:#82AAFF">TimeLimit</span><span style="color:#24292E;--shiki-dark:#89DDFF">()))</span></span></code></pre>
+<p><code>GetVersion(ctx, changeID, minSupported, maxSupported)</code>:</p>
+<ul>
+<li>On first execution, it records a marker with <code>maxSupported</code> (1) and returns 1.</li>
+<li>On replay with the marker, it returns the recorded version.</li>
+<li>On replay without the marker, it returns <code>DefaultVersion</code> (-1).</li>
+<li>If the history holds a version outside <code>[minSupported, maxSupported]</code>, the Workflow Task fails. That protects you from deploying code that has dropped support for a version still in use.</li>
+</ul>
+<h3 id="3-check-before-deploying">3. Check before deploying</h3>
+<pre class="astro-code astro-code-themes github-light material-theme-palenight" style="background-color:#fff;--shiki-dark-bg:#292D3E;color:#24292e;--shiki-dark:#babed8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="sh"><code><span class="line"><span style="color:#6F42C1;--shiki-dark:#FFCB6B">make</span><span style="color:#032F62;--shiki-dark:#C3E88D"> replay</span></span></code></pre>
+<p>Every history passes, including the one from step 1.</p>
+<h3 id="4-deploy">4. Deploy</h3>
+<p>Restart the Worker and follow the checklist in the README. To check rollback:</p>
+<pre class="astro-code astro-code-themes github-light material-theme-palenight" style="background-color:#fff;--shiki-dark-bg:#292D3E;color:#24292e;--shiki-dark:#babed8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="sh"><code><span class="line"><span style="color:#6F42C1;--shiki-dark:#FFCB6B">make</span><span style="color:#032F62;--shiki-dark:#C3E88D"> history</span><span style="color:#032F62;--shiki-dark:#C3E88D"> ID=game-bob-1</span></span>
+<span class="line"><span style="color:#6F42C1;--shiki-dark:#FFCB6B">make</span><span style="color:#032F62;--shiki-dark:#C3E88D"> replay</span><span style="color:#032F62;--shiki-dark:#C3E88D"> S=</span><span style="color:#005CC5;--shiki-dark:#F78C6C">12</span></span></code></pre>
+<p><code>S=12</code> runs <code>solutions/12/cmd/replay</code>, the Lesson 12 code, against every saved history. Bob’s game fails.</p>
+<h3 id="5-later-retire-the-old-path">5. Later: retire the old path</h3>
+<p>When every game that started before the patch has finished:</p>
+<pre class="astro-code astro-code-themes github-light material-theme-palenight" style="background-color:#fff;--shiki-dark-bg:#292D3E;color:#24292e;--shiki-dark:#babed8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="go"><code><span class="line"><span style="color:#24292E;--shiki-dark:#BABED8">	workflow</span><span style="color:#24292E;--shiki-dark:#89DDFF">.</span><span style="color:#6F42C1;--shiki-dark:#82AAFF">GetVersion</span><span style="color:#24292E;--shiki-dark:#89DDFF">(</span><span style="color:#24292E;--shiki-dark:#BABED8">ctx</span><span style="color:#24292E;--shiki-dark:#89DDFF">,</span><span style="color:#032F62;--shiki-dark:#89DDFF"> "</span><span style="color:#032F62;--shiki-dark:#C3E88D">announce-game</span><span style="color:#032F62;--shiki-dark:#89DDFF">"</span><span style="color:#24292E;--shiki-dark:#89DDFF">,</span><span style="color:#005CC5;--shiki-dark:#F78C6C"> 1</span><span style="color:#24292E;--shiki-dark:#89DDFF">,</span><span style="color:#005CC5;--shiki-dark:#F78C6C"> 1</span><span style="color:#24292E;--shiki-dark:#89DDFF">)</span></span>
+<span class="line"><span style="color:#6F42C1;--shiki-dark:#82AAFF">	announce</span><span style="color:#24292E;--shiki-dark:#89DDFF">(</span><span style="color:#24292E;--shiki-dark:#BABED8">ctx</span><span style="color:#24292E;--shiki-dark:#89DDFF">,</span><span style="color:#6F42C1;--shiki-dark:#82AAFF"> startedMessage</span><span style="color:#24292E;--shiki-dark:#89DDFF">(</span><span style="color:#24292E;--shiki-dark:#BABED8">state</span><span style="color:#24292E;--shiki-dark:#89DDFF">))</span></span></code></pre>
+<p>Once every Workflow recorded with the marker has finished too, you can delete the <code>GetVersion</code> line.</p>
+<p>Compare with <code>solutions/13</code>.</p>
+</div>
+<h2 id="check-it">Check it</h2>
+<p>Start with your Lesson 12 code, without the <code>announce</code> call, running.</p>
+<ul class="contains-task-list">
+<li class="task-list-item">
+<p><input type="checkbox" disabled> Start a game as <code>alice</code> and leave it running. Save its history with <code>make history</code>.</p>
+</li>
+<li class="task-list-item">
+<p><input type="checkbox" disabled> Add the versioned <code>announce</code> call. <code>make replay</code> prints <code>ok</code> for every history, old games included.</p>
+</li>
+<li class="task-list-item">
+<p><input type="checkbox" disabled> Restart the Worker. The old game keeps working: guesses, hints, and the clock.</p>
+</li>
+<li class="task-list-item">
+<p><input type="checkbox" disabled> Join as <code>bob</code> and start a game. The feed shows <strong>bob started …</strong>. His game’s history has a <code>MarkerRecorded</code> event, then the <code>Announce</code> Activity.</p>
+<p><img alt="The feed announces Bob&amp;#x27;s game" loading="lazy" decoding="async" fetchpriority="auto" width="510" height="242" src="/_astro/feed.Bm6d3joG_1uM34x.png" ></p>
+<p><img alt="The version marker, then the Announce Activity" loading="lazy" decoding="async" fetchpriority="auto" width="2160" height="1500" src="/_astro/marker.B2KfuQia_AzU7v.png" ></p>
+</li>
+<li class="task-list-item">
+<p><input type="checkbox" disabled> Save Bob’s game with <code>make history</code>, then run <code>make replay S=12</code>. Bob’s game fails on the Lesson 12 code. That’s why you can’t simply roll back.</p>
+</li>
+</ul> </div> <p class="CourseSource"> <a href="https://github.com/mikeacjones/temporal-course-wordflow/blob/main/course/13-versioning/README.md" target="_blank" rel="noreferrer">Edit this lesson on GitHub</a> </p> <div class="codelab-step-nav"> <a class="codelab-nav-btn codelab-prev" href="/course/wordflow/12-determinism-and-replay/">Back: 12 · Determinism and replay</a> <a class="codelab-nav-btn codelab-next" href="/course/wordflow/saga/">Next: Saga</a> </div> </div> </div> </div> <script type="module" src="/_astro/CodeBlock.astro_astro_type_script_index_0_lang.CtkjkfEA.js"></script> <script type="module">function o(){const a=document.querySelector(".post-view-content");if(!a)return;a.querySelectorAll("img").forEach(e=>{e.dataset.zoomable!=="true"&&(e.dataset.zoomable="true",e.style.cursor="pointer",e.addEventListener("click",()=>{const t=document.createElement("div");t.className="zoomable-overlay";const n=document.createElement("img");n.src=e.src,n.alt=e.alt,t.appendChild(n),document.body.appendChild(t),t.addEventListener("click",()=>{t.remove()}),document.addEventListener("keydown",function d(r){r.key==="Escape"&&(t.remove(),document.removeEventListener("keydown",d))})}))})}document.readyState==="loading"?document.addEventListener("DOMContentLoaded",o):o();document.addEventListener("astro:page-load",o);</script> <script>
+  (function () {
+    var nav = document.querySelector('.CourseNav');
+    if (!nav) return;
+    var course = nav.getAttribute('data-course');
+    var LANG_KEY = 'course:lang';
+
+    // On narrow screens the nav is a scrolling row; bring the current lesson into view.
+    var active = nav.querySelector('.active');
+    if (active && nav.scrollWidth > nav.clientWidth) nav.scrollLeft = active.offsetLeft - 16;
+    var TICKS_KEY = 'course:' + course + ':ticks';
+
+    function load(key, fallback) {
+      try {
+        var value = JSON.parse(localStorage.getItem(key));
+        return value == null ? fallback : value;
+      } catch (e) {
+        return fallback;
+      }
+    }
+
+    function save(key, value) {
+      try {
+        localStorage.setItem(key, JSON.stringify(value));
+      } catch (e) {}
+    }
+
+    // Language tabs: each run of adjacent .CourseLang panels gets one tab bar.
+    var panels = Array.prototype.slice.call(document.querySelectorAll('.CourseLang'));
+    var groups = [];
+    panels.forEach(function (panel) {
+      var group = groups[groups.length - 1];
+      if (group && group[group.length - 1].nextElementSibling === panel) group.push(panel);
+      else groups.push([panel]);
+    });
+
+    var tabBars = [];
+    function selectLang(lang) {
+      tabBars.forEach(function (bar) {
+        var group = bar.group;
+        var match = group.some(function (p) { return p.dataset.lang === lang; }) ? lang : group[0].dataset.lang;
+        group.forEach(function (p) { p.hidden = p.dataset.lang !== match; });
+        bar.querySelectorAll('button').forEach(function (b) {
+          b.setAttribute('aria-selected', String(b.dataset.lang === match));
+          b.tabIndex = b.dataset.lang === match ? 0 : -1;
+        });
+      });
+    }
+
+    groups.forEach(function (group, g) {
+      var bar = document.createElement('div');
+      bar.className = 'CourseLang-tabs';
+      bar.setAttribute('role', 'tablist');
+      bar.setAttribute('aria-label', 'Language');
+      bar.group = group;
+      group.forEach(function (panel, i) {
+        var id = 'lang-' + g + '-' + panel.dataset.lang;
+        var button = document.createElement('button');
+        button.type = 'button';
+        button.setAttribute('role', 'tab');
+        button.id = id + '-tab';
+        button.setAttribute('aria-controls', id);
+        button.dataset.lang = panel.dataset.lang;
+        button.textContent = panel.dataset.label;
+        button.addEventListener('click', function () {
+          save(LANG_KEY, panel.dataset.lang);
+          selectLang(panel.dataset.lang);
+        });
+        bar.appendChild(button);
+        panel.id = id;
+        panel.setAttribute('role', 'tabpanel');
+        panel.setAttribute('aria-labelledby', id + '-tab');
+      });
+      bar.addEventListener('keydown', function (e) {
+        if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+        var buttons = Array.prototype.slice.call(bar.querySelectorAll('button'));
+        var i = buttons.indexOf(document.activeElement);
+        var next = buttons[(i + (e.key === 'ArrowRight' ? 1 : buttons.length - 1)) % buttons.length];
+        next.focus();
+        next.click();
+      });
+      group[0].before(bar);
+      tabBars.push(bar);
+    });
+    if (tabBars.length) selectLang(load(LANG_KEY, null));
+
+    // Checklists. Ticks are stored per lesson as an array of booleans.
+    var lesson = document.querySelector('[data-course-lesson]');
+    var ticks = load(TICKS_KEY, {});
+
+    function markNav() {
+      nav.querySelectorAll('[data-lesson]').forEach(function (link) {
+        var saved = ticks[link.dataset.lesson];
+        var done = saved && saved.total > 0 && saved.done === saved.total;
+        link.classList.toggle('done', !!done);
+      });
+    }
+
+    if (lesson) {
+      var slug = lesson.getAttribute('data-course-lesson');
+      var boxes = Array.prototype.slice.call(lesson.querySelectorAll('input[type=checkbox]'));
+      var saved = (ticks[slug] && ticks[slug].boxes) || [];
+      var update = function () {
+        var state = boxes.map(function (b) { return b.checked; });
+        ticks[slug] = { boxes: state, done: state.filter(Boolean).length, total: state.length };
+        save(TICKS_KEY, ticks);
+        markNav();
+      };
+      boxes.forEach(function (box, i) {
+        box.disabled = false;
+        box.checked = !!saved[i];
+        var item = box.closest('li');
+        if (item) item.classList.toggle('checked', box.checked);
+        box.addEventListener('change', function () {
+          if (item) item.classList.toggle('checked', box.checked);
+          update();
+        });
+      });
+      if (boxes.length && !ticks[slug]) update();
+    }
+    markNav();
+  })();
+</script>  </main> <footer class="SiteFooter"> <div class="About"> <img src="/images/profilePicture.png" alt="Michael Jones" width="44" height="44" loading="lazy"> <p>Written by Michael Jones, mostly about Temporal and durable execution, with older posts on MuleSoft and DataWeave.</p> </div> <nav aria-label="Elsewhere"> <a href="https://github.com/mikeacjones" target="_blank" rel="noreferrer">GitHub</a> <a href="https://www.linkedin.com/in/michael-jones-5a870678" target="_blank" rel="noreferrer">LinkedIn</a> <a href="https://stackoverflow.com/users/10890536/michael-jones" target="_blank" rel="noreferrer">Stack Overflow</a> <a href="/rss.xml">RSS</a> <a href="/sitemap-index.xml">Sitemap</a> </nav> </footer> </body></html>

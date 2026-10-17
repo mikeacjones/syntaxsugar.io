@@ -3654,3 +3654,3762 @@ For a throwaway environment like this lab, the easiest path is to tear it down a
 - [KEDA Temporal scaler](https://keda.sh/docs/latest/scalers/temporal/)
 - [Safe Deployment Guide](https://docs.temporal.io/develop/safe-deployments)
 - [Python SDK Versioning Reference](https://docs.temporal.io/develop/python/versioning)
+
+---
+
+# Wordflow: Learn Temporal by Building a Word Game
+
+> A hands-on Temporal course: build the backend of a timed word game one concept at a time, from your first Workflow through Signals, Updates, Timers, Entity Workflows, Continue-As-New, and versioning.
+
+- Author: Michael Jones
+- Published: 2026-10-17
+- Updated: 2026-10-05
+- Tags: Temporal, Course, Go
+- Languages: Go
+- Source: https://github.com/mikeacjones/temporal-course-wordflow
+- URL: https://syntaxsugar.io/course/wordflow/
+
+You'll build the backend of Wordflow, a timed word game, one Temporal concept at a time. The web app and HTTP routing are already written. You write the Workflows, Activities, and Worker, plus the API code that uses the Temporal Client to start, signal, query, and update Workflows.
+
+Each lesson adds one feature to the game and teaches the concept behind it. By the end you'll have used the [Temporal design patterns](https://docs.temporal.io/design-patterns) that come up most in real systems.
+
+**You need:** a GitHub account, and to be comfortable in the language you choose. No Temporal experience needed.
+
+## Start
+
+1. Pick a language. Each one lives on its own branch:
+
+   | Language | Branch |
+   |---|---|
+   | Go | [`go`](https://github.com/mikeacjones/temporal-course-wordflow/tree/go) |
+   | Python | `python` (coming soon) |
+
+2. Switch to that branch on GitHub, then choose **Code → Codespaces → Create codespace on `<branch>`**. Setup takes a few minutes.
+3. The course opens in a browser tab once the Codespace is ready. If it doesn't, open the **Ports** tab and open **Course** (port 8000). Each lesson page shows the concepts, the build steps for your language, and a checklist that remembers your progress.
+
+You can also read the lessons here on GitHub, starting with [`course/00-setup`](/course/wordflow/00-setup/).
+
+The `main` branch only has the shared material (lesson text, web app, puzzles), so it won't run on its own.
+
+## How each lesson works
+
+- `README.md` explains the concept and what you'll build. It is the same for every language.
+- `build.md` walks you through the code in your language.
+- **Check it** tells you what you should see in the game and in the Temporal UI. If you see it, move on.
+- You write all your code in `app/`. Each lesson's finished code is in `solutions/NN/`. Run a solution with `make worker S=NN` and `make server S=NN` to compare.
+
+## Lessons
+
+| # | Lesson | What you add | Concepts and patterns |
+|---|---|---|---|
+| 00 | [Setup](/course/wordflow/00-setup/) | Nothing yet | Temporal Service, Temporal UI, the project |
+| 01 | [Your first Workflow](/course/wordflow/01-first-workflow/) | Start a game | Workflow, Worker, Task Queue, Client, Workflow ID |
+| 02 | [Activities](/course/wordflow/02-activities/) | Load puzzles from storage | Activity, retries, timeouts, determinism, non-retryable errors |
+| 03 | [Signals and Queries](/course/wordflow/03-signals-and-queries/) | Guess words, see the board | Long-running Workflow, Signal, Query |
+| 04 | [Updates](/course/wordflow/04-updates/) | Instant guess results | Update, validator, Update-with-Start, Request-Response via Updates, Early Return |
+| 05 | [Durable Timers](/course/wordflow/05-timers/) | A game clock you can extend | Timer, cancellation, Updatable Timer |
+| 06 | [Entity Workflows](/course/wordflow/06-entity-workflows/) | Players with points | Entity Workflow, ID conflict policy |
+| 07 | [Child Workflows](/course/wordflow/07-child-workflows/) | Players start their own games | Child Workflow, parent close policy |
+| 08 | [Workflow to Workflow](/course/wordflow/08-workflow-to-workflow/) | Hints that cost points | Activity Dependency Injection, idempotent Updates, Workflow mutex |
+| 09 | [Signal-with-Start](/course/wordflow/09-signal-with-start/) | A global leaderboard | Signal-with-Start, singleton Workflow |
+| 10 | [Continue-As-New](/course/wordflow/10-continue-as-new/) | Players who play forever | Event History limits, Continue-As-New |
+| 11 | [Retries in depth](/course/wordflow/11-retries/) | Bonus words from a flaky dictionary | Retry policies, Fixed Count, Fixed Wall-Time, Delayed Retry, Non-Retryable Errors |
+| 12 | [Determinism and replay](/course/wordflow/12-determinism-and-replay/) | An activity feed, and a broken deploy | Replay, nondeterminism errors, replay testing |
+| 13 | [Versioning](/course/wordflow/13-versioning/) | Ship the change safely | Patching with `GetVersion`, Worker Versioning |
+
+Optional exercises, after Lesson 13:
+
+| Exercise | What you add | Pattern |
+|---|---|---|
+| [Saga](/course/wordflow/saga/) | Gift points to a friend | Saga, compensation |
+| [Pick First](/course/wordflow/pick-first/) | Race two dictionary regions | Pick First, cancellation |
+| [Approval](/course/wordflow/approval/) | Players submit puzzles for review | Parallel Execution, Approval |
+| [Schedules](/course/wordflow/schedules/) | Puzzle of the day | Schedules, Delayed Start |
+
+## Reference
+
+- [API and Temporal names](/course/wordflow/contract/)
+- [Temporal documentation](https://docs.temporal.io/)
+- [Design patterns](https://docs.temporal.io/design-patterns)
+
+---
+
+# 00 · Setup
+
+> Get the Temporal Service, the web app, and the Temporal UI running, and find your way around the project.
+
+- Course: [Wordflow: Learn Temporal by Building a Word Game](https://syntaxsugar.io/course/wordflow/index.md)
+- Section: Lessons
+- Author: Michael Jones
+- Updated: 2026-10-05
+- URL: https://syntaxsugar.io/course/wordflow/00-setup/
+
+**Goal:** get the Temporal Service, the web app, and the Temporal UI running, and find your way around the project.
+
+## What's running
+
+| Process | Command | Port | What it does |
+|---|---|---|---|
+| Temporal Service | `make temporal` | 7233, UI on 8233 | Stores Workflow state and hands out work. A dev server that keeps its data in `.temporal/`. |
+| Web app and API | `make server` | 8080 | The game UI, the HTTP API, and fake external services. |
+| Worker | `make worker` | | Runs your Workflow and Activity code. You build it in Lesson 1. |
+
+The Temporal Service never runs your code. It records what happened and puts tasks on a Task Queue. Your Worker polls that queue, runs the code, and reports back.
+
+## Project layout
+
+| Path | Owner | What |
+|---|---|---|
+| `app/` | you | Everything you write: Workflows, Activities, the Worker, and the API functions that call Temporal. |
+| `solutions/NN/` | course | The finished `app/` after each lesson. |
+| `internal/` | course | Game rules, puzzle storage, HTTP routing, fake services. You call these; you don't change them. |
+| `web/` | course | The browser app. |
+| `puzzles/` | course | One JSON file per puzzle. |
+| `course/` | course | These lessons. |
+
+## Build it
+
+**Go:**
+
+### 1. Start the Temporal Service
+
+The Codespace installs the Temporal CLI. In a terminal:
+
+```sh
+make temporal
+```
+
+Leave it running. Open the **Ports** tab and open port **8233** to see the Temporal UI.
+
+### 2. Start the web app
+
+In a second terminal:
+
+```sh
+make server
+```
+
+Port **8080** opens in your browser.
+
+### 3. Look around
+
+```
+app/
+  api/api.go          # one method per endpoint; all return ErrNotImplemented
+  cmd/server/main.go  # starts the web app; you add a Temporal Client in Lesson 1
+  cmd/worker/main.go  # you build the Worker in Lesson 1
+internal/
+  game/               # game rules: State, Player, Leaderboard
+  puzzles/            # reads puzzles/*.json
+  httpapi/            # routes, JSON, error mapping
+  services/           # fake dictionary and feed
+```
+
+Open `app/api/api.go`. Each method is one endpoint and names the lesson that builds it. The HTTP layer in `internal/httpapi` decodes the request, calls your method, and turns its result or error into a response.
+
+Skim `internal/game/game.go`. Its functions take the current time as an argument instead of calling `time.Now()`. You'll see why in Lesson 1.
+
+### 4. Useful commands
+
+| Command | What |
+|---|---|
+| `make worker` / `make server` | Run your code in `app/`. |
+| `make worker S=05` | Run Lesson 5's solution. |
+| `make build` | Compile and vet everything. |
+| `make clean-workflows` | Terminate every running Workflow. |
+| `make reset-temporal` | Delete all Temporal data (stop `make temporal` first). |
+| `temporal workflow list` | List Workflows from the terminal. |
+
+
+
+## Check it
+
+- [ ] The Temporal UI opens on port 8233 and shows the `default` namespace with no Workflows.
+
+  *[Image: Temporal UI with no Workflows]*
+
+- [ ] The web app opens on port 8080 and lists five puzzles.
+- [ ] Clicking a puzzle shows **Not built yet. This arrives in Lesson 1.**
+- [ ] The **External services** panel shows the dictionary mode and an empty feed.
+
+  *[Image: The starter web app]*
+
+## Working through the course
+
+- Keep three terminals open: `make temporal`, `make server`, and `make worker`.
+- Restart the Worker after changing Workflow or Activity code. Restart the server after changing API code.
+- Games from earlier lessons keep running with the code they started on. If the Worker logs errors about old Workflows, end them with `make clean-workflows`. Lesson 12 explains why this happens.
+- To compare with the finished code, run `make worker S=NN` and `make server S=NN`.
+- `make reset-temporal` (with `make temporal` stopped) deletes every Workflow and starts fresh.
+- The course site starts with the Codespace. If it isn't on port 8000, run `make course`.
+
+---
+
+# 01 · Your first Workflow
+
+> Clicking a puzzle starts a Workflow that creates a new game and returns the board.
+
+- Course: [Wordflow: Learn Temporal by Building a Word Game](https://syntaxsugar.io/course/wordflow/index.md)
+- Section: Lessons
+- Author: Michael Jones
+- Updated: 2026-10-05
+- URL: https://syntaxsugar.io/course/wordflow/01-first-workflow/
+
+**Goal:** clicking a puzzle starts a Workflow that creates a new game and returns the board.
+
+## Concepts
+
+**Workflow.** A function whose progress Temporal records. Each step it takes is saved as an event in its **Event History**. If the Worker running it crashes, another Worker rebuilds its state by re-running the code against that history. This is what makes a Workflow durable.
+
+**Determinism.** Because Workflow code is re-run, it must make the same decisions every time. It can't read the system clock, generate random numbers, or call the network directly. Use the SDK's clock (`workflow.Now` and its equivalents), which returns the time recorded in history. That's why the game rules take `now` as an argument.
+
+**Worker.** Your process. It connects to the Temporal Service, polls a **Task Queue**, and runs the Workflows registered with it. Ours polls `wordflow`.
+
+**Temporal Client.** How the API talks to Temporal. *Execute Workflow* starts a Workflow and returns a handle. Calling *get result* on the handle waits for the Workflow to finish.
+
+**Workflow ID.** Your name for a Workflow. Only one Workflow with a given ID can run at a time. The web app sends an `Idempotency-Key` with each request, and the API uses it as the Workflow ID (`game-<key>`). If a request is retried, it can't start a second game.
+
+## What you'll build
+
+- Shared names: the Task Queue and the Workflow's input type.
+- `GameWorkflow`: takes a puzzle, creates the game state, returns its view.
+- The Worker: connect, register `GameWorkflow`, run.
+- `StartGame` in the API: read the puzzle file, start `GameWorkflow` with it, wait for the result.
+
+For now the API reads the puzzle and passes it in. Lesson 2 moves that into the Workflow.
+
+## Build it
+
+**Go:**
+
+### 1. Shared names
+
+The API, the Worker, and the Workflows all need the Task Queue name and the Workflow's input type. Create `app/shared/shared.go`:
+
+```go
+// Package shared holds names and types used by Workflows, Activities, and the API.
+package shared
+
+import "wordflow/internal/game"
+
+// TaskQueue is where the API sends work and where the Worker picks it up.
+const TaskQueue = "wordflow"
+
+type GameInput struct {
+	Puzzle game.Puzzle `json:"puzzle"`
+}
+
+// GuestGameID derives a Workflow ID from the HTTP request ID, so a retried
+// request maps to the same Workflow.
+func GuestGameID(requestID string) string {
+	return "game-" + requestID
+}
+```
+
+Workflow inputs and results are serialized to JSON and stored in the Event History, so use plain structs with exported fields.
+
+### 2. The Workflow
+
+Create `app/workflows/game.go`:
+
+```go
+package workflows
+
+import (
+	"go.temporal.io/sdk/workflow"
+
+	"wordflow/app/shared"
+	"wordflow/internal/game"
+)
+
+// GameWorkflow builds a new game and returns its first view.
+func GameWorkflow(ctx workflow.Context, input shared.GameInput) (game.View, error) {
+	gameID := workflow.GetInfo(ctx).WorkflowExecution.ID
+	state := game.NewState(gameID, "", input.Puzzle, workflow.Now(ctx))
+	return state.View(), nil
+}
+```
+
+- A Workflow is a function that takes a `workflow.Context` first and returns a result and an error.
+- `workflow.GetInfo(ctx)` gives you the Workflow ID, Run ID, and more.
+- `workflow.Now(ctx)` replaces `time.Now()`. It returns the same value when the code is re-run.
+
+### 3. The Worker
+
+Replace `app/cmd/worker/main.go`:
+
+```go
+// Command worker runs your Workflows and Activities.
+package main
+
+import (
+	"log"
+
+	"go.temporal.io/sdk/client"
+	"go.temporal.io/sdk/worker"
+
+	"wordflow/app/shared"
+	"wordflow/app/workflows"
+)
+
+func main() {
+	c, err := client.Dial(client.Options{})
+	if err != nil {
+		log.Fatalln("unable to connect to Temporal:", err)
+	}
+	defer c.Close()
+
+	w := worker.New(c, shared.TaskQueue, worker.Options{})
+	w.RegisterWorkflow(workflows.GameWorkflow)
+
+	if err := w.Run(worker.InterruptCh()); err != nil {
+		log.Fatalln("worker stopped:", err)
+	}
+}
+```
+
+`client.Options{}` connects to `localhost:7233` and the `default` namespace. The Workflow type name is the function name, `GameWorkflow`.
+
+### 4. Give the API a Client
+
+In `app/cmd/server/main.go`, connect and pass the Client to `api.New`:
+
+```go
+func main() {
+	c, err := client.Dial(client.Options{})
+	if err != nil {
+		log.Fatalln("unable to connect to Temporal:", err)
+	}
+	defer c.Close()
+
+	backend := api.New(c, puzzles.NewStore())
+	log.Fatal(httpapi.Serve(":8080", backend))
+}
+```
+
+Add `"go.temporal.io/sdk/client"` to the imports. Create one Client per process and share it; it is safe for concurrent use.
+
+### 5. Start the Workflow from the API
+
+In `app/api/api.go`, replace `StartGame`:
+
+```go
+func (a *API) StartGame(ctx context.Context, req httpapi.StartGameRequest) (httpapi.StartGameResponse, error) {
+	puzzle, err := a.Puzzles.Get(req.PuzzleID)
+	if err != nil {
+		return httpapi.StartGameResponse{}, err
+	}
+
+	options := client.StartWorkflowOptions{
+		ID:        shared.GuestGameID(req.RequestID),
+		TaskQueue: shared.TaskQueue,
+	}
+	run, err := a.Temporal.ExecuteWorkflow(ctx, options, workflows.GameWorkflow, shared.GameInput{Puzzle: puzzle})
+	if err != nil {
+		return httpapi.StartGameResponse{}, err
+	}
+
+	var view game.View
+	if err := run.Get(ctx, &view); err != nil {
+		return httpapi.StartGameResponse{}, err
+	}
+	return httpapi.StartGameResponse{GameID: run.GetID(), Game: &view}, nil
+}
+```
+
+Add `"wordflow/app/shared"` and `"wordflow/app/workflows"` to the imports.
+
+- `ExecuteWorkflow` returns as soon as the Temporal Service has recorded the start. It doesn't wait for the Workflow to run.
+- `run.Get` blocks until the Workflow completes, then decodes its result.
+- Passing the function `workflows.GameWorkflow` gives you type checking. You can also pass the type name as a string.
+- `ctx` carries the HTTP request's 15-second timeout. When it expires, `Get` stops waiting, but the Workflow keeps going.
+
+### 6. Run it
+
+```sh
+make worker   # terminal 3
+make server   # restart terminal 2
+```
+
+Compare with `solutions/01`.
+
+
+
+## Check it
+
+Run `make worker` and `make server`.
+
+- [ ] Click a puzzle. The board appears: letters, and blank slots for each word.
+
+  *[Image: The game board]*
+
+- [ ] Try a guess. You see **This arrives in Lesson 3**.
+- [ ] Click **Workflow ↗**. The Temporal UI shows a `GameWorkflow` with status **Completed**.
+- [ ] Its Event History has five events: `WorkflowExecutionStarted`, then a Workflow Task (scheduled, started, completed), then `WorkflowExecutionCompleted`.
+
+  *[Image: A completed GameWorkflow and its five events]*
+
+- [ ] The **Input** contains the whole puzzle, answers included. Anyone who can read the history can see them. Lesson 2 fixes that.
+- [ ] Stop the Worker and click a puzzle. After 15 seconds the app shows a timeout. In the Temporal UI the new Workflow is **Running** and waiting for a Worker. Start the Worker again and it completes right away.
+
+The last check is the core idea: Temporal holds the work until a Worker is available to do it.
+
+---
+
+# 02 · Activities
+
+> The Workflow loads its own puzzle, so the API only passes a puzzle ID.
+
+- Course: [Wordflow: Learn Temporal by Building a Word Game](https://syntaxsugar.io/course/wordflow/index.md)
+- Section: Lessons
+- Author: Michael Jones
+- Updated: 2026-10-05
+- URL: https://syntaxsugar.io/course/wordflow/02-activities/
+
+**Goal:** the Workflow loads its own puzzle, so the API only passes a puzzle ID.
+
+## Concepts
+
+**Activity.** A normal function for work that touches the outside world: files, databases, HTTP calls. Workflows can't do this work directly because it isn't deterministic. A Workflow asks for an Activity to run. A Worker runs it, and the result is recorded in the Event History. When the Workflow is re-run, it reads the recorded result instead of calling the Activity again.
+
+**Timeouts.** Every Activity needs a **Start-To-Close** timeout: the longest one attempt may take. If an attempt runs longer, it fails and Temporal retries it.
+
+**Retries.** Failed Activities are retried automatically. The default policy retries forever, waiting 1 s, then 2 s, 4 s, and so on, up to 100 s between attempts. Retries don't add events to the history. You see one `ActivityTaskStarted` event that records the final attempt number.
+
+**Non-retryable errors.** Some failures will never succeed on retry. Asking for a puzzle that doesn't exist is one. Mark these errors **non-retryable** and the Activity fails at once.
+
+**Dependencies.** Activities get their dependencies, such as the puzzle store, when the Worker starts. Workflows never touch them.
+
+## Patterns
+
+- [Non-Retryable Errors](https://docs.temporal.io/design-patterns/non-retryable-errors)
+- [Activity Dependency Injection](https://docs.temporal.io/design-patterns/activity-dependency-injection) (first look; Lesson 8 goes further)
+
+## What you'll build
+
+- A `LoadPuzzle` Activity that reads from the puzzle store. A missing puzzle is a non-retryable error.
+- `GameWorkflow` takes `{puzzleId}` and calls `LoadPuzzle` with a 5-second Start-To-Close timeout.
+- The Worker registers the Activity with a puzzle store.
+- `StartGame` passes the puzzle ID instead of the puzzle.
+
+## Build it
+
+**Go:**
+
+### 1. The Activity
+
+Create `app/activities/puzzles.go`:
+
+```go
+// Package activities holds code that talks to the outside world.
+package activities
+
+import (
+	"context"
+	"errors"
+
+	"go.temporal.io/sdk/temporal"
+
+	"wordflow/internal/game"
+	"wordflow/internal/puzzles"
+)
+
+// PuzzleActivities gets its dependencies when the Worker starts.
+type PuzzleActivities struct {
+	Store *puzzles.Store
+}
+
+func (a *PuzzleActivities) LoadPuzzle(ctx context.Context, puzzleID string) (game.Puzzle, error) {
+	puzzle, err := a.Store.Get(puzzleID)
+	if errors.Is(err, puzzles.ErrNotFound) {
+		return game.Puzzle{}, temporal.NewNonRetryableApplicationError("no puzzle named "+puzzleID, "puzzle_not_found", err)
+	}
+	return puzzle, err
+}
+```
+
+- Activities are plain Go. They take a normal `context.Context`.
+- Methods on a struct are a simple way to give Activities their dependencies. The Activity type name is the method name, `LoadPuzzle`.
+- Any other error is retryable. An application error has a message and a type, and both show up in the Temporal UI.
+
+### 2. Pass an ID, not a puzzle
+
+In `app/shared/shared.go`, change the input. You can also remove the `internal/game` import, since nothing else uses it yet:
+
+```go
+type GameInput struct {
+	PuzzleID string `json:"puzzleId"`
+}
+```
+
+### 3. Call the Activity from the Workflow
+
+Replace `app/workflows/game.go`:
+
+```go
+package workflows
+
+import (
+	"time"
+
+	"go.temporal.io/sdk/workflow"
+
+	"wordflow/app/activities"
+	"wordflow/app/shared"
+	"wordflow/internal/game"
+)
+
+// GameWorkflow loads a puzzle and returns the first view of a new game.
+func GameWorkflow(ctx workflow.Context, input shared.GameInput) (game.View, error) {
+	gameID := workflow.GetInfo(ctx).WorkflowExecution.ID
+
+	puzzle, err := loadPuzzle(ctx, input.PuzzleID)
+	if err != nil {
+		return game.View{}, err
+	}
+
+	state := game.NewState(gameID, "", puzzle, workflow.Now(ctx))
+	return state.View(), nil
+}
+
+func loadPuzzle(ctx workflow.Context, puzzleID string) (game.Puzzle, error) {
+	ctx = workflow.WithActivityOptions(ctx, workflow.ActivityOptions{
+		StartToCloseTimeout: 5 * time.Second,
+	})
+	var a *activities.PuzzleActivities
+	var puzzle game.Puzzle
+	err := workflow.ExecuteActivity(ctx, a.LoadPuzzle, puzzleID).Get(ctx, &puzzle)
+	return puzzle, err
+}
+```
+
+- `WithActivityOptions` returns a context that carries the timeout and retry policy.
+- `var a *activities.PuzzleActivities` is a nil pointer. It is only used so that `a.LoadPuzzle` gives the Activity's name and type checking. The real struct lives in the Worker.
+- `ExecuteActivity` returns a Future. `Get` waits for the result.
+- Returning the error fails the Workflow. Because the Activity error is non-retryable, that happens on the first attempt.
+
+### 4. Register the Activity
+
+In `app/cmd/worker/main.go`, after `RegisterWorkflow`:
+
+```go
+	w.RegisterActivity(&activities.PuzzleActivities{Store: puzzles.NewStore()})
+```
+
+Add imports for `"wordflow/app/activities"` and `"wordflow/internal/puzzles"`. Registering a struct registers each of its exported methods as an Activity.
+
+### 5. Update the API
+
+In `StartGame`, delete the `a.Puzzles.Get` call and pass the ID:
+
+```go
+	run, err := a.Temporal.ExecuteWorkflow(ctx, options, workflows.GameWorkflow, shared.GameInput{PuzzleID: req.PuzzleID})
+```
+
+### 6. Run it
+
+Restart the Worker and the server. Compare with `solutions/02`.
+
+
+
+## Check it
+
+- [ ] Starting a game works as before.
+- [ ] In the Temporal UI, the Workflow's input is `{"puzzleId": "..."}`, with no answers.
+- [ ] The history has `ActivityTaskScheduled`, `ActivityTaskStarted`, and `ActivityTaskCompleted` for `LoadPuzzle`. The puzzle is in the completed event's result.
+- [ ] Restart the Worker with `PUZZLES_FAIL_FIRST=2 make worker`. The puzzle store now fails its first two reads. Start a game. It takes about 3 seconds: a 1 s wait, then a 2 s wait, then success.
+- [ ] Open that Workflow. `ActivityTaskStarted` shows `attempt: 3`, and there is still only one of each Activity event. Click the Activity to see the last failure.
+
+  *[Image: LoadPuzzle succeeded on attempt 3]*
+
+- [ ] Start a Workflow for a puzzle that doesn't exist (the API checks for this, so use the CLI):
+
+  ```sh
+  temporal workflow start --type GameWorkflow --task-queue wordflow \
+    --workflow-id bad-puzzle --input '{"puzzleId":"nope"}'
+  ```
+
+  It fails at once with `no puzzle named nope`, after one attempt.
+
+  *[Image: The Workflow failed with a non-retryable error]*
+
+Restart the Worker with plain `make worker` when you're done.
+
+---
+
+# 03 · Signals and Queries
+
+> The game stays open while you play. You send guesses to it and read the board from it.
+
+- Course: [Wordflow: Learn Temporal by Building a Word Game](https://syntaxsugar.io/course/wordflow/index.md)
+- Section: Lessons
+- Author: Michael Jones
+- Updated: 2026-10-05
+- URL: https://syntaxsugar.io/course/wordflow/03-signals-and-queries/
+
+**Goal:** the game stays open while you play. You send guesses to it and read the board from it.
+
+## Concepts
+
+**Long-running Workflows.** A Workflow can wait for minutes, days, or years. While it waits, it uses no Worker resources. Its state lives in its Event History, and a Worker rebuilds it when there's something to do.
+
+**Signal.** A one-way message to a running Workflow. It is recorded in the history (`WorkflowExecutionSignaled`), so it's never lost, even if no Worker is running. The sender only learns that Temporal accepted the message. It gets no reply and can't tell whether the Workflow acted on it.
+
+**Query.** A read-only request. A Worker runs the Query handler against the Workflow's current state and returns the answer. Queries aren't recorded in history, and their handlers must not change state or block.
+
+**Message handlers.** Register Query handlers before the Workflow's first blocking call, so the Workflow can answer from the moment it starts. Until the puzzle has loaded, our Query returns a `loading` view.
+
+## What you'll build
+
+- `GameWorkflow` registers a `state` Query, loads the puzzle, then loops: receive a `guess` Signal, apply it, until every word is found. It returns the game's result.
+- `StartGame` starts the Workflow and returns the game ID without waiting.
+- `GetGame` sends the `state` Query.
+- `SubmitGuess` sends the `guess` Signal and returns nothing. The API answers `202 Accepted`, and the web app fetches the board again.
+
+There's no timer yet, so a game only ends when you find every word.
+
+## Build it
+
+**Go:**
+
+### 1. Message names
+
+In `app/shared/shared.go`, add:
+
+```go
+// Message names for GameWorkflow.
+const (
+	QueryState  = "state"
+	SignalGuess = "guess"
+)
+
+type GuessInput struct {
+	Word string `json:"word"`
+}
+```
+
+Signals and Queries are identified by name, so the API and the Workflow must agree on the strings.
+
+### 2. A Workflow that waits
+
+Replace `GameWorkflow` in `app/workflows/game.go` (keep `loadPuzzle`):
+
+```go
+// GameWorkflow runs one game until every word is found.
+func GameWorkflow(ctx workflow.Context, input shared.GameInput) (game.Result, error) {
+	gameID := workflow.GetInfo(ctx).WorkflowExecution.ID
+	var state *game.State
+
+	err := workflow.SetQueryHandler(ctx, shared.QueryState, func() (game.View, error) {
+		if state == nil {
+			return game.LoadingView(gameID), nil
+		}
+		return state.View(), nil
+	})
+	if err != nil {
+		return game.Result{}, err
+	}
+
+	puzzle, err := loadPuzzle(ctx, input.PuzzleID)
+	if err != nil {
+		return game.Result{}, err
+	}
+	state = game.NewState(gameID, "", puzzle, workflow.Now(ctx))
+
+	guesses := workflow.GetSignalChannel(ctx, shared.SignalGuess)
+	for !state.Over() {
+		var guess shared.GuessInput
+		guesses.Receive(ctx, &guess)
+		state.Guess(guess.Word, workflow.Now(ctx))
+	}
+	return state.Result(), nil
+}
+```
+
+- The return type is now `game.Result`. The Workflow returns it when the game ends.
+- The Query handler is a closure over `state`, so it always sees the latest value.
+- `GetSignalChannel` returns a channel of incoming Signals. `Receive` blocks until one arrives. Signals that arrive while the Workflow is busy are buffered.
+- Use `workflow.Channel` and `Receive`, never Go channels or `select`, in Workflow code. The SDK controls how Workflow code is scheduled so that it re-runs the same way every time.
+- `state.Guess` ignores invalid words. Nobody is waiting for its answer.
+
+### 3. The API
+
+In `app/api/api.go`, `StartGame` no longer waits for a result. Replace the end of the method, after the `ExecuteWorkflow` error check:
+
+```go
+	return httpapi.StartGameResponse{GameID: run.GetID()}, nil
+```
+
+Implement `GetGame`:
+
+```go
+func (a *API) GetGame(ctx context.Context, gameID string) (game.View, error) {
+	response, err := a.Temporal.QueryWorkflow(ctx, gameID, "", shared.QueryState)
+	if err != nil {
+		return game.View{}, err
+	}
+	var view game.View
+	err = response.Get(&view)
+	return view, err
+}
+```
+
+Implement `SubmitGuess`:
+
+```go
+func (a *API) SubmitGuess(ctx context.Context, req httpapi.GuessRequest) (*game.GuessResult, error) {
+	err := a.Temporal.SignalWorkflow(ctx, req.GameID, "", shared.SignalGuess, shared.GuessInput{Word: req.Word})
+	return nil, err
+}
+```
+
+- The empty string is the Run ID. Leaving it empty targets the current run of that Workflow ID.
+- `SignalWorkflow` returns once the Signal is recorded. A `nil` result tells the HTTP layer to answer `202`.
+
+### 4. Run it
+
+```sh
+make clean-workflows
+```
+
+Restart the Worker and the server. Compare with `solutions/03`.
+
+
+
+## Check it
+
+Before you start, run `make clean-workflows` to end games from earlier lessons.
+
+- [ ] Click a puzzle. The board appears, sometimes after a brief **loading** state.
+- [ ] Guess a word in the puzzle. Its slot fills in.
+- [ ] Guess a word made from the letters that isn't in the puzzle. It appears under **Not in puzzle**.
+
+  *[Image: Found words and a word that's not in the puzzle]*
+
+- [ ] Guess `zz`. The app says **Sent ZZ**, then nothing changes. The game ignored it, and nobody told you. That's the downside of Signals.
+- [ ] In the Temporal UI, every guess is a `WorkflowExecutionSignaled` event. The board refreshes don't appear anywhere: Queries aren't recorded.
+
+  *[Image: Each guess is a WorkflowExecutionSignaled event]*
+
+- [ ] Stop the Worker and send two guesses. They're still accepted, but the board stops refreshing because nothing can answer the Query. Start the Worker. Both guesses are applied.
+- [ ] Find every word. The status changes to **won**, and the Workflow completes with the result (`won`, `score`).
+
+Next, Updates fix the missing feedback: you'll know right away whether a guess counted.
+
+---
+
+# 04 · Updates
+
+> Every guess gets an immediate answer, and a new game returns its board as soon as it's ready.
+
+- Course: [Wordflow: Learn Temporal by Building a Word Game](https://syntaxsugar.io/course/wordflow/index.md)
+- Section: Lessons
+- Author: Michael Jones
+- Updated: 2026-10-05
+- URL: https://syntaxsugar.io/course/wordflow/04-updates/
+
+**Goal:** every guess gets an immediate answer, and a new game returns its board as soon as it's ready.
+
+## Concepts
+
+**Update.** A request to a running Workflow that can change its state and returns a result, or an error, to the caller. It's a Signal and a Query in one round trip.
+
+**Validator.** An optional function that runs before an Update is accepted. If it returns an error, the caller gets that error and nothing is written to history. Validators must not change state or block. Once accepted, an Update is recorded (`WorkflowExecutionUpdateAccepted`), and so is its result (`WorkflowExecutionUpdateCompleted`).
+
+**Update ID.** Temporal de-duplicates Updates by ID within a Workflow run. Send the same Update ID twice and the second call returns the first result. We use the request's `Idempotency-Key`, so retrying a guess can't count it twice.
+
+**Update-with-Start.** Starts a Workflow and sends it an Update in one call. With the ID conflict policy *use existing*, a retried request finds the Workflow it already started and sends the Update to it.
+
+**Waiting in a handler.** Handlers may block, for example to wait for a condition. Our `ready` Update waits until the puzzle has loaded, then returns the board. The caller gets its answer early while the Workflow keeps running.
+
+**Finishing cleanly.** When a guess wins the game, the main loop could complete the Workflow before that guess's Update has replied. Wait for all handlers to finish before returning.
+
+## Patterns
+
+- [Request-Response via Updates](https://docs.temporal.io/design-patterns/request-response-via-updates)
+- [Early Return](https://docs.temporal.io/design-patterns/early-return)
+
+## What you'll build
+
+- A `ready` Update that waits for the puzzle and returns the board.
+- The `guess` Signal becomes a `guess` Update with a validator that rejects invalid words. The handler returns the outcome.
+- The main loop becomes "wait until the game is over, then wait for handlers to finish".
+- `StartGame` uses Update-with-Start (`ready`). `SubmitGuess` sends the `guess` Update with the request ID as its Update ID.
+
+## Build it
+
+**Go:**
+
+### 1. Names
+
+In `app/shared/shared.go`, replace the message names:
+
+```go
+// Message names for GameWorkflow.
+const (
+	QueryState  = "state"
+	UpdateReady = "ready"
+	UpdateGuess = "guess"
+)
+```
+
+### 2. Update handlers
+
+In `app/workflows/game.go`, register two Update handlers after the Query handler and before `loadPuzzle`:
+
+```go
+	// ready returns the first view as soon as the puzzle has loaded.
+	err = workflow.SetUpdateHandler(ctx, shared.UpdateReady, func(ctx workflow.Context) (game.View, error) {
+		if err := workflow.Await(ctx, func() bool { return state != nil }); err != nil {
+			return game.View{}, err
+		}
+		return state.View(), nil
+	})
+	if err != nil {
+		return game.Result{}, err
+	}
+
+	err = workflow.SetUpdateHandlerWithOptions(ctx, shared.UpdateGuess,
+		func(ctx workflow.Context, guess shared.GuessInput) (game.GuessResult, error) {
+			outcome := state.Guess(guess.Word, workflow.Now(ctx))
+			return game.GuessResult{Word: game.Normalize(guess.Word), Outcome: outcome, Game: state.View()}, nil
+		},
+		workflow.UpdateHandlerOptions{
+			Validator: func(ctx workflow.Context, guess shared.GuessInput) error {
+				if err := checkLoaded(state); err != nil {
+					return err
+				}
+				return state.CheckGuess(guess.Word)
+			},
+		},
+	)
+	if err != nil {
+		return game.Result{}, err
+	}
+```
+
+- `workflow.Await` blocks until the condition is true. The SDK re-checks it whenever the Workflow's state may have changed.
+- The handler and validator take a `workflow.Context` and then the Update's arguments.
+- `game.Error` creates the application errors that `CheckGuess` returns, and the API turns them into `400` responses.
+
+Add the helper at the bottom of the file:
+
+```go
+func checkLoaded(state *game.State) error {
+	if state == nil {
+		return game.Error("loading", "the game is still loading")
+	}
+	return nil
+}
+```
+
+### 3. The main loop
+
+Replace the Signal loop with:
+
+```go
+	if err := workflow.Await(ctx, state.Over); err != nil {
+		return game.Result{}, err
+	}
+	// Let any Update that is still running reply before the Workflow completes.
+	if err := workflow.Await(ctx, func() bool { return workflow.AllHandlersFinished(ctx) }); err != nil {
+		return game.Result{}, err
+	}
+	return state.Result(), nil
+```
+
+The handlers now change `state`. The main loop only waits.
+
+### 4. Start with an Update
+
+In `app/api/api.go`, replace `StartGame`:
+
+```go
+func (a *API) StartGame(ctx context.Context, req httpapi.StartGameRequest) (httpapi.StartGameResponse, error) {
+	startOp := a.Temporal.NewWithStartWorkflowOperation(client.StartWorkflowOptions{
+		ID:                       shared.GuestGameID(req.RequestID),
+		TaskQueue:                shared.TaskQueue,
+		WorkflowIDConflictPolicy: enumspb.WORKFLOW_ID_CONFLICT_POLICY_USE_EXISTING,
+	}, workflows.GameWorkflow, shared.GameInput{PuzzleID: req.PuzzleID})
+
+	handle, err := a.Temporal.UpdateWithStartWorkflow(ctx, client.UpdateWithStartWorkflowOptions{
+		StartWorkflowOperation: startOp,
+		UpdateOptions: client.UpdateWorkflowOptions{
+			UpdateName:   shared.UpdateReady,
+			WaitForStage: client.WorkflowUpdateStageCompleted,
+		},
+	})
+	if err != nil {
+		return httpapi.StartGameResponse{}, err
+	}
+
+	var view game.View
+	if err := handle.Get(ctx, &view); err != nil {
+		return httpapi.StartGameResponse{}, err
+	}
+	return httpapi.StartGameResponse{GameID: handle.WorkflowID(), Game: &view}, nil
+}
+```
+
+Import `enumspb "go.temporal.io/api/enums/v1"`.
+
+- Update-with-Start requires a conflict policy. *Use existing* means "if it's already running, send the Update to it".
+- `WaitForStage: Completed` waits for the handler's result. `Accepted` would return once the validator passes.
+
+### 5. Send guesses as Updates
+
+Replace `SubmitGuess`:
+
+```go
+func (a *API) SubmitGuess(ctx context.Context, req httpapi.GuessRequest) (*game.GuessResult, error) {
+	handle, err := a.Temporal.UpdateWorkflow(ctx, client.UpdateWorkflowOptions{
+		WorkflowID:   req.GameID,
+		UpdateID:     req.RequestID,
+		UpdateName:   shared.UpdateGuess,
+		Args:         []any{shared.GuessInput{Word: req.Word}},
+		WaitForStage: client.WorkflowUpdateStageCompleted,
+	})
+	if err != nil {
+		return nil, err
+	}
+	var result game.GuessResult
+	if err := handle.Get(ctx, &result); err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+```
+
+A validator rejection comes back as an error from `handle.Get` or `UpdateWorkflow`, already in a form the HTTP layer maps to `400`.
+
+### 6. Run it
+
+```sh
+make clean-workflows
+```
+
+Restart the Worker and the server. Compare with `solutions/04`.
+
+
+
+## Check it
+
+Run `make clean-workflows`, then restart the Worker and the server.
+
+- [ ] Click a puzzle. The board appears right away, with no loading state.
+- [ ] In the Temporal UI, the history starts with `WorkflowExecutionStarted`, then the `ready` Update's accepted and completed events, with the `LoadPuzzle` Activity between them.
+
+  *[Image: The ready Update with LoadPuzzle between its events]*
+
+- [ ] Guess a word. The app tells you what happened: found, not in puzzle, or already found.
+
+  *[Image: A found word]*
+
+- [ ] Guess `zz`. You see **words need at least 3 letters** right away, and no new events appear in the history.
+
+  *[Image: A rejected guess]*
+
+- [ ] Send the same guess twice with the same key. Copy the game ID from the Temporal UI:
+
+  ```sh
+  curl -s -XPOST localhost:8080/api/games/GAME_ID/guesses \
+    -H 'Idempotency-Key: try-1' -d '{"word":"WORD"}'
+  ```
+
+  Run it twice. Both replies are identical, the `guesses` count went up only once, and the history has only one Update for it.
+- [ ] Find the last word. The final guess returns `found` with status **won**, and then the Workflow completes.
+
+---
+
+# 05 · Durable Timers
+
+> Each game has a clock. When it runs out, the game ends. Players can add 30 seconds, twice.
+
+- Course: [Wordflow: Learn Temporal by Building a Word Game](https://syntaxsugar.io/course/wordflow/index.md)
+- Section: Lessons
+- Author: Michael Jones
+- Updated: 2026-10-05
+- URL: https://syntaxsugar.io/course/wordflow/05-timers/
+
+**Goal:** each game has a clock. When it runs out, the game ends. Players can add 30 seconds, twice.
+
+## Concepts
+
+**Durable Timer.** A Workflow can sleep or start a Timer for any length of time. The Temporal Service keeps the Timer, not the Worker, so it fires on time even if no Worker is running. It's recorded as `TimerStarted`, then `TimerFired` or `TimerCanceled`.
+
+**Waiting for "whichever comes first".** Workflows often wait for a Timer *or* a change in state. Here the clock waits for the deadline, the game ending, or the deadline moving.
+
+**Cancelling a Timer.** A Timer you no longer need should be cancelled. Otherwise it still fires later and wakes the Workflow for nothing.
+
+**Workflow time.** The SDK's clock returns the time of the current Workflow Task. It doesn't move while your code runs, and it's the same when the code is re-run.
+
+## Patterns
+
+- [Updatable Timer](https://docs.temporal.io/design-patterns/updatable-timer): when the deadline changes, cancel the Timer and start a new one.
+
+## What you'll build
+
+- After loading the puzzle, set the deadline to *now + the puzzle's time limit*.
+- A `runClock` loop: start a Timer for the time remaining, then wait until it fires, the game ends, or the deadline changes. Cancel the Timer, and if it fired, expire the game.
+- An `extendTime` Update, with a validator, that moves the deadline 30 seconds later.
+- `ExtendTime` in the API sends that Update.
+
+## Build it
+
+**Go:**
+
+### 1. Name
+
+In `app/shared/shared.go`, add `UpdateExtendTime = "extendTime"` to the Game message names.
+
+### 2. The extendTime Update
+
+In `app/workflows/game.go`, register it next to the other handlers:
+
+```go
+	err = workflow.SetUpdateHandlerWithOptions(ctx, shared.UpdateExtendTime,
+		func(ctx workflow.Context) (game.View, error) {
+			if err := state.Extend(workflow.Now(ctx)); err != nil {
+				return game.View{}, err
+			}
+			return state.View(), nil
+		},
+		workflow.UpdateHandlerOptions{
+			Validator: func(ctx workflow.Context) error {
+				if err := checkLoaded(state); err != nil {
+					return err
+				}
+				return state.CheckExtend()
+			},
+		},
+	)
+	if err != nil {
+		return game.Result{}, err
+	}
+```
+
+`state.Extend` re-checks the deadline using the current time. The validator can pass just before the deadline, and the handler can run just after it.
+
+### 3. Set the deadline and run the clock
+
+Replace the lines after `loadPuzzle`, up to the `AllHandlersFinished` wait:
+
+```go
+	now := workflow.Now(ctx)
+	state = game.NewState(gameID, "", puzzle, now)
+	state.SetDeadline(now.Add(puzzle.TimeLimit()))
+
+	if err := runClock(ctx, state); err != nil {
+		return game.Result{}, err
+	}
+```
+
+Add `runClock`:
+
+```go
+// runClock waits until the game is over or its deadline passes. Each time the
+// deadline moves, it cancels the timer and starts a new one.
+func runClock(ctx workflow.Context, state *game.State) error {
+	for !state.Over() {
+		deadline := state.Deadline
+		remaining := deadline.Sub(workflow.Now(ctx))
+		if remaining <= 0 {
+			state.Expire(workflow.Now(ctx))
+			continue
+		}
+
+		timerCtx, cancelTimer := workflow.WithCancel(ctx)
+		timer := workflow.NewTimerWithOptions(timerCtx, remaining, workflow.TimerOptions{Summary: "game deadline"})
+		err := workflow.Await(ctx, func() bool {
+			return timer.IsReady() || state.Over() || !state.Deadline.Equal(deadline)
+		})
+		cancelTimer()
+		if err != nil {
+			return err
+		}
+		if timer.IsReady() {
+			state.Expire(workflow.Now(ctx))
+		}
+	}
+	return nil
+}
+```
+
+- `NewTimer` returns a Future that becomes ready when the Timer fires. `Summary` labels it in the Temporal UI.
+- Cancelling `timerCtx` cancels the Timer. Calling `cancelTimer` after the Timer fired does nothing.
+- `workflow.AwaitWithTimeout` looks like a shortcut here, but in this SDK version it doesn't cancel its Timer when the condition wins. Stale Timers would keep firing.
+- The loop handles all three exits: the game ended (loop condition), the deadline moved (go round with the new deadline), or the Timer fired (expire).
+
+### 4. The API
+
+Implement `ExtendTime` in `app/api/api.go`:
+
+```go
+func (a *API) ExtendTime(ctx context.Context, req httpapi.GameRequest) (game.View, error) {
+	handle, err := a.Temporal.UpdateWorkflow(ctx, client.UpdateWorkflowOptions{
+		WorkflowID:   req.GameID,
+		UpdateID:     req.RequestID,
+		UpdateName:   shared.UpdateExtendTime,
+		WaitForStage: client.WorkflowUpdateStageCompleted,
+	})
+	if err != nil {
+		return game.View{}, err
+	}
+	var view game.View
+	err = handle.Get(ctx, &view)
+	return view, err
+}
+```
+
+### 5. Run it
+
+```sh
+make clean-workflows
+```
+
+Restart the Worker and the server. Compare with `solutions/05`.
+
+
+
+## Check it
+
+Run `make clean-workflows`, then restart the Worker and the server.
+
+- [ ] The game shows a countdown. The history has a `TimerStarted` event labelled **game deadline**.
+- [ ] Click **+30s**. The countdown jumps forward 30 seconds. The history shows `TimerCanceled`, then a new `TimerStarted`.
+
+  *[Image: The extended countdown]*
+
+  *[Image: TimerCanceled, then a new TimerStarted]*
+
+  The **Timeline** tab shows the same thing: the first **game deadline** Timer is cancelled by the `extendTime` Update, and a new one starts.
+
+  *[Image: The Timers on the Timeline tab]*
+
+- [ ] Click **+30s** a third time. You get **no time extensions left**, and nothing is added to the history.
+- [ ] Let the clock run out. The status becomes **timed_out**, `TimerFired` appears, and the Workflow completes.
+- [ ] Start a game, then stop the Worker. Wait until the deadline has passed, then start the Worker. The game is timed out right away, and `TimerFired` shows the deadline time, not the time the Worker came back.
+
+---
+
+# 06 · Entity Workflows
+
+> Players can join. Each player is a Workflow that holds their points and stats.
+
+- Course: [Wordflow: Learn Temporal by Building a Word Game](https://syntaxsugar.io/course/wordflow/index.md)
+- Section: Lessons
+- Author: Michael Jones
+- Updated: 2026-10-05
+- URL: https://syntaxsugar.io/course/wordflow/06-entity-workflows/
+
+**Goal:** players can join. Each player is a Workflow that holds their points and stats.
+
+## Concepts
+
+**Entity Workflow.** A Workflow that represents one thing, here a player, for as long as it exists. It keeps the entity's state in memory and changes it through messages. The Workflow ID is the entity's key: `player-alice`. There's no database: the Event History is the record.
+
+**Only one at a time.** Temporal allows one running Workflow per ID. Two requests to create `player-alice` can't produce two players.
+
+**ID conflict policy.** What happens when you start a Workflow whose ID is already running. The default *fail* returns an "already started" error. *Use existing* returns the running Workflow instead.
+
+**ID reuse policy.** What happens when you start a Workflow whose ID belongs to a *closed* Workflow. The default allows it, which creates a new run with a fresh history.
+
+**Join is idempotent.** Update-with-Start with *use existing*: the first join creates the player, and every later join just returns the player's view. The API doesn't need to check whether the player exists first.
+
+## Patterns
+
+- [Entity Workflow](https://docs.temporal.io/design-patterns/entity-workflow)
+
+## What you'll build
+
+- `PlayerWorkflow`: creates the player, registers a `player` Query and a `join` Update that returns the player's view, and then waits forever.
+- `JoinPlayer`: Update-with-Start on `player-<name>`, with Update `join`.
+- `GetPlayer`: the `player` Query.
+
+Games are still guest games. Lesson 7 connects them to players.
+
+## Build it
+
+**Go:**
+
+### 1. Names
+
+In `app/shared/shared.go`, add:
+
+```go
+// Message names for PlayerWorkflow.
+const (
+	QueryPlayer = "player"
+	UpdateJoin  = "join"
+)
+
+// PlayerWorkflowID is the one Workflow ID for a player.
+func PlayerWorkflowID(name string) string {
+	return "player-" + name
+}
+
+type PlayerInput struct {
+	Name string `json:"name"`
+}
+```
+
+### 2. The Player Workflow
+
+Create `app/workflows/player.go`:
+
+```go
+package workflows
+
+import (
+	"go.temporal.io/sdk/workflow"
+
+	"wordflow/app/shared"
+	"wordflow/internal/game"
+)
+
+// PlayerWorkflow is one player for as long as they play.
+func PlayerWorkflow(ctx workflow.Context, input shared.PlayerInput) error {
+	player := game.NewPlayer(input.Name, workflow.Now(ctx))
+
+	err := workflow.SetQueryHandler(ctx, shared.QueryPlayer, func() (game.PlayerView, error) {
+		return player.View(), nil
+	})
+	if err != nil {
+		return err
+	}
+
+	err = workflow.SetUpdateHandler(ctx, shared.UpdateJoin, func(ctx workflow.Context) (game.PlayerView, error) {
+		return player.View(), nil
+	})
+	if err != nil {
+		return err
+	}
+
+	// The Workflow stays open, holding the player's state, until something
+	// ends it. Lesson 10 adds Continue-As-New to keep its history small.
+	return workflow.Await(ctx, func() bool { return false })
+}
+```
+
+`join` doesn't change anything. Its job is to give Update-with-Start something to send, so the caller gets the player's view back.
+
+Register it in `app/cmd/worker/main.go`:
+
+```go
+	w.RegisterWorkflow(workflows.PlayerWorkflow)
+```
+
+### 3. The API
+
+The HTTP layer has already checked and normalized the name. In `app/api/api.go`:
+
+```go
+func (a *API) JoinPlayer(ctx context.Context, name string) (game.PlayerView, error) {
+	startOp := a.Temporal.NewWithStartWorkflowOperation(client.StartWorkflowOptions{
+		ID:                       shared.PlayerWorkflowID(name),
+		TaskQueue:                shared.TaskQueue,
+		WorkflowIDConflictPolicy: enumspb.WORKFLOW_ID_CONFLICT_POLICY_USE_EXISTING,
+	}, workflows.PlayerWorkflow, shared.PlayerInput{Name: name})
+
+	handle, err := a.Temporal.UpdateWithStartWorkflow(ctx, client.UpdateWithStartWorkflowOptions{
+		StartWorkflowOperation: startOp,
+		UpdateOptions: client.UpdateWorkflowOptions{
+			UpdateName:   shared.UpdateJoin,
+			WaitForStage: client.WorkflowUpdateStageCompleted,
+		},
+	})
+	if err != nil {
+		return game.PlayerView{}, err
+	}
+	var view game.PlayerView
+	err = handle.Get(ctx, &view)
+	return view, err
+}
+
+func (a *API) GetPlayer(ctx context.Context, name string) (game.PlayerView, error) {
+	response, err := a.Temporal.QueryWorkflow(ctx, shared.PlayerWorkflowID(name), "", shared.QueryPlayer)
+	if err != nil {
+		return game.PlayerView{}, err
+	}
+	var view game.PlayerView
+	err = response.Get(&view)
+	return view, err
+}
+```
+
+Querying a Workflow ID that doesn't exist returns a `*serviceerror.NotFound`, which the HTTP layer maps to `404`.
+
+### 4. Run it
+
+Restart the Worker and the server. Compare with `solutions/06`.
+
+
+
+## Check it
+
+- [ ] Join as `alice`. The player panel shows 20 points. In the Temporal UI, `player-alice` is **Running**.
+
+  *[Image: The player panel]*
+
+- [ ] Click **Switch player** and join as `alice` again. The history has a second `join` Update, and there's still one Workflow. Both Updates return the same `joinedAt`.
+
+  *[Image: Two join Updates on one player Workflow]*
+
+- [ ] Reload the page. You're still `alice`: the app queries the player.
+- [ ] `curl -i localhost:8080/api/players/nobody` returns `404`.
+- [ ] Play a game. Alice's points don't change yet.
+
+---
+
+# 07 · Child Workflows
+
+> A player's games belong to them. Finishing a game adds its score to the player's points and stats.
+
+- Course: [Wordflow: Learn Temporal by Building a Word Game](https://syntaxsugar.io/course/wordflow/index.md)
+- Section: Lessons
+- Author: Michael Jones
+- Updated: 2026-10-05
+- URL: https://syntaxsugar.io/course/wordflow/07-child-workflows/
+
+**Goal:** a player's games belong to them. Finishing a game adds its score to the player's points and stats.
+
+## Concepts
+
+**Child Workflow.** A Workflow started by another Workflow. It has its own ID, Event History, and result. The parent can wait for it to start, wait for it to finish, or both. Children keep each history small and focused. The player's history records "game 3 started" and "game 3 finished with this result", not every guess.
+
+**Parent close policy.** What happens to a running child when its parent closes. The default *terminate* ends the child too. Other options are *abandon* (the child keeps running) and *request cancel*.
+
+**Handlers run concurrently.** When a handler blocks, other handlers and the main loop can run. Change state *before* blocking, so the next message sees it. `startGame` marks the player as busy before it waits for the child to start. Without that, a second `startGame` could pass the validator while the first one waits.
+
+**Deterministic IDs.** The game ID comes from the player's state (`game-alice-3`), so it's the same every time the code re-runs.
+
+## Patterns
+
+- [Child Workflows](https://docs.temporal.io/design-patterns/child-workflows)
+
+## What you'll build
+
+- `GameWorkflow` takes an optional player ID.
+- A `startGame` Update on `PlayerWorkflow`. The validator allows one game at a time. The handler marks the player as busy, starts a child `GameWorkflow`, waits for it to *start*, and returns the game ID.
+- The Player main loop waits for an active game, waits for its result, and records it.
+- `StartGame` in the API: for a player, send `startGame` to the player, then `ready` to the new game. Guests use the Lesson 4 path.
+
+## Build it
+
+**Go:**
+
+### 1. Names and types
+
+In `app/shared/shared.go`, add `UpdateStartGame = "startGame"` to the Player message names, and:
+
+```go
+type StartGameInput struct {
+	PuzzleID string `json:"puzzleId"`
+}
+
+type StartGameResult struct {
+	GameID string `json:"gameId"`
+}
+```
+
+Add a player ID to `GameInput`:
+
+```go
+type GameInput struct {
+	PuzzleID string `json:"puzzleId"`
+	PlayerID string `json:"playerId,omitempty"`
+}
+```
+
+### 2. Games know their player
+
+In `GameWorkflow`, pass the player ID to `NewState`:
+
+```go
+	state = game.NewState(gameID, input.PlayerID, puzzle, now)
+```
+
+### 3. Start a child from an Update
+
+In `app/workflows/player.go`, declare the active game after `player`:
+
+```go
+	var activeGame workflow.ChildWorkflowFuture
+```
+
+Then register `startGame` after the `join` handler:
+
+```go
+	err = workflow.SetUpdateHandlerWithOptions(ctx, shared.UpdateStartGame,
+		func(ctx workflow.Context, input shared.StartGameInput) (shared.StartGameResult, error) {
+			// Change state before blocking, so a second startGame sees this game.
+			gameID := player.NextGameID()
+			player.StartGame(gameID)
+
+			childCtx := workflow.WithChildOptions(ctx, workflow.ChildWorkflowOptions{WorkflowID: gameID})
+			future := workflow.ExecuteChildWorkflow(childCtx, GameWorkflow, shared.GameInput{
+				PuzzleID: input.PuzzleID,
+				PlayerID: player.Name,
+			})
+			// Wait until the child has started, not until it finishes.
+			if err := future.GetChildWorkflowExecution().Get(ctx, nil); err != nil {
+				player.ClearGame(gameID)
+				return shared.StartGameResult{}, err
+			}
+			activeGame = future
+			return shared.StartGameResult{GameID: gameID}, nil
+		},
+		workflow.UpdateHandlerOptions{
+			Validator: func(ctx workflow.Context, input shared.StartGameInput) error {
+				return player.CheckStartGame()
+			},
+		},
+	)
+	if err != nil {
+		return err
+	}
+```
+
+- Children run on the parent's Task Queue unless you set one.
+- `ExecuteChildWorkflow` returns a `ChildWorkflowFuture`. `GetChildWorkflowExecution()` resolves when the child starts. `Get` resolves when it finishes.
+- If the child can't start, for example because its ID is already in use, the handler undoes `StartGame` and returns the error.
+
+### 4. Wait for each game
+
+Replace the `return workflow.Await(ctx, func() bool { return false })` line with:
+
+```go
+	for {
+		if err := workflow.Await(ctx, func() bool { return activeGame != nil }); err != nil {
+			return err
+		}
+		var result game.Result
+		if err := activeGame.Get(ctx, &result); err != nil {
+			workflow.GetLogger(ctx).Error("game failed", "gameID", player.ActiveGameID, "error", err)
+			player.ClearGame(player.ActiveGameID)
+		} else {
+			player.FinishGame(result)
+		}
+		activeGame = nil
+	}
+```
+
+`workflow.GetLogger` doesn't log again when code re-runs.
+
+### 5. The API
+
+In `app/api/api.go`, rename the current `StartGame` to `startGuestGame`, then add a new `StartGame` above it:
+
+```go
+func (a *API) StartGame(ctx context.Context, req httpapi.StartGameRequest) (httpapi.StartGameResponse, error) {
+	if req.Player == "" {
+		return a.startGuestGame(ctx, req)
+	}
+
+	handle, err := a.Temporal.UpdateWorkflow(ctx, client.UpdateWorkflowOptions{
+		WorkflowID:   shared.PlayerWorkflowID(req.Player),
+		UpdateID:     req.RequestID,
+		UpdateName:   shared.UpdateStartGame,
+		Args:         []any{shared.StartGameInput{PuzzleID: req.PuzzleID}},
+		WaitForStage: client.WorkflowUpdateStageCompleted,
+	})
+	if err != nil {
+		return httpapi.StartGameResponse{}, err
+	}
+	var started shared.StartGameResult
+	if err := handle.Get(ctx, &started); err != nil {
+		return httpapi.StartGameResponse{}, err
+	}
+
+	ready, err := a.Temporal.UpdateWorkflow(ctx, client.UpdateWorkflowOptions{
+		WorkflowID:   started.GameID,
+		UpdateName:   shared.UpdateReady,
+		WaitForStage: client.WorkflowUpdateStageCompleted,
+	})
+	if err != nil {
+		return httpapi.StartGameResponse{}, err
+	}
+	var view game.View
+	if err := ready.Get(ctx, &view); err != nil {
+		return httpapi.StartGameResponse{}, err
+	}
+	return httpapi.StartGameResponse{GameID: started.GameID, Game: &view}, nil
+}
+
+func (a *API) startGuestGame(ctx context.Context, req httpapi.StartGameRequest) (httpapi.StartGameResponse, error) {
+	// ... the Lesson 4 code, unchanged
+}
+```
+
+The request ID is the `startGame` Update ID. A retried request returns the same game instead of failing with "finish your current game first".
+
+### 6. Run it
+
+```sh
+make clean-workflows
+```
+
+Restart the Worker and the server. Compare with `solutions/07`.
+
+
+
+## Check it
+
+Run `make clean-workflows`, then restart the Worker and the server. Join again, because the old player Workflows are gone.
+
+- [ ] Join as `alice` and start a game. In the Temporal UI, `player-alice` shows `StartChildWorkflowExecutionInitiated` and `ChildWorkflowExecutionStarted`. The game's ID is `game-alice-1`, and its page links to its parent.
+
+  *[Image: The player started a Child Workflow]*
+
+  The **Relationships** tab shows the parent and its child.
+
+  *[Image: The Relationships tab]*
+
+- [ ] Click another puzzle while playing. You get **finish your current game first**, and nothing is added to her history.
+
+  *[Image: One game at a time]*
+
+- [ ] Finish the game, or let it time out. The player panel updates: games played, and points increased by the score. `player-alice` shows `ChildWorkflowExecutionCompleted` with the result.
+
+  *[Image: The player panel after a win]*
+
+- [ ] Start another game, then terminate `player-alice` from the Temporal UI. Her game is terminated too: that's the parent close policy.
+- [ ] Click **Switch player** and start a game without joining. Guest games still work.
+
+---
+
+# 08 · Workflow to Workflow
+
+> Hints. The first two are free. After that, each costs a player 10 points, paid by the Player Workflow.
+
+- Course: [Wordflow: Learn Temporal by Building a Word Game](https://syntaxsugar.io/course/wordflow/index.md)
+- Section: Lessons
+- Author: Michael Jones
+- Updated: 2026-10-05
+- URL: https://syntaxsugar.io/course/wordflow/08-workflow-to-workflow/
+
+**Goal:** hints. The first two are free. After that, each costs a player 10 points, paid by the Player Workflow.
+
+## Concepts
+
+**Workflows can't call the Client.** A Client call is a network call, so it isn't deterministic. To send a message to another Workflow, a Workflow runs an Activity, and the Activity uses a Client. The Worker gives the Activity its Client when it starts. That's dependency injection, the same as the puzzle store in Lesson 2.
+
+**Errors that mean "no".** When the Player rejects a payment (not enough points), the Activity gets an application error. Retrying won't change the answer, so the Activity makes it non-retryable.
+
+**Idempotency across Workflows.** An Activity can run more than once. For example, a Worker crash after the Update succeeded but before the result was recorded causes a retry. If each attempt sent a new Update, the player could pay twice. Instead, the Update ID is derived from the hint request's own Update ID. Every retry of the same hint sends the same Update ID, and the Player de-duplicates it.
+
+**Handlers interleave.** While the `hint` handler waits for its Activity, other handlers run. A guess could finish the game in the middle of a hint. A Workflow **mutex** makes the handlers that touch the game take turns. After getting the lock, re-check the rules: the validator ran before the wait.
+
+## Patterns
+
+- [Activity Dependency Injection](https://docs.temporal.io/design-patterns/activity-dependency-injection)
+- [Non-Retryable Errors](https://docs.temporal.io/design-patterns/non-retryable-errors)
+
+## What you'll build
+
+- A `spendPoints` Update on `PlayerWorkflow`. Its validator checks the game is the player's active game and that the player has enough points.
+- A `SpendPoints` Activity that sends that Update with a Client, using the Update ID it's given.
+- A `hint` Update on `GameWorkflow`: lock, re-check, pay if it's not free, reveal a letter.
+- The `guess` handler takes the same lock.
+- `UseHint` in the API sends the `hint` Update.
+
+## Build it
+
+**Go:**
+
+### 1. Names and types
+
+In `app/shared/shared.go`, add `UpdateHint = "hint"` to the Game names and `UpdateSpendPoints = "spendPoints"` to the Player names. Then add:
+
+```go
+type SpendPointsInput struct {
+	GameID string `json:"gameId"`
+	Amount int    `json:"amount"`
+}
+
+type SpendPointsResult struct {
+	Remaining int `json:"remaining"`
+}
+
+type SpendPointsActivityInput struct {
+	PlayerID string `json:"playerId"`
+	GameID   string `json:"gameId"`
+	Amount   int    `json:"amount"`
+	UpdateID string `json:"updateId"`
+}
+```
+
+### 2. The Player accepts payments
+
+In `app/workflows/player.go`, after the `startGame` handler:
+
+```go
+	err = workflow.SetUpdateHandlerWithOptions(ctx, shared.UpdateSpendPoints,
+		func(ctx workflow.Context, input shared.SpendPointsInput) (shared.SpendPointsResult, error) {
+			player.Spend(input.Amount)
+			return shared.SpendPointsResult{Remaining: player.Points}, nil
+		},
+		workflow.UpdateHandlerOptions{
+			Validator: func(ctx workflow.Context, input shared.SpendPointsInput) error {
+				return player.CheckSpend(input.GameID, input.Amount)
+			},
+		},
+	)
+	if err != nil {
+		return err
+	}
+```
+
+### 3. An Activity with a Client
+
+Create `app/activities/players.go`:
+
+```go
+package activities
+
+import (
+	"context"
+	"errors"
+
+	"go.temporal.io/sdk/client"
+	"go.temporal.io/sdk/temporal"
+
+	"wordflow/app/shared"
+)
+
+// PlayerActivities send messages to Player Workflows using a Temporal Client.
+type PlayerActivities struct {
+	Client client.Client
+}
+
+// SpendPoints asks a Player Workflow to spend points.
+func (a *PlayerActivities) SpendPoints(ctx context.Context, input shared.SpendPointsActivityInput) (shared.SpendPointsResult, error) {
+	handle, err := a.Client.UpdateWorkflow(ctx, client.UpdateWorkflowOptions{
+		WorkflowID:   shared.PlayerWorkflowID(input.PlayerID),
+		UpdateID:     input.UpdateID,
+		UpdateName:   shared.UpdateSpendPoints,
+		Args:         []any{shared.SpendPointsInput{GameID: input.GameID, Amount: input.Amount}},
+		WaitForStage: client.WorkflowUpdateStageCompleted,
+	})
+	var result shared.SpendPointsResult
+	if err == nil {
+		err = handle.Get(ctx, &result)
+	}
+
+	var appErr *temporal.ApplicationError
+	if errors.As(err, &appErr) {
+		// The Player said no. Asking again will get the same answer.
+		return result, temporal.NewNonRetryableApplicationError(appErr.Message(), appErr.Type(), err)
+	}
+	return result, err
+}
+```
+
+The Activity uses the same API as your HTTP code. Network errors stay retryable.
+
+Register it in `app/cmd/worker/main.go`, passing the Worker's Client:
+
+```go
+	w.RegisterActivity(&activities.PlayerActivities{Client: c})
+```
+
+### 4. The hint Update
+
+In `app/workflows/game.go`, create a mutex after `var state *game.State`:
+
+```go
+	// Handlers that block (on an Activity) take this lock so they run one at a time.
+	lock := workflow.NewMutex(ctx)
+```
+
+At the top of the `guess` handler, take it:
+
+```go
+			if err := lock.Lock(ctx); err != nil {
+				return game.GuessResult{}, err
+			}
+			defer lock.Unlock()
+```
+
+Register `hint` with the other handlers:
+
+```go
+	err = workflow.SetUpdateHandlerWithOptions(ctx, shared.UpdateHint,
+		func(ctx workflow.Context) (game.HintResult, error) {
+			if err := lock.Lock(ctx); err != nil {
+				return game.HintResult{}, err
+			}
+			defer lock.Unlock()
+
+			// The game may have changed while this handler waited for the lock.
+			if err := state.CheckHint(); err != nil {
+				return game.HintResult{}, err
+			}
+			cost := state.NextHintCost()
+			if cost > 0 {
+				if err := spendPoints(ctx, state, cost); err != nil {
+					return game.HintResult{}, err
+				}
+			}
+			if err := state.RevealLetter(workflow.Now(ctx)); err != nil {
+				return game.HintResult{}, err
+			}
+			return game.HintResult{PointsSpent: cost, Game: state.View()}, nil
+		},
+		workflow.UpdateHandlerOptions{
+			Validator: func(ctx workflow.Context) error {
+				if err := checkLoaded(state); err != nil {
+					return err
+				}
+				return state.CheckHint()
+			},
+		},
+	)
+	if err != nil {
+		return game.Result{}, err
+	}
+```
+
+Add the helper:
+
+```go
+// spendPoints asks the player's Workflow to pay for a hint.
+func spendPoints(ctx workflow.Context, state *game.State, amount int) error {
+	ctx = workflow.WithActivityOptions(ctx, workflow.ActivityOptions{
+		StartToCloseTimeout: 10 * time.Second,
+	})
+	input := shared.SpendPointsActivityInput{
+		PlayerID: state.PlayerID,
+		GameID:   state.GameID,
+		Amount:   amount,
+		// Same hint request, same Update ID: a retried Activity cannot charge twice.
+		UpdateID: state.GameID + "-hint-" + workflow.GetCurrentUpdateInfo(ctx).ID,
+	}
+	var a *activities.PlayerActivities
+	return workflow.ExecuteActivity(ctx, a.SpendPoints, input).Get(ctx, nil)
+}
+```
+
+- `workflow.Mutex` is safe in Workflow code. `sync.Mutex` is not.
+- `GetCurrentUpdateInfo(ctx).ID` is the ID of the `hint` Update being handled: the API's request ID.
+- The guest check is in `CheckHint`, so guests never reach `spendPoints`.
+
+### 5. The API
+
+```go
+func (a *API) UseHint(ctx context.Context, req httpapi.GameRequest) (game.HintResult, error) {
+	handle, err := a.Temporal.UpdateWorkflow(ctx, client.UpdateWorkflowOptions{
+		WorkflowID:   req.GameID,
+		UpdateID:     req.RequestID,
+		UpdateName:   shared.UpdateHint,
+		WaitForStage: client.WorkflowUpdateStageCompleted,
+	})
+	if err != nil {
+		return game.HintResult{}, err
+	}
+	var result game.HintResult
+	err = handle.Get(ctx, &result)
+	return result, err
+}
+```
+
+### 6. Run it
+
+```sh
+make clean-workflows
+```
+
+Restart the Worker and the server. Compare with `solutions/08`.
+
+
+
+## Check it
+
+Run `make clean-workflows`, restart the Worker and the server, and join again.
+
+- [ ] Click **Hint** twice. Each reveals a letter and costs nothing.
+- [ ] Click **Hint** again. It reveals a letter and the player panel drops by 10 points. The game's history has a `SpendPoints` Activity. `player-alice` has a `spendPoints` Update with an ID ending in `-hint-<hint Update ID>`.
+
+  *[Image: A paid hint]*
+
+  *[Image: The SpendPoints Activity in the game's history]*
+
+  *[Image: The spendPoints Update in the player's history]*
+
+- [ ] Keep buying hints until you have fewer than 10 points. You get **not enough points**. The `SpendPoints` Activity failed after one attempt, and no letter was revealed.
+- [ ] As a guest, the third hint says **guests only get 2 free hints**, and no Activity runs.
+
+## Think about it
+
+The lock stops a guess from ending the game mid-hint, but the clock doesn't take the lock. If the game times out while `SpendPoints` runs, the player has paid and the reveal fails. Two Workflows can't change state in one step. The [Saga exercise](/course/wordflow/saga/) shows how to undo a step when a later one fails.
+
+---
+
+# 09 · Signal-with-Start
+
+> A global leaderboard that every player's finished games feed into.
+
+- Course: [Wordflow: Learn Temporal by Building a Word Game](https://syntaxsugar.io/course/wordflow/index.md)
+- Section: Lessons
+- Author: Michael Jones
+- Updated: 2026-10-05
+- URL: https://syntaxsugar.io/course/wordflow/09-signal-with-start/
+
+**Goal:** a global leaderboard that every player's finished games feed into.
+
+## Concepts
+
+**Singleton Workflow.** One Workflow with a fixed ID, `leaderboard`, for the whole app. It's an entity, like a player, with one instance.
+
+**Signal-with-Start.** Sends a Signal to a Workflow and, if it isn't running, starts it first, in one atomic call. Nobody has to create the leaderboard ahead of time. The first finished game creates it.
+
+**Why a Signal here.** The player doesn't need a reply, and the leaderboard should never slow a player down. Signals are recorded and processed in order, even if the leaderboard's Worker is busy.
+
+**Safe to repeat.** Each entry carries a version (the player's games played). The leaderboard ignores anything older than what it has. A Signal that arrives twice or out of order can't make the board wrong.
+
+**Activities can't import Workflows.** Workflows already import Activities, and Go doesn't allow import cycles. So the Activity starts the leaderboard by its type name, `LeaderboardWorkflow`.
+
+## Patterns
+
+- [Signal-with-Start](https://docs.temporal.io/design-patterns/signal-with-start)
+- [Entity Workflow](https://docs.temporal.io/design-patterns/entity-workflow)
+
+## What you'll build
+
+- `LeaderboardWorkflow`: a `leaderboard` Query, and a loop that receives `score` Signals and updates the board.
+- A `PublishScore` Activity that uses Signal-with-Start.
+- The Player runs `PublishScore` after recording each finished game.
+- `GetLeaderboard` in the API queries `leaderboard`. If it doesn't exist yet, it returns an empty board.
+
+## Build it
+
+**Go:**
+
+### 1. Names
+
+In `app/shared/shared.go`:
+
+```go
+// The leaderboard is a single Workflow with a fixed ID.
+const (
+	LeaderboardWorkflowID = "leaderboard"
+	// Activities cannot import the workflows package, so they start it by name.
+	LeaderboardWorkflowType = "LeaderboardWorkflow"
+	QueryLeaderboard        = "leaderboard"
+	SignalScore             = "score"
+)
+
+type LeaderboardInput struct{}
+```
+
+`LeaderboardInput` is empty for now. Lesson 10 adds a field. Using a struct from the start lets you add fields later without changing the Workflow's signature.
+
+### 2. The leaderboard
+
+Create `app/workflows/leaderboard.go`:
+
+```go
+package workflows
+
+import (
+	"go.temporal.io/sdk/workflow"
+
+	"wordflow/app/shared"
+	"wordflow/internal/game"
+)
+
+// LeaderboardWorkflow is the single, global leaderboard.
+func LeaderboardWorkflow(ctx workflow.Context, input shared.LeaderboardInput) error {
+	board := &game.Leaderboard{}
+
+	err := workflow.SetQueryHandler(ctx, shared.QueryLeaderboard, func() (game.LeaderboardView, error) {
+		return board.View(), nil
+	})
+	if err != nil {
+		return err
+	}
+
+	scores := workflow.GetSignalChannel(ctx, shared.SignalScore)
+	for {
+		var entry game.LeaderboardEntry
+		scores.Receive(ctx, &entry)
+		board.Upsert(entry)
+	}
+}
+```
+
+Register it in the Worker:
+
+```go
+	w.RegisterWorkflow(workflows.LeaderboardWorkflow)
+```
+
+### 3. Publish with Signal-with-Start
+
+In `app/activities/players.go`, add (and import `"wordflow/internal/game"`):
+
+```go
+// PublishScore sends a player's score to the leaderboard, starting the
+// leaderboard Workflow if it is not running yet.
+func (a *PlayerActivities) PublishScore(ctx context.Context, entry game.LeaderboardEntry) error {
+	options := client.StartWorkflowOptions{
+		ID:        shared.LeaderboardWorkflowID,
+		TaskQueue: shared.TaskQueue,
+	}
+	_, err := a.Client.SignalWithStartWorkflow(ctx, shared.LeaderboardWorkflowID, shared.SignalScore, entry,
+		options, shared.LeaderboardWorkflowType, shared.LeaderboardInput{})
+	return err
+}
+```
+
+The arguments are: Workflow ID, Signal name, Signal argument, start options, Workflow type, and Workflow input. The input is only used if the Workflow has to be started.
+
+### 4. Call it from the Player
+
+In `app/workflows/player.go`, replace the `else` branch in the main loop:
+
+```go
+		} else if player.FinishGame(result) {
+			publishScore(ctx, player)
+		}
+```
+
+`FinishGame` returns false if it has already seen this result. Add the helper, and import `"time"` and `"wordflow/app/activities"`:
+
+```go
+func publishScore(ctx workflow.Context, player *game.Player) {
+	ctx = workflow.WithActivityOptions(ctx, workflow.ActivityOptions{
+		StartToCloseTimeout: 10 * time.Second,
+	})
+	var a *activities.PlayerActivities
+	err := workflow.ExecuteActivity(ctx, a.PublishScore, player.LeaderboardEntry()).Get(ctx, nil)
+	if err != nil {
+		workflow.GetLogger(ctx).Error("publish score failed", "error", err)
+	}
+}
+```
+
+### 5. The API
+
+In `app/api/api.go`, import `"errors"` and `"go.temporal.io/api/serviceerror"`:
+
+```go
+func (a *API) GetLeaderboard(ctx context.Context) (game.LeaderboardView, error) {
+	response, err := a.Temporal.QueryWorkflow(ctx, shared.LeaderboardWorkflowID, "", shared.QueryLeaderboard)
+	var notFound *serviceerror.NotFound
+	if errors.As(err, &notFound) {
+		// Nobody has finished a game yet, so the leaderboard has not started.
+		return game.LeaderboardView{Entries: []game.LeaderboardRank{}}, nil
+	}
+	if err != nil {
+		return game.LeaderboardView{}, err
+	}
+	var view game.LeaderboardView
+	err = response.Get(&view)
+	return view, err
+}
+```
+
+### 6. Run it
+
+Restart the Worker and the server **without** running `make clean-workflows`, and follow the checklist. Compare with `solutions/09`.
+
+
+
+## Check it
+
+**Don't** clean up first this time. Keep Lesson 8's `player-alice`, with at least one finished game, and restart the Worker and the server.
+
+- [ ] Within a few seconds (the app queries the player, which makes the Worker load her history), the Worker logs an error with code `TMPRL1100`, a nondeterminism error. `player-alice` shows a failing Workflow Task in the Temporal UI. Her history says "game finished, then wait". The new code says "game finished, then run `PublishScore`". When the code and the history disagree, Temporal stops the Workflow instead of guessing. Lesson 12 is about this. For now, run `make clean-workflows`.
+
+  *[Image: A failed Workflow Task with a nondeterminism error]*
+
+- [ ] Before any game finishes, the leaderboard is empty and there's no `leaderboard` Workflow.
+- [ ] Join as `alice` and finish a game. The `leaderboard` Workflow appears. Its history starts with `WorkflowExecutionStarted` followed by `WorkflowExecutionSignaled`, from one call. Alice is on the board.
+- [ ] Join as `bob` and finish a game. Both are listed, ranked by points earned. The leaderboard has one more Signal and is still the same Workflow.
+
+  *[Image: The leaderboard]*
+
+  *[Image: Signal-With-Start: started and signaled by one call]*
+
+---
+
+# 10 · Continue-As-New
+
+> Player and leaderboard Workflows can run forever without their histories growing forever.
+
+- Course: [Wordflow: Learn Temporal by Building a Word Game](https://syntaxsugar.io/course/wordflow/index.md)
+- Section: Lessons
+- Author: Michael Jones
+- Updated: 2026-10-05
+- URL: https://syntaxsugar.io/course/wordflow/10-continue-as-new/
+
+**Goal:** player and leaderboard Workflows can run forever without their histories growing forever.
+
+## Concepts
+
+**History limits.** Every event is stored, and a Worker that loads a Workflow replays all of them. Long histories are slow to replay, and Temporal caps them: it warns at 10,240 events and terminates the Workflow at 51,200 events or 50 MB. An entity that lives forever will get there.
+
+**Continue-As-New.** Completes the current run and starts a new run with the same Workflow ID, passing whatever state you choose as its input. The new run starts with an empty history. Clients that use the Workflow ID, which ours all do, reach the new run automatically. Each run has its own **Run ID**.
+
+**When to do it.** The Temporal Service tells the Workflow when its history is getting long ("continue-as-new suggested"). Here we also continue at 100 events so you can watch it happen. A Workflow can't read environment variables or files to get a setting like that, so it's a constant in the code.
+
+**Don't lose work in flight.**
+
+- Continue only when idle. A Player with a running child game waits until the game finishes, because the child belongs to this run.
+- Wait for running Update handlers to finish first. Otherwise their callers get an error.
+- Signals that have arrived but haven't been read are not carried over. The leaderboard reads every buffered Signal before it continues.
+
+## Patterns
+
+- [Continue-As-New](https://docs.temporal.io/design-patterns/continue-as-new)
+
+## What you'll build
+
+- `PlayerInput` and `LeaderboardInput` take an optional state. Each Workflow starts from that state if it's given.
+- A shared `shouldContinueAsNew` check: suggested by the server, or at least 100 events.
+- The Player waits for "a game started, or time to continue". If it's time and no game is running, it waits for handlers to finish, checks again, and continues as new with its state.
+- The leaderboard checks after each Signal, drains buffered Signals, and continues as new with its board.
+
+## Build it
+
+**Go:**
+
+### 1. Carry state in the input
+
+In `app/shared/shared.go`, add `import "wordflow/internal/game"` back, then:
+
+```go
+type LeaderboardInput struct {
+	State *game.Leaderboard `json:"state,omitempty"`
+}
+
+type PlayerInput struct {
+	Name string `json:"name"`
+	// State is set when the Workflow continues as new.
+	State *game.Player `json:"state,omitempty"`
+}
+```
+
+The game types are plain structs with exported, JSON-tagged fields, so they serialize as Workflow input.
+
+### 2. The Player
+
+In `app/workflows/player.go`, add near the top:
+
+```go
+// historyLimit is low so you can watch Continue-As-New happen. Real code can
+// rely on GetContinueAsNewSuggested alone.
+const historyLimit = 100
+```
+
+Start from the input state if there is one:
+
+```go
+	player := input.State
+	if player == nil {
+		player = game.NewPlayer(input.Name, workflow.Now(ctx))
+	}
+```
+
+Replace the start of the main loop, up to `var result game.Result`:
+
+```go
+	for {
+		err := workflow.Await(ctx, func() bool { return activeGame != nil || shouldContinueAsNew(ctx) })
+		if err != nil {
+			return err
+		}
+		if activeGame == nil {
+			// Let running handlers finish. One of them may start a game.
+			if err := workflow.Await(ctx, func() bool { return workflow.AllHandlersFinished(ctx) }); err != nil {
+				return err
+			}
+			if activeGame == nil {
+				return workflow.NewContinueAsNewError(ctx, PlayerWorkflow, shared.PlayerInput{Name: player.Name, State: player})
+			}
+		}
+
+		var result game.Result
+		// ... unchanged
+```
+
+Add the check:
+
+```go
+func shouldContinueAsNew(ctx workflow.Context) bool {
+	info := workflow.GetInfo(ctx)
+	return info.GetContinueAsNewSuggested() || info.GetCurrentHistoryLength() >= historyLimit
+}
+```
+
+- Continue-As-New is an error you return. `NewContinueAsNewError` takes the Workflow function and its new input.
+- `GetCurrentHistoryLength` is the event count, and it's deterministic.
+- After waiting for handlers, check `activeGame` again: a `startGame` might have just finished.
+
+### 3. The leaderboard
+
+In `app/workflows/leaderboard.go`, start from the input state:
+
+```go
+	board := input.State
+	if board == nil {
+		board = &game.Leaderboard{}
+	}
+```
+
+At the end of the loop, after `board.Upsert(entry)`:
+
+```go
+		if shouldContinueAsNew(ctx) {
+			// Apply Signals that already arrived. They do not carry over to the new run.
+			for {
+				var pending game.LeaderboardEntry
+				if !scores.ReceiveAsync(&pending) {
+					break
+				}
+				board.Upsert(pending)
+			}
+			return workflow.NewContinueAsNewError(ctx, LeaderboardWorkflow, shared.LeaderboardInput{State: board})
+		}
+```
+
+`ReceiveAsync` returns false right away when the channel is empty.
+
+### 4. Run it
+
+```sh
+make clean-workflows
+```
+
+Restart the Worker. The API didn't change. Compare with `solutions/10`.
+
+
+
+## Check it
+
+Run `make clean-workflows`, restart the Worker and the server, and join as `alice`.
+
+- [ ] Play about five short games. Using two free hints and then letting the clock run out is quick. Watch `player-alice` in the Temporal UI: when her history passes 100 events, the run ends as **Continued as New**.
+
+  *[Image: Runs of a player Workflow, continued as new]*
+
+- [ ] The Workflow page now shows the new run. Its input contains her full state: points, games played, and so on.
+
+  *[Image: The new run's input]*
+
+- [ ] The player panel shows the same numbers as before, and new games and hints still work. The API didn't change.
+- [ ] To see it sooner, lower the limit to 40 and restart the Worker.
+
+---
+
+# 11 · Retries in depth
+
+> A real word that isn't in the puzzle earns a bonus. Checking it means calling an unreliable dictionary service, and the game must handle every way it fails.
+
+- Course: [Wordflow: Learn Temporal by Building a Word Game](https://syntaxsugar.io/course/wordflow/index.md)
+- Section: Lessons
+- Author: Michael Jones
+- Updated: 2026-10-05
+- URL: https://syntaxsugar.io/course/wordflow/11-retries/
+
+**Goal:** a real word that isn't in the puzzle earns a bonus. Checking it means calling an unreliable dictionary service, and the game must handle every way it fails.
+
+## Concepts
+
+**Retry policy.** Controls how an Activity is retried:
+
+| Field | Meaning | Default |
+|---|---|---|
+| Initial interval | Wait before the first retry | 1 s |
+| Backoff coefficient | Multiplier for each later wait | 2 |
+| Maximum interval | Cap on the wait | 100 × initial |
+| Maximum attempts | Total attempts; 0 means no limit | 0 |
+| Non-retryable error types | Error types that are never retried | none |
+
+**Timeouts.**
+
+| Timeout | Limits |
+|---|---|
+| Start-To-Close | One attempt. |
+| Schedule-To-Close | The whole Activity, including every retry and wait. |
+| Heartbeat | Time between heartbeats from a long-running Activity. Used in the Pick First exercise. |
+
+**Not every response is an error.** A `404` from the dictionary means "not a word". That's a valid answer, not a failure.
+
+**Fail gracefully.** If the dictionary can't answer in time, the guess still counts. It's simply not a bonus. The Workflow catches the Activity's final error and moves on.
+
+## Patterns
+
+- [Fixed Count Retries](https://docs.temporal.io/design-patterns/fixed-count-retries): at most 5 attempts.
+- [Fixed Wall-Time Retries](https://docs.temporal.io/design-patterns/fixed-wall-time-retries): give up after 10 seconds in total, because a player is waiting.
+- [Delayed Retry](https://docs.temporal.io/design-patterns/delayed-retry): when the service says `429 Retry-After: 3`, wait exactly that long.
+- [Non-Retryable Errors](https://docs.temporal.io/design-patterns/non-retryable-errors): a `401` won't fix itself.
+
+## What you'll build
+
+- A `LookupWord` Activity that calls `GET /services/dictionary/words/{word}`:
+  - `200`: true. `404`: false.
+  - `401`: non-retryable error.
+  - `429`: retryable error with the next retry delay set from `Retry-After`.
+  - Anything else: retryable error.
+- The Worker gets the services URL from `SERVICES_URL`, defaulting to `http://localhost:8080/services`.
+- An `isRealWord` helper: Start-To-Close 2 s, Schedule-To-Close 10 s, retries starting at 500 ms, doubling, at most 5 attempts. Any final error means false.
+- In the `guess` handler: if the outcome is "not in puzzle", the word is real, and the game isn't over, mark it as a bonus.
+
+## Build it
+
+**Go:**
+
+### 1. The Activity
+
+Create `app/activities/dictionary.go`:
+
+```go
+package activities
+
+import (
+	"context"
+	"fmt"
+	"net/http"
+	"net/url"
+	"strconv"
+	"time"
+
+	"go.temporal.io/sdk/temporal"
+)
+
+// DictionaryActivities call the dictionary service over HTTP.
+type DictionaryActivities struct {
+	BaseURL string
+	HTTP    *http.Client
+}
+
+// LookupWord reports whether word is a real word.
+func (a *DictionaryActivities) LookupWord(ctx context.Context, word string) (bool, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, a.BaseURL+"/words/"+url.PathEscape(word), nil)
+	if err != nil {
+		return false, err
+	}
+	resp, err := a.HTTP.Do(req)
+	if err != nil {
+		return false, err
+	}
+	defer resp.Body.Close()
+
+	switch resp.StatusCode {
+	case http.StatusOK:
+		return true, nil
+	case http.StatusNotFound:
+		return false, nil
+	case http.StatusUnauthorized:
+		// Retrying will not fix bad credentials.
+		return false, temporal.NewNonRetryableApplicationError("dictionary rejected our credentials", "unauthorized", nil)
+	case http.StatusTooManyRequests:
+		// Wait as long as the service asks before the next attempt.
+		seconds, _ := strconv.Atoi(resp.Header.Get("Retry-After"))
+		return false, temporal.NewApplicationErrorWithOptions("dictionary rate limit", "rate_limited", temporal.ApplicationErrorOptions{
+			NextRetryDelay: time.Duration(seconds) * time.Second,
+		})
+	default:
+		return false, fmt.Errorf("dictionary returned %d", resp.StatusCode)
+	}
+}
+```
+
+- Use the Activity's `ctx` for the request. When the attempt times out, the request is cancelled.
+- `NextRetryDelay` replaces the retry policy's wait for the next attempt only.
+- Instead of making the error non-retryable in the Activity, you could list `"unauthorized"` in the retry policy's `NonRetryableErrorTypes`. Use the Activity when the error is always permanent, and the policy when it depends on the caller.
+
+### 2. Register it
+
+In `app/cmd/worker/main.go`, import `"net/http"` and `"os"`, then:
+
+```go
+	servicesURL := os.Getenv("SERVICES_URL")
+	if servicesURL == "" {
+		servicesURL = "http://localhost:8080/services"
+	}
+```
+
+```go
+	w.RegisterActivity(&activities.DictionaryActivities{BaseURL: servicesURL + "/dictionary", HTTP: http.DefaultClient})
+```
+
+Configuration belongs in the Worker and Activities. Workflow code can't read environment variables.
+
+### 3. Call it
+
+In `app/workflows/game.go`, import `"go.temporal.io/sdk/temporal"` and add:
+
+```go
+// isRealWord asks the dictionary service. If it cannot answer in time, the
+// guess simply does not earn a bonus.
+func isRealWord(ctx workflow.Context, word string) bool {
+	ctx = workflow.WithActivityOptions(ctx, workflow.ActivityOptions{
+		StartToCloseTimeout:    2 * time.Second,  // one attempt
+		ScheduleToCloseTimeout: 10 * time.Second, // every attempt: the player is waiting
+		RetryPolicy: &temporal.RetryPolicy{
+			InitialInterval:    500 * time.Millisecond,
+			BackoffCoefficient: 2,
+			MaximumAttempts:    5,
+		},
+	})
+	var a *activities.DictionaryActivities
+	var valid bool
+	if err := workflow.ExecuteActivity(ctx, a.LookupWord, game.Normalize(word)).Get(ctx, &valid); err != nil {
+		workflow.GetLogger(ctx).Warn("dictionary lookup failed", "word", word, "error", err)
+		return false
+	}
+	return valid
+}
+```
+
+In the `guess` handler, after `state.Guess`:
+
+```go
+			outcome := state.Guess(guess.Word, workflow.Now(ctx))
+			if outcome == game.OutcomeNotInPuzzle && isRealWord(ctx, guess.Word) && !state.Over() {
+				state.MarkBonus(guess.Word)
+				outcome = game.OutcomeBonus
+			}
+```
+
+The handler holds the lock while the lookup runs, so other guesses wait their turn. The clock doesn't wait, so check `state.Over()` after the lookup.
+
+### 4. Run it
+
+```sh
+make clean-workflows
+```
+
+Restart the Worker. Compare with `solutions/11`.
+
+
+
+## Check it
+
+Run `make clean-workflows` and restart the Worker. Pick a mode in the **External services** panel, then guess a real word that isn't in the puzzle. Each puzzle file lists some under `extras`. Watch the server log, which prints every dictionary request, and the pending Activity in the Temporal UI.
+
+| Mode | What the service does | What you should see |
+|---|---|---|
+| `ok` | Answers | **Bonus** right away. |
+| `flaky` | 2 of every 3 requests fail with `500` | **Bonus** within about 1.5 s. The log shows up to 3 requests: fail, fail, ok. |
+| `slow` | Takes 3 s | Each attempt times out at 2 s. After 10 s the total limit is hit and it's **Not in puzzle**. |
+| `rate_limited` | Every other request is `429 Retry-After: 3` | **Bonus**, either right away or after exactly 3 s. Guess a few words to see both. |
+| `down` | `503` | 5 attempts over about 7.5 s, then **Not in puzzle**. |
+| `unauthorized` | `401` | **Not in puzzle** right away. One request, no retries. |
+
+- [ ] Each row behaves as described.
+
+  *[Image: A bonus word]*
+
+- [ ] While a lookup is retrying, the Temporal UI shows the pending Activity's attempt number and last failure.
+
+  *[Image: A pending Activity that's retrying]*
+
+- [ ] In every mode the game keeps working. The Worker logs a warning when a lookup gives up.
+
+Set the mode back to `ok` when you're done.
+
+---
+
+# 12 · Determinism and replay
+
+> Understand exactly why changing Workflow code can break running Workflows, and catch it before you deploy.
+
+- Course: [Wordflow: Learn Temporal by Building a Word Game](https://syntaxsugar.io/course/wordflow/index.md)
+- Section: Lessons
+- Author: Michael Jones
+- Updated: 2026-10-05
+- URL: https://syntaxsugar.io/course/wordflow/12-determinism-and-replay/
+
+**Goal:** understand exactly why changing Workflow code can break running Workflows, and catch it before you deploy.
+
+## Concepts
+
+**Replay.** When a Worker needs a Workflow's state, it runs the Workflow code from the start and feeds it the recorded events. Activity results, Timer firings, and messages all come from history instead of happening again. A Worker that restarts, or one that loads a Workflow it hasn't cached, replays.
+
+**Commands must match events.** As the code runs, it produces commands: "schedule this Activity", "start this Timer". During replay, each command must match the next recorded event. If the code now schedules an Activity where the history has a Timer, the Worker can't continue safely. That's a **nondeterminism error** (`TMPRL1100`).
+
+**What happens then.** The Workflow doesn't fail. Its Workflow Task fails and is retried until a Worker with compatible code picks it up. Fix the code, or roll back the deploy, and it continues.
+
+**What breaks replay:**
+
+- Adding, removing, or reordering Activities, Timers, Child Workflows, or anything else that produces a command, in code that existing Workflows have already passed.
+- Reading the clock, random numbers, environment variables, or global state directly.
+- Ranging over maps, or using native threads, goroutines, or channels in Workflow code.
+
+**What's safe:** changing Activity code, changing code that runs only after every existing Workflow has passed that point, and changing the logic inside a handler, as long as it produces the same commands.
+
+**Replay testing.** Save real histories. Before deploying, replay them against the new code. A failure means the deploy would break running Workflows.
+
+## What you'll build
+
+- A `FeedActivities.Announce` Activity that posts to the feed service, and an `announce` helper that never fails the game. The helper isn't called yet.
+- A replay command that loads saved histories and replays them against your Workflow code.
+- Then you'll break it on purpose.
+
+## Build it
+
+**Go:**
+
+### 1. The feed Activity
+
+Create `app/activities/feed.go`:
+
+```go
+package activities
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"fmt"
+	"net/http"
+)
+
+// FeedActivities post messages to the activity feed service.
+type FeedActivities struct {
+	BaseURL string
+	HTTP    *http.Client
+}
+
+func (a *FeedActivities) Announce(ctx context.Context, message string) error {
+	body, err := json.Marshal(map[string]string{"message": message})
+	if err != nil {
+		return err
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, a.BaseURL, bytes.NewReader(body))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := a.HTTP.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode >= 300 {
+		return fmt.Errorf("feed returned %d", resp.StatusCode)
+	}
+	return nil
+}
+```
+
+Register it in the Worker:
+
+```go
+	w.RegisterActivity(&activities.FeedActivities{BaseURL: servicesURL + "/feed", HTTP: http.DefaultClient})
+```
+
+Add these helpers to `app/workflows/game.go`, but don't call them yet:
+
+```go
+// announce posts to the activity feed. A feed outage must not stop the game.
+func announce(ctx workflow.Context, message string) {
+	ctx = workflow.WithActivityOptions(ctx, workflow.ActivityOptions{
+		StartToCloseTimeout:    2 * time.Second,
+		ScheduleToCloseTimeout: 5 * time.Second,
+	})
+	var a *activities.FeedActivities
+	if err := workflow.ExecuteActivity(ctx, a.Announce, message).Get(ctx, nil); err != nil {
+		workflow.GetLogger(ctx).Warn("announce failed", "error", err)
+	}
+}
+
+func startedMessage(state *game.State) string {
+	who := "A guest"
+	if state.PlayerID != "" {
+		who = state.PlayerID
+	}
+	return who + " started " + state.Puzzle.Title
+}
+```
+
+Run `make clean-workflows` and restart the Worker. You haven't changed any Workflow's commands, but the old Workflows aren't needed for this lesson.
+
+### 2. The replayer
+
+Create `app/cmd/replay/main.go`:
+
+```go
+// Command replay checks saved Workflow histories against the current Workflow code.
+//
+//	go run ./app/cmd/replay histories/*.json
+package main
+
+import (
+	"fmt"
+	"log/slog"
+	"os"
+
+	"go.temporal.io/sdk/log"
+	"go.temporal.io/sdk/worker"
+
+	"wordflow/app/workflows"
+)
+
+func main() {
+	replayer := worker.NewWorkflowReplayer()
+	replayer.RegisterWorkflow(workflows.GameWorkflow)
+	replayer.RegisterWorkflow(workflows.PlayerWorkflow)
+	replayer.RegisterWorkflow(workflows.LeaderboardWorkflow)
+
+	// The error returned below says everything we need, so discard the SDK's logs.
+	quiet := log.NewStructuredLogger(slog.New(slog.DiscardHandler))
+
+	failed := false
+	for _, path := range os.Args[1:] {
+		if err := replayer.ReplayWorkflowHistoryFromJSONFile(quiet, path); err != nil {
+			fmt.Printf("FAIL %s\n     %v\n", path, err)
+			failed = true
+			continue
+		}
+		fmt.Printf("ok   %s\n", path)
+	}
+	if failed {
+		os.Exit(1)
+	}
+}
+```
+
+The replayer runs your Workflow code against a history without connecting to Temporal. Activities aren't registered, because their results come from the history. In a real project, run this in CI with histories from production.
+
+### 3. Save histories and replay
+
+Join as `alice`, finish one game, and start a second one. Leave the second game running. Then:
+
+```sh
+make history ID=game-alice-1
+make history ID=game-alice-2
+make history ID=player-alice
+make replay
+```
+
+`make history` runs `temporal workflow show --output json` and saves the result in `histories/`. You should see `ok` three times.
+
+### 4. Break it
+
+In `GameWorkflow`, call `announce` right after the state is created:
+
+```go
+	state = game.NewState(gameID, input.PlayerID, puzzle, now)
+	announce(ctx, startedMessage(state))
+	state.SetDeadline(now.Add(puzzle.TimeLimit()))
+```
+
+Run `make replay`. Both games fail:
+
+```
+FAIL histories/game-alice-1.json
+     [TMPRL1100] ... a matching Timer command was expected ...
+```
+
+The history says the next command after loading the puzzle was a Timer. The new code produced an Activity.
+
+Now restart the Worker with this code and guess a word in `game-alice-2`. The Worker replays the game, hits the same mismatch, and the guess times out. The Temporal UI shows `WorkflowTaskFailed` with the same error.
+
+### 5. Undo it
+
+Remove the `announce` line and restart the Worker. Within about 10 seconds the next Workflow Task attempt succeeds, and `game-alice-2` carries on. If its clock ran out while it was stuck, it ends as timed out.
+
+### 6. Static checks
+
+The Go SDK has a linter that flags non-deterministic calls, such as `time.Now`, `rand`, map iteration, and goroutines, in Workflow code:
+
+```sh
+go run go.temporal.io/sdk/contrib/tools/workflowcheck@latest ./app/...
+```
+
+No output means no problems found. It can't catch command order changes like the one above. Only replay tests catch those.
+
+Compare with `solutions/12`.
+
+
+
+## Check it
+
+- [ ] Play one game to the end and start another. Save their histories, and the player's, with `make history ID=...`. `make replay` prints `ok` for each.
+- [ ] Add a call to `announce` right after the game state is created. `make replay` prints `FAIL` for every game, with a `TMPRL1100` error. The new code schedules an Activity where the history has a Timer.
+- [ ] Start a game on the old code, then restart the Worker with the new code and make a guess. The guess times out. In the Temporal UI, the game shows a failed Workflow Task with the nondeterminism error, retrying.
+
+  *[Image: A game stuck on a nondeterminism error]*
+
+- [ ] Remove the call and restart the Worker. The stuck game picks up where it left off.
+
+Lesson 13 ships the same change safely.
+
+---
+
+# 13 · Versioning
+
+> Announce every new game in the feed, without breaking the games that are already running.
+
+- Course: [Wordflow: Learn Temporal by Building a Word Game](https://syntaxsugar.io/course/wordflow/index.md)
+- Section: Lessons
+- Author: Michael Jones
+- Updated: 2026-10-05
+- URL: https://syntaxsugar.io/course/wordflow/13-versioning/
+
+**Goal:** announce every new game in the feed, without breaking the games that are already running.
+
+## Concepts
+
+**Patching.** Wrap the change in a version check. The first time new code reaches the check, it records a marker in the history and takes the new path. When code replays a history that has no marker, the check returns the default version and the code takes the old path. Old and new Workflows run on the same Worker, each following the code it started with.
+
+**Retiring a patch.** Once no running Workflow can still take the old path, delete the old branch. Keep the check, with the default version as its minimum, until no running Workflow has the old marker either. Then delete the check too.
+
+**Rolling back.** After the new code has run, histories contain the marker. The old code doesn't expect it, so rolling back breaks those Workflows. Replay-test new histories against the old code before you rely on being able to roll back.
+
+**Worker Versioning.** The other approach. Each Worker deployment has a version, and each Workflow is pinned to the version it started on. Old and new Workers run side by side until the old Workflows finish. There are no version checks in the code, but you run more than one Worker deployment at a time. It's the better fit for frequent changes to short Workflows. Patching suits occasional changes to long ones. See [Worker Versioning](https://docs.temporal.io/production-deployment/worker-deployments/worker-versioning).
+
+## What you'll build
+
+- Wrap the `announce` call from Lesson 12 in a version check called `announce-game`. Version 1 announces. The default version doesn't.
+
+## Build it
+
+**Go:**
+
+### 1. Save an old history
+
+With your Lesson 12 code running, start a game as `alice` and leave it running:
+
+```sh
+make history ID=game-alice-3   # use your game's ID
+```
+
+### 2. Patch the Workflow
+
+In `GameWorkflow`, after `NewState`:
+
+```go
+	state = game.NewState(gameID, input.PlayerID, puzzle, now)
+	// Games started before this change have no "announce-game" marker in their
+	// history, so GetVersion returns DefaultVersion and they skip the Activity.
+	if workflow.GetVersion(ctx, "announce-game", workflow.DefaultVersion, 1) == 1 {
+		announce(ctx, startedMessage(state))
+	}
+	state.SetDeadline(now.Add(puzzle.TimeLimit()))
+```
+
+`GetVersion(ctx, changeID, minSupported, maxSupported)`:
+
+- On first execution, it records a marker with `maxSupported` (1) and returns 1.
+- On replay with the marker, it returns the recorded version.
+- On replay without the marker, it returns `DefaultVersion` (-1).
+- If the history holds a version outside `[minSupported, maxSupported]`, the Workflow Task fails. That protects you from deploying code that has dropped support for a version still in use.
+
+### 3. Check before deploying
+
+```sh
+make replay
+```
+
+Every history passes, including the one from step 1.
+
+### 4. Deploy
+
+Restart the Worker and follow the checklist in the README. To check rollback:
+
+```sh
+make history ID=game-bob-1
+make replay S=12
+```
+
+`S=12` runs `solutions/12/cmd/replay`, the Lesson 12 code, against every saved history. Bob's game fails.
+
+### 5. Later: retire the old path
+
+When every game that started before the patch has finished:
+
+```go
+	workflow.GetVersion(ctx, "announce-game", 1, 1)
+	announce(ctx, startedMessage(state))
+```
+
+Once every Workflow recorded with the marker has finished too, you can delete the `GetVersion` line.
+
+Compare with `solutions/13`.
+
+
+
+## Check it
+
+Start with your Lesson 12 code, without the `announce` call, running.
+
+- [ ] Start a game as `alice` and leave it running. Save its history with `make history`.
+- [ ] Add the versioned `announce` call. `make replay` prints `ok` for every history, old games included.
+- [ ] Restart the Worker. The old game keeps working: guesses, hints, and the clock.
+- [ ] Join as `bob` and start a game. The feed shows **bob started ...**. His game's history has a `MarkerRecorded` event, then the `Announce` Activity.
+
+  *[Image: The feed announces Bob's game]*
+
+  *[Image: The version marker, then the Announce Activity]*
+
+- [ ] Save Bob's game with `make history`, then run `make replay S=12`. Bob's game fails on the Lesson 12 code. That's why you can't simply roll back.
+
+---
+
+# Extra · Saga
+
+> Players can gift points to each other. If the gift can't be delivered, the sender gets their points back.
+
+- Course: [Wordflow: Learn Temporal by Building a Word Game](https://syntaxsugar.io/course/wordflow/index.md)
+- Section: Optional exercises
+- Author: Michael Jones
+- Updated: 2026-10-05
+- URL: https://syntaxsugar.io/course/wordflow/saga/
+
+**Goal:** players can gift points to each other. If the gift can't be delivered, the sender gets their points back.
+
+## Concepts
+
+**No transactions across Workflows.** A gift changes two Player Workflows. There's no way to change both in one step: the first can succeed and the second fail.
+
+**Saga.** Run the steps in order. After each step succeeds, record a **compensation** that undoes it. If a later step fails, run the recorded compensations in reverse order.
+
+**Compensations must finish.** They're Activities, so they're retried. Make them safe to repeat. Run them in a context that isn't cancelled, so they still run if the Workflow itself is cancelled.
+
+**IDs for each step.** Each step's Update ID is built from the transfer's Run ID and the step name. A retried step can't apply twice, but two gifts between the same players are still separate.
+
+## Patterns
+
+- [Saga](https://docs.temporal.io/design-patterns/saga-pattern)
+
+## What you'll build
+
+- `withdraw` and `deposit` Updates on `PlayerWorkflow`, with validators.
+- `Withdraw` and `Deposit` Activities. A rejection or a missing player is non-retryable.
+- `TransferPointsWorkflow`: withdraw from the sender, record "refund the sender", deposit to the recipient. On failure, run the compensations.
+- A small command-line client that runs a transfer and prints the result.
+
+## Build it
+
+**Go:**
+
+Start from your Lesson 13 code. The finished code for every extra is in `solutions/extras`.
+
+### 1. Names
+
+Create `app/shared/extras.go`. The other extras add to it as well:
+
+```go
+package shared
+
+// Extra: Saga. PlayerWorkflow Updates used to move points between players.
+const (
+	UpdateWithdraw = "withdraw"
+	UpdateDeposit  = "deposit"
+)
+
+type PointsInput struct {
+	Amount int `json:"amount"`
+}
+
+type PointsActivityInput struct {
+	PlayerID string `json:"playerId"`
+	Amount   int    `json:"amount"`
+	UpdateID string `json:"updateId"`
+}
+
+type TransferInput struct {
+	From   string `json:"from"`
+	To     string `json:"to"`
+	Amount int    `json:"amount"`
+}
+```
+
+### 2. Player Updates
+
+In `app/workflows/player.go`, after `spendPoints`:
+
+```go
+	err = workflow.SetUpdateHandlerWithOptions(ctx, shared.UpdateWithdraw,
+		func(ctx workflow.Context, input shared.PointsInput) (game.PlayerView, error) {
+			player.Withdraw(input.Amount)
+			return player.View(), nil
+		},
+		workflow.UpdateHandlerOptions{
+			Validator: func(ctx workflow.Context, input shared.PointsInput) error {
+				return player.CheckWithdraw(input.Amount)
+			},
+		},
+	)
+	if err != nil {
+		return err
+	}
+
+	err = workflow.SetUpdateHandlerWithOptions(ctx, shared.UpdateDeposit,
+		func(ctx workflow.Context, input shared.PointsInput) (game.PlayerView, error) {
+			player.Credit(input.Amount)
+			return player.View(), nil
+		},
+		workflow.UpdateHandlerOptions{
+			Validator: func(ctx workflow.Context, input shared.PointsInput) error {
+				return player.CheckCredit(input.Amount)
+			},
+		},
+	)
+	if err != nil {
+		return err
+	}
+```
+
+### 3. Activities
+
+In `app/activities/players.go`, import `"go.temporal.io/api/serviceerror"` and add:
+
+```go
+// Withdraw takes points from a player.
+func (a *PlayerActivities) Withdraw(ctx context.Context, input shared.PointsActivityInput) error {
+	return a.changePoints(ctx, shared.UpdateWithdraw, input)
+}
+
+// Deposit gives points to a player.
+func (a *PlayerActivities) Deposit(ctx context.Context, input shared.PointsActivityInput) error {
+	return a.changePoints(ctx, shared.UpdateDeposit, input)
+}
+
+func (a *PlayerActivities) changePoints(ctx context.Context, update string, input shared.PointsActivityInput) error {
+	handle, err := a.Client.UpdateWorkflow(ctx, client.UpdateWorkflowOptions{
+		WorkflowID:   shared.PlayerWorkflowID(input.PlayerID),
+		UpdateID:     input.UpdateID,
+		UpdateName:   update,
+		Args:         []any{shared.PointsInput{Amount: input.Amount}},
+		WaitForStage: client.WorkflowUpdateStageCompleted,
+	})
+	if err == nil {
+		err = handle.Get(ctx, nil)
+	}
+
+	var appErr *temporal.ApplicationError
+	var notFound *serviceerror.NotFound
+	switch {
+	case errors.As(err, &appErr):
+		return temporal.NewNonRetryableApplicationError(appErr.Message(), appErr.Type(), err)
+	case errors.As(err, &notFound):
+		return temporal.NewNonRetryableApplicationError("no player named "+input.PlayerID, "player_not_found", err)
+	}
+	return err
+}
+```
+
+### 4. The Saga
+
+Create `app/workflows/transfer.go`:
+
+```go
+package workflows
+
+import (
+	"time"
+
+	"go.temporal.io/sdk/workflow"
+
+	"wordflow/app/activities"
+	"wordflow/app/shared"
+)
+
+// TransferPointsWorkflow gifts points from one player to another. Each step
+// that succeeds adds a compensation. If a later step fails, the compensations
+// run in reverse order.
+func TransferPointsWorkflow(ctx workflow.Context, input shared.TransferInput) (err error) {
+	ctx = workflow.WithActivityOptions(ctx, workflow.ActivityOptions{
+		StartToCloseTimeout: 10 * time.Second,
+	})
+	// The Run ID is unique to this transfer, even when the Workflow ID is reused.
+	transferID := workflow.GetInfo(ctx).WorkflowExecution.RunID
+	points := func(playerID, step string) shared.PointsActivityInput {
+		return shared.PointsActivityInput{PlayerID: playerID, Amount: input.Amount, UpdateID: transferID + "-" + step}
+	}
+	var a *activities.PlayerActivities
+
+	var compensations []func(workflow.Context) error
+	defer func() {
+		if err == nil {
+			return
+		}
+		// Compensate even if this Workflow was canceled.
+		ctx, _ := workflow.NewDisconnectedContext(ctx)
+		for i := len(compensations) - 1; i >= 0; i-- {
+			if cerr := compensations[i](ctx); cerr != nil {
+				workflow.GetLogger(ctx).Error("compensation failed", "error", cerr)
+			}
+		}
+	}()
+
+	if err := workflow.ExecuteActivity(ctx, a.Withdraw, points(input.From, "withdraw")).Get(ctx, nil); err != nil {
+		return err
+	}
+	compensations = append(compensations, func(ctx workflow.Context) error {
+		return workflow.ExecuteActivity(ctx, a.Deposit, points(input.From, "refund")).Get(ctx, nil)
+	})
+
+	return workflow.ExecuteActivity(ctx, a.Deposit, points(input.To, "deposit")).Get(ctx, nil)
+}
+```
+
+- The named result `err` lets the deferred function see how the Workflow ended.
+- `NewDisconnectedContext` gives a context that isn't cancelled when the Workflow is.
+- With two steps, the list holds one compensation. The structure stays the same as you add steps.
+
+Register it in the Worker and in `app/cmd/replay/main.go`:
+
+```go
+	w.RegisterWorkflow(workflows.TransferPointsWorkflow)
+```
+
+### 5. A client
+
+Create `app/cmd/gift/main.go`:
+
+```go
+// Command gift moves points from one player to another.
+//
+//	go run ./app/cmd/gift -from alice -to bob -amount 5
+package main
+
+import (
+	"context"
+	"flag"
+	"fmt"
+	"log"
+
+	"go.temporal.io/sdk/client"
+
+	"wordflow/app/shared"
+	"wordflow/app/workflows"
+)
+
+func main() {
+	from := flag.String("from", "", "player giving points")
+	to := flag.String("to", "", "player receiving points")
+	amount := flag.Int("amount", 0, "points to give")
+	flag.Parse()
+
+	c, err := client.Dial(client.Options{})
+	if err != nil {
+		log.Fatalln("unable to connect to Temporal:", err)
+	}
+	defer c.Close()
+
+	ctx := context.Background()
+	run, err := c.ExecuteWorkflow(ctx, client.StartWorkflowOptions{
+		ID:        fmt.Sprintf("gift-%s-%s", *from, *to),
+		TaskQueue: shared.TaskQueue,
+	}, workflows.TransferPointsWorkflow, shared.TransferInput{From: *from, To: *to, Amount: *amount})
+	if err != nil {
+		log.Fatalln("unable to start transfer:", err)
+	}
+	fmt.Println("started", run.GetID(), run.GetRunID())
+
+	if err := run.Get(ctx, nil); err != nil {
+		log.Fatalln("transfer failed:", err)
+	}
+	fmt.Printf("%s gave %s %d points\n", *from, *to, *amount)
+}
+```
+
+### 6. Run it
+
+`PlayerWorkflow` only gained handlers, which don't produce commands, so running players replay fine. Restart the Worker, then:
+
+```sh
+go run ./app/cmd/gift -from alice -to bob -amount 5
+go run ./app/cmd/gift -from alice -to nobody -amount 5
+go run ./app/cmd/gift -from alice -to bob -amount 100
+```
+
+
+
+## Check it
+
+Join as `alice` and `bob` first.
+
+- [ ] Gift 5 points from `alice` to `bob`. It succeeds, and the player panels show 15 and 25.
+- [ ] Gift 5 from `alice` to `nobody`. It fails with **no player named nobody**, and Alice still has 15. The transfer's history shows `Withdraw` completed, `Deposit` failed, and then a second `Deposit`, the refund, completed.
+
+  *[Image: Withdraw, a failed Deposit, then the refund]*
+
+- [ ] Gift 100 from `alice`. It fails with **not enough points**. Nothing was withdrawn, so there's nothing to compensate.
+- [ ] Gift 3 from `alice` to `bob` again. It succeeds: a new run with new Update IDs.
+
+---
+
+# Extra · Pick First
+
+> The dictionary has two regions, and each is slow at random. Ask both, use whichever answers first, and cancel the other.
+
+- Course: [Wordflow: Learn Temporal by Building a Word Game](https://syntaxsugar.io/course/wordflow/index.md)
+- Section: Optional exercises
+- Author: Michael Jones
+- Updated: 2026-10-05
+- URL: https://syntaxsugar.io/course/wordflow/pick-first/
+
+**Goal:** the dictionary has two regions, and each is slow at random. Ask both, use whichever answers first, and cancel the other.
+
+## Concepts
+
+**Run in parallel, take the first.** Start several Activities without waiting, then wait for whichever finishes first.
+
+**Cancel the rest.** Cancel the scope the other Activities were started in. The Workflow records the cancel request and moves on.
+
+**Activities learn about cancellation from heartbeats.** A running Activity is just your code on a Worker. It only finds out it was cancelled when it sends a heartbeat and the reply says so. Then its context is cancelled, which also aborts its HTTP request. Activities that should stop early must heartbeat and have a heartbeat timeout.
+
+**This changes running games.** The `guess` handler now produces different commands. Wrap the change in a version check, as in Lesson 13.
+
+## Patterns
+
+- [Pick First](https://docs.temporal.io/design-patterns/pick-first)
+
+## What you'll build
+
+- The dictionary service takes `?region=NAME` and adds 0–1.5 s of random latency.
+- A `LookupWordIn` Activity that sends the region and heartbeats while it waits.
+- `isRealWordFastest`: start a lookup in `east` and `west`, wait for the first, cancel the other.
+- A `race-dictionary` version check that chooses between the old single lookup and the race.
+
+## Build it
+
+**Go:**
+
+The dictionary service already supports `?region=NAME`.
+
+### 1. Input
+
+Add to `app/shared/extras.go`:
+
+```go
+// Extra: Pick First.
+type LookupInput struct {
+	Word   string `json:"word"`
+	Region string `json:"region"`
+}
+```
+
+### 2. A region-aware Activity
+
+In `app/activities/dictionary.go`, rename the body of `LookupWord` to a private `lookup` that takes a region, then add `LookupWordIn`. Import `"go.temporal.io/sdk/activity"` and `"wordflow/app/shared"`:
+
+```go
+func (a *DictionaryActivities) LookupWord(ctx context.Context, word string) (bool, error) {
+	return a.lookup(ctx, word, "")
+}
+
+// LookupWordIn asks one region of the dictionary. Canceling ctx abandons the
+// request.
+func (a *DictionaryActivities) LookupWordIn(ctx context.Context, input shared.LookupInput) (bool, error) {
+	// A running Activity learns it was canceled from a heartbeat response.
+	done := make(chan struct{})
+	defer close(done)
+	go func() {
+		ticker := time.NewTicker(200 * time.Millisecond)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				activity.RecordHeartbeat(ctx)
+			case <-done:
+				return
+			}
+		}
+	}()
+	return a.lookup(ctx, input.Word, input.Region)
+}
+
+func (a *DictionaryActivities) lookup(ctx context.Context, word, region string) (bool, error) {
+	u := a.BaseURL + "/words/" + url.PathEscape(word)
+	if region != "" {
+		u += "?region=" + url.QueryEscape(region)
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
+	// ... the rest of the old LookupWord, unchanged
+}
+```
+
+Goroutines are fine in Activities. Only Workflow code has restrictions. The SDK throttles heartbeats, so calling `RecordHeartbeat` often is cheap.
+
+### 3. Race the regions
+
+Create `app/workflows/pickfirst.go`:
+
+```go
+package workflows
+
+import (
+	"time"
+
+	"go.temporal.io/sdk/temporal"
+	"go.temporal.io/sdk/workflow"
+
+	"wordflow/app/activities"
+	"wordflow/app/shared"
+	"wordflow/internal/game"
+)
+
+var dictionaryRegions = []string{"east", "west"}
+
+// checkDictionary chooses how to look a word up. Games that started before
+// the race existed keep making a single lookup.
+func checkDictionary(ctx workflow.Context, word string) bool {
+	if workflow.GetVersion(ctx, "race-dictionary", workflow.DefaultVersion, 1) == workflow.DefaultVersion {
+		return isRealWord(ctx, word)
+	}
+	return isRealWordFastest(ctx, word)
+}
+
+// isRealWordFastest asks every region at once, takes the first answer, and
+// cancels the rest.
+func isRealWordFastest(ctx workflow.Context, word string) bool {
+	ctx, cancel := workflow.WithCancel(ctx)
+	defer cancel()
+
+	var a *activities.DictionaryActivities
+	selector := workflow.NewSelector(ctx)
+	var valid bool
+	var err error
+	for _, region := range dictionaryRegions {
+		regionCtx := workflow.WithActivityOptions(ctx, workflow.ActivityOptions{
+			Summary:                "lookup in " + region,
+			StartToCloseTimeout:    2 * time.Second,
+			ScheduleToCloseTimeout: 10 * time.Second,
+			HeartbeatTimeout:       time.Second,
+			RetryPolicy: &temporal.RetryPolicy{
+				InitialInterval:    500 * time.Millisecond,
+				BackoffCoefficient: 2,
+				MaximumAttempts:    5,
+			},
+		})
+		future := workflow.ExecuteActivity(regionCtx, a.LookupWordIn, shared.LookupInput{Word: game.Normalize(word), Region: region})
+		selector.AddFuture(future, func(f workflow.Future) {
+			err = f.Get(ctx, &valid)
+		})
+	}
+	selector.Select(ctx)
+
+	if err != nil {
+		workflow.GetLogger(ctx).Warn("dictionary lookup failed", "word", word, "error", err)
+		return false
+	}
+	return valid
+}
+```
+
+- `workflow.Selector` is the Workflow-safe `select`. `Select` runs the callback of the first Future that's ready.
+- `defer cancel()` cancels the losing Activity when the function returns.
+- `GetVersion` can be called inside a handler. It only runs when a guess needs a lookup, which is deterministic.
+- The slice gives a fixed order. Ranging over a map here would not be deterministic.
+
+In the `guess` handler in `game.go`, call `checkDictionary` instead of `isRealWord`:
+
+```go
+			if outcome == game.OutcomeNotInPuzzle && checkDictionary(ctx, guess.Word) && !state.Over() {
+```
+
+### 4. Run it
+
+Restart the Worker.
+
+
+
+## Check it
+
+- [ ] Start a new game and guess a few bonus words. They're still marked as bonuses.
+- [ ] The server log shows both regions for each word: one answers, and the other logs **caller gave up** a moment later.
+- [ ] The game's history shows two `ActivityTaskScheduled` events labelled **lookup in east** and **lookup in west**, one completed, and `ActivityTaskCancelRequested` for the other.
+
+  *[Image: Two regional lookups: one wins, the other is cancelled]*
+
+- [ ] A game that started before the change still makes one lookup per word.
+
+---
+
+# Extra · Approval
+
+> Players submit new puzzles. Every word is checked against the dictionary at once, then a person approves or rejects the puzzle before it's published.
+
+- Course: [Wordflow: Learn Temporal by Building a Word Game](https://syntaxsugar.io/course/wordflow/index.md)
+- Section: Optional exercises
+- Author: Michael Jones
+- Updated: 2026-10-05
+- URL: https://syntaxsugar.io/course/wordflow/approval/
+
+**Goal:** players submit new puzzles. Every word is checked against the dictionary at once, then a person approves or rejects the puzzle before it's published.
+
+## Concepts
+
+**Parallel Execution.** Start all the Activities first, then wait for each result. Eight lookups take about as long as one.
+
+**Approval.** A Workflow waits for a person's decision, as a Signal, with a deadline. Waiting a day costs nothing: no Worker is busy, and the Timer lives in the Temporal Service.
+
+**Status from a Query.** The submitter or reviewer can check progress at any time without changing anything.
+
+## Patterns
+
+- [Parallel Execution](https://docs.temporal.io/design-patterns/parallel-execution)
+- [Approval](https://docs.temporal.io/design-patterns/approval)
+
+## What you'll build
+
+- `PuzzleSubmissionWorkflow`, with Workflow ID `submission-<puzzleId>`:
+  1. Check the puzzle's shape with the provided rules.
+  2. Look up every word in parallel, and note any the dictionary doesn't know.
+  3. Wait for a `review` Signal (`{approved, reviewer, note}`) or 24 hours.
+  4. If approved, save the puzzle with a `SavePuzzle` Activity and announce it.
+- A `submission` Query that returns the status, the unknown words, and the review.
+- A command that submits a puzzle file.
+
+## Build it
+
+**Go:**
+
+The provided code includes `game.ValidatePuzzle` and `Store.Save`.
+
+### 1. Names
+
+Add to `app/shared/extras.go`, and import `"wordflow/internal/game"`:
+
+```go
+// Extra: Approval.
+const (
+	SignalReview    = "review"
+	QuerySubmission = "submission"
+)
+
+func SubmissionWorkflowID(puzzleID string) string {
+	return "submission-" + puzzleID
+}
+
+type SubmissionInput struct {
+	Puzzle game.Puzzle `json:"puzzle"`
+}
+
+type ReviewInput struct {
+	Approved bool   `json:"approved"`
+	Reviewer string `json:"reviewer"`
+	Note     string `json:"note,omitempty"`
+}
+
+type SubmissionView struct {
+	Status       string       `json:"status"`
+	UnknownWords []string     `json:"unknownWords,omitempty"`
+	Review       *ReviewInput `json:"review,omitempty"`
+}
+```
+
+### 2. Save Activity
+
+In `app/activities/puzzles.go`:
+
+```go
+// SavePuzzle publishes a puzzle so it can be played.
+func (a *PuzzleActivities) SavePuzzle(ctx context.Context, puzzle game.Puzzle) error {
+	return a.Store.Save(puzzle)
+}
+```
+
+### 3. The Workflow
+
+Create `app/workflows/submission.go`:
+
+```go
+package workflows
+
+import (
+	"time"
+
+	"go.temporal.io/sdk/workflow"
+
+	"wordflow/app/activities"
+	"wordflow/app/shared"
+	"wordflow/internal/game"
+)
+
+const reviewTimeout = 24 * time.Hour
+
+// PuzzleSubmissionWorkflow checks a submitted puzzle, waits for a person to
+// approve it, then publishes it.
+func PuzzleSubmissionWorkflow(ctx workflow.Context, input shared.SubmissionInput) (shared.SubmissionView, error) {
+	puzzle := input.Puzzle
+	view := shared.SubmissionView{Status: "checking"}
+	err := workflow.SetQueryHandler(ctx, shared.QuerySubmission, func() (shared.SubmissionView, error) {
+		return view, nil
+	})
+	if err != nil {
+		return view, err
+	}
+
+	if err := game.ValidatePuzzle(puzzle); err != nil {
+		view.Status = "invalid"
+		return view, err
+	}
+
+	// Parallel Execution: start every lookup, then collect the results.
+	lookupCtx := workflow.WithActivityOptions(ctx, workflow.ActivityOptions{
+		StartToCloseTimeout: 2 * time.Second,
+	})
+	var a *activities.DictionaryActivities
+	lookups := make([]workflow.Future, len(puzzle.Words))
+	for i, word := range puzzle.Words {
+		lookups[i] = workflow.ExecuteActivity(lookupCtx, a.LookupWord, word)
+	}
+	for i, lookup := range lookups {
+		var valid bool
+		if err := lookup.Get(ctx, &valid); err != nil {
+			return view, err
+		}
+		if !valid {
+			view.UnknownWords = append(view.UnknownWords, puzzle.Words[i])
+		}
+	}
+
+	// Approval: wait for a review Signal, or give up after reviewTimeout.
+	view.Status = "awaiting_review"
+	var review shared.ReviewInput
+	reviewed := false
+	timerCtx, cancelTimer := workflow.WithCancel(ctx)
+	timer := workflow.NewTimerWithOptions(timerCtx, reviewTimeout, workflow.TimerOptions{Summary: "review deadline"})
+	selector := workflow.NewSelector(ctx)
+	selector.AddReceive(workflow.GetSignalChannel(ctx, shared.SignalReview), func(c workflow.ReceiveChannel, more bool) {
+		c.Receive(ctx, &review)
+		reviewed = true
+	})
+	selector.AddFuture(timer, func(workflow.Future) {})
+	selector.Select(ctx)
+	cancelTimer()
+
+	if !reviewed {
+		view.Status = "expired"
+		return view, nil
+	}
+	view.Review = &review
+	if !review.Approved {
+		view.Status = "rejected"
+		return view, nil
+	}
+
+	saveCtx := workflow.WithActivityOptions(ctx, workflow.ActivityOptions{
+		StartToCloseTimeout: 5 * time.Second,
+	})
+	var p *activities.PuzzleActivities
+	if err := workflow.ExecuteActivity(saveCtx, p.SavePuzzle, puzzle).Get(ctx, nil); err != nil {
+		return view, err
+	}
+	view.Status = "published"
+	announce(ctx, "New puzzle: "+puzzle.Title+", approved by "+review.Reviewer)
+	return view, nil
+}
+```
+
+- `ValidatePuzzle` is pure, deterministic code, so it runs in the Workflow. No Activity is needed.
+- All the `ExecuteActivity` calls happen before the first `Get`, so all the lookups are scheduled together.
+- `AddReceive` and `AddFuture` on one Selector means "whichever comes first": the Signal or the Timer.
+
+Register it in the Worker and the replayer:
+
+```go
+	w.RegisterWorkflow(workflows.PuzzleSubmissionWorkflow)
+```
+
+### 4. A client
+
+Create `app/cmd/submit/main.go`:
+
+```go
+// Command submit sends a new puzzle for review.
+//
+//	go run ./app/cmd/submit submissions/bread.json
+package main
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"log"
+	"os"
+
+	"go.temporal.io/sdk/client"
+
+	"wordflow/app/shared"
+	"wordflow/app/workflows"
+	"wordflow/internal/game"
+)
+
+func main() {
+	if len(os.Args) != 2 {
+		log.Fatalln("usage: submit PUZZLE.json")
+	}
+	data, err := os.ReadFile(os.Args[1])
+	if err != nil {
+		log.Fatalln(err)
+	}
+	var puzzle game.Puzzle
+	if err := json.Unmarshal(data, &puzzle); err != nil {
+		log.Fatalln("bad puzzle file:", err)
+	}
+
+	c, err := client.Dial(client.Options{})
+	if err != nil {
+		log.Fatalln("unable to connect to Temporal:", err)
+	}
+	defer c.Close()
+
+	id := shared.SubmissionWorkflowID(puzzle.ID)
+	_, err = c.ExecuteWorkflow(context.Background(), client.StartWorkflowOptions{
+		ID:        id,
+		TaskQueue: shared.TaskQueue,
+	}, workflows.PuzzleSubmissionWorkflow, shared.SubmissionInput{Puzzle: puzzle})
+	if err != nil {
+		log.Fatalln("unable to submit:", err)
+	}
+	fmt.Println("submitted", id)
+	fmt.Printf("check it:  temporal workflow query --workflow-id %s --name %s\n", id, shared.QuerySubmission)
+	fmt.Printf("approve:   temporal workflow signal --workflow-id %s --name %s --input '{\"approved\":true,\"reviewer\":\"you\"}'\n", id, shared.SignalReview)
+}
+```
+
+### 5. Run it
+
+Restart the Worker, then:
+
+```sh
+go run ./app/cmd/submit submissions/bread.json
+temporal workflow query --workflow-id submission-bread --name submission
+temporal workflow signal --workflow-id submission-bread --name review \
+  --input '{"approved":true,"reviewer":"you"}'
+temporal workflow result --workflow-id submission-bread
+```
+
+The reviewer here is the Temporal CLI. In a real app, it would be an admin page calling `SignalWorkflow`.
+
+
+
+## Check it
+
+- [ ] Submit `submissions/bread.json`. The `submission` Query returns `awaiting_review`.
+- [ ] In the history, eight `ActivityTaskScheduled` events come before any `ActivityTaskCompleted`, then a `TimerStarted` labelled **review deadline**.
+
+  *[Image: Eight lookups scheduled in parallel]*
+
+- [ ] Send the `review` Signal with `{"approved": true, "reviewer": "you"}`. The Timer is cancelled, the puzzle is saved, the feed shows **New puzzle: Bread, approved by you**, and **Bread** appears in the puzzle list.
+
+  *[Image: The review Signal cancels the Timer]*
+
+- [ ] Copy the file, change its `id` to `bread-2`, and add the word `DRAEB`. Submit it. The Query shows `DRAEB` under `unknownWords`. Reject it, and the Workflow completes with status `rejected`.
+
+Delete `puzzles/bread.json` afterwards if you want the original puzzle list back.
+
+---
+
+# Extra · Schedules
+
+> A puzzle of the day, announced in the feed on a schedule.
+
+- Course: [Wordflow: Learn Temporal by Building a Word Game](https://syntaxsugar.io/course/wordflow/index.md)
+- Section: Optional exercises
+- Author: Michael Jones
+- Updated: 2026-10-05
+- URL: https://syntaxsugar.io/course/wordflow/schedules/
+
+**Goal:** a puzzle of the day, announced in the feed on a schedule.
+
+## Concepts
+
+**Schedule.** A Temporal Service object that starts a Workflow on a timetable, either an interval or calendar times. You can pause it, trigger it now, backfill missed runs, and choose what happens when a run is still going when the next one is due (the overlap policy). It lives in the Temporal Service, so nothing of yours has to be running to keep time.
+
+**Each run is a normal Workflow.** Its ID is the Schedule's Workflow ID plus the scheduled time, for example `daily-puzzle-run-2026-10-04T12:00:00Z`.
+
+**Delayed Start.** For a single run later, start the Workflow with a start delay. It exists right away and runs when the delay ends.
+
+## Patterns
+
+- [Delayed Start](https://docs.temporal.io/design-patterns/delayed-start)
+- [Schedules](https://docs.temporal.io/schedule)
+
+## What you'll build
+
+- `DailyPuzzleWorkflow`: a `PickPuzzle` Activity chooses a puzzle based on the day, then the Workflow announces it.
+- A command that creates the `daily-puzzle` Schedule, deletes it, or starts a single delayed run.
+
+## Build it
+
+**Go:**
+
+### 1. Name
+
+Add to `app/shared/extras.go`:
+
+```go
+// Extra: Schedules.
+const DailyScheduleID = "daily-puzzle"
+```
+
+### 2. Pick a puzzle
+
+In `app/activities/puzzles.go`:
+
+```go
+// PickPuzzle chooses a puzzle for a given day and returns its title.
+func (a *PuzzleActivities) PickPuzzle(ctx context.Context, day int) (string, error) {
+	list, err := a.Store.List()
+	if err != nil {
+		return "", err
+	}
+	if len(list) == 0 {
+		return "", temporal.NewNonRetryableApplicationError("there are no puzzles", "no_puzzles", nil)
+	}
+	return list[day%len(list)].Title, nil
+}
+```
+
+### 3. The Workflow
+
+Create `app/workflows/daily.go`:
+
+```go
+package workflows
+
+import (
+	"time"
+
+	"go.temporal.io/sdk/workflow"
+
+	"wordflow/app/activities"
+)
+
+// DailyPuzzleWorkflow announces the puzzle of the day. A Schedule starts it.
+func DailyPuzzleWorkflow(ctx workflow.Context) (string, error) {
+	ctx = workflow.WithActivityOptions(ctx, workflow.ActivityOptions{
+		StartToCloseTimeout: 5 * time.Second,
+	})
+	var a *activities.PuzzleActivities
+	var title string
+	if err := workflow.ExecuteActivity(ctx, a.PickPuzzle, workflow.Now(ctx).YearDay()).Get(ctx, &title); err != nil {
+		return "", err
+	}
+	announce(ctx, "Puzzle of the day: "+title)
+	return title, nil
+}
+```
+
+The Workflow knows nothing about Schedules. Anything can start it. Register it in the Worker and the replayer:
+
+```go
+	w.RegisterWorkflow(workflows.DailyPuzzleWorkflow)
+```
+
+### 4. Create the Schedule
+
+Create `app/cmd/daily/main.go`:
+
+```go
+// Command daily manages the puzzle-of-the-day Schedule.
+//
+//	go run ./app/cmd/daily -every 1m    create the Schedule
+//	go run ./app/cmd/daily -delete      delete it
+//	go run ./app/cmd/daily -in 30s      start one run after a delay, no Schedule
+package main
+
+import (
+	"context"
+	"flag"
+	"fmt"
+	"log"
+	"time"
+
+	"go.temporal.io/sdk/client"
+
+	"wordflow/app/shared"
+	"wordflow/app/workflows"
+)
+
+func main() {
+	every := flag.Duration("every", 0, "create a Schedule that runs this often")
+	del := flag.Bool("delete", false, "delete the Schedule")
+	in := flag.Duration("in", 0, "start a single run after this delay")
+	flag.Parse()
+
+	c, err := client.Dial(client.Options{})
+	if err != nil {
+		log.Fatalln("unable to connect to Temporal:", err)
+	}
+	defer c.Close()
+	ctx := context.Background()
+
+	switch {
+	case *every > 0:
+		_, err := c.ScheduleClient().Create(ctx, client.ScheduleOptions{
+			ID: shared.DailyScheduleID,
+			Spec: client.ScheduleSpec{
+				Intervals: []client.ScheduleIntervalSpec{{Every: *every}},
+			},
+			Action: &client.ScheduleWorkflowAction{
+				ID:        "daily-puzzle-run",
+				Workflow:  workflows.DailyPuzzleWorkflow,
+				TaskQueue: shared.TaskQueue,
+			},
+		})
+		if err != nil {
+			log.Fatalln("unable to create schedule:", err)
+		}
+		fmt.Printf("created Schedule %s: runs every %v\n", shared.DailyScheduleID, *every)
+
+	case *del:
+		if err := c.ScheduleClient().GetHandle(ctx, shared.DailyScheduleID).Delete(ctx); err != nil {
+			log.Fatalln("unable to delete schedule:", err)
+		}
+		fmt.Println("deleted Schedule", shared.DailyScheduleID)
+
+	case *in > 0:
+		run, err := c.ExecuteWorkflow(ctx, client.StartWorkflowOptions{
+			ID:         fmt.Sprintf("daily-puzzle-once-%d", time.Now().Unix()),
+			TaskQueue:  shared.TaskQueue,
+			StartDelay: *in,
+		}, workflows.DailyPuzzleWorkflow)
+		if err != nil {
+			log.Fatalln("unable to start:", err)
+		}
+		fmt.Printf("started %s: it runs in %v\n", run.GetID(), *in)
+
+	default:
+		flag.Usage()
+	}
+}
+```
+
+- For a real daily puzzle, use a calendar spec, such as `Calendars: []client.ScheduleCalendarSpec{{Hour: []client.ScheduleRange{{Start: 9}}}}`, instead of an interval.
+- `time.Now()` is fine here. This is client code, not a Workflow.
+
+### 5. Run it
+
+Restart the Worker, then:
+
+```sh
+go run ./app/cmd/daily -every 10s
+go run ./app/cmd/daily -delete
+go run ./app/cmd/daily -in 30s
+```
+
+The same actions are in the CLI: `temporal schedule list`, `temporal schedule toggle --schedule-id daily-puzzle --pause --reason "testing"`.
+
+
+
+## Check it
+
+- [ ] Create the Schedule with a 10-second interval. Every 10 seconds the feed shows **Puzzle of the day: ...**.
+
+  *[Image: Puzzle of the day announcements in the feed]*
+
+- [ ] The Temporal UI's **Schedules** page lists `daily-puzzle` with its recent runs. Pause it there, and the announcements stop. Unpause it, and they resume.
+
+  *[Image: The daily-puzzle Schedule]*
+
+- [ ] Delete the Schedule.
+- [ ] Start a single run with a 30-second delay. It appears in the Workflow list right away, but nothing happens until 30 seconds later, when the announcement appears.
+
+---
+
+# Wordflow contract
+
+> Every language branch implements the same HTTP API and uses the same Temporal names. The web app in web/ only knows about the HTTP API.
+
+- Course: [Wordflow: Learn Temporal by Building a Word Game](https://syntaxsugar.io/course/wordflow/index.md)
+- Section: Reference
+- Author: Michael Jones
+- Updated: 2026-10-05
+- URL: https://syntaxsugar.io/course/wordflow/contract/
+
+Every language branch implements the same HTTP API and uses the same Temporal names. The web app in `web/` only knows about the HTTP API.
+
+## HTTP API
+
+The routing, JSON encoding, and error mapping are provided. You implement the part of each endpoint that calls Temporal.
+
+| Endpoint | Body | Returns | Lesson |
+|---|---|---|---|
+| `GET /api/puzzles` | | `[{id, title, words, timeLimitSeconds}]` | provided |
+| `POST /api/games` | `{puzzleId, player?}` | `{gameId, game?}` | 1 (guest), 7 (player) |
+| `GET /api/games/{id}` | | Game view | 3 |
+| `POST /api/games/{id}/guesses` | `{word}` | `{word, outcome, game}`, or `202` with no body | 3 (202), 4 (200) |
+| `POST /api/games/{id}/extend` | | Game view | 5 |
+| `POST /api/players` | `{name}` | Player view | 6 |
+| `GET /api/players/{name}` | | Player view | 6 |
+| `POST /api/games/{id}/hints` | | `{pointsSpent, game}` | 8 |
+| `GET /api/leaderboard` | | `{entries: [{rank, name, totalEarned, gamesWon}]}` | 9 |
+
+Every `POST` from the web app sends an `Idempotency-Key` header. The API passes it to your code as the request ID.
+
+An endpoint that is not built yet returns `501 {"error", "lesson"}`, and the web app shows "This arrives in Lesson N".
+
+### Error mapping
+
+| Temporal error | HTTP |
+|---|---|
+| Application error (a rejected Update, a failed Workflow) | `400 {"error", "code"}` |
+| Workflow not found | `404` |
+| Workflow already started | `409` |
+| Temporal unavailable | `503` |
+| Timed out waiting for a reply | `504` (usually: the Worker is not running) |
+
+### Game view
+
+```json
+{
+  "gameId": "game-alice-1", "playerId": "alice", "puzzleId": "signal", "title": "Signal",
+  "letters": "LANGIS", "status": "playing",
+  "words": [{"length": 4, "pattern": "S___", "found": false}],
+  "foundCount": 0, "totalWords": 9,
+  "rejected": ["GLIN"], "bonusWords": ["SAIL"],
+  "guesses": 3, "incorrect": 1,
+  "freeHints": 2, "hintCost": 0, "extensionsLeft": 2,
+  "expiresAt": "2026-10-04T18:00:00Z", "score": 0
+}
+```
+
+`status` is `loading`, `playing`, `won`, or `timed_out`. `score` is set when the game ends.
+
+Guess `outcome` is `found`, `already_found`, `not_in_puzzle`, `bonus`, `invalid`, `timed_out`, or `game_over`.
+
+### Player view
+
+```json
+{"name": "alice", "joinedAt": "2026-10-04T17:55:00Z", "points": 20, "totalEarned": 0,
+ "gamesPlayed": 0, "gamesWon": 0, "activeGameId": "game-alice-1"}
+```
+
+## Temporal names
+
+Use these exact names in every language, so the Temporal UI looks the same and the lessons read the same.
+
+Task Queue: `wordflow`
+
+| Workflow type | Workflow ID | Messages |
+|---|---|---|
+| `GameWorkflow` | `game-<requestId>` (guest), `game-<player>-<n>` (child of a player) | Query `state`, Updates `ready`, `guess` (a Signal in Lesson 3), `extendTime`, `hint` |
+| `PlayerWorkflow` | `player-<name>` | Query `player`, Updates `join`, `startGame`, `spendPoints` |
+| `LeaderboardWorkflow` | `leaderboard` | Query `leaderboard`, Signal `score` |
+
+Optional exercises add `TransferPointsWorkflow` (Updates `withdraw`, `deposit` on `PlayerWorkflow`), `PuzzleSubmissionWorkflow` (ID `submission-<puzzleId>`, Signal `review`, Query `submission`), and `DailyPuzzleWorkflow` (Schedule ID `daily-puzzle`).
+
+## External services
+
+The server also runs fake external services. Use them from Activities, never from Workflows.
+
+| Endpoint | Purpose |
+|---|---|
+| `GET /services/dictionary/words/{word}` | `200` real word, `404` not a word. Add `?region=NAME` for 0–1.5 s of random latency. |
+| `GET` / `PUT /services/dictionary/mode` | `ok`, `flaky`, `slow`, `rate_limited`, `down`, `unauthorized` |
+| `GET` / `POST /services/feed` | Activity feed. `POST {"message"}` |
+
+## Game rules (provided)
+
+Each language branch provides the game rules as plain, deterministic code: the game state, player state, leaderboard, and puzzle store. Lessons call that code; they never re-implement it.
+
+- Words are 3+ letters, made from the puzzle's letters.
+- A wrong guess costs 1 point. A real word that is not in the puzzle is a bonus worth 2.
+- Score = letters in found words + bonuses − wrong guesses (+10 for finding every word), never below 0.
+- 2 free hints, then 10 points each. Guests cannot buy hints.
+- Up to 2 extensions of 30 seconds.
+- New players start with 20 points. Finishing a game adds its score.
