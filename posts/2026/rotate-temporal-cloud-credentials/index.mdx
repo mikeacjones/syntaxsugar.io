@@ -6,11 +6,21 @@ shortDescription: "Every Temporal Cloud API key and mTLS certificate expires. He
 published: true
 ---
 
-Every Temporal Cloud API key expires. Every mTLS certificate expires. And the way a lot of teams keep track of that is some combination of a spreadsheet, a calendar reminder, and the expiry email that lands in someone's inbox while they're on vacation.
+Picture this. It's 2:47 AM on a Saturday, and your phone is doing the thing where it vibrates itself off the nightstand.
 
-When a renewal gets missed, every Worker on that Namespace loses its connection and Workflows stop making progress. When a renewal gets *rushed*, you can push a credential to Workers before Temporal Cloud has accepted it, and get the exact same outage. Either way, the risk scales with the number of Namespaces you run.
+The payments team's dashboard is a wall of red. Every Worker on the `payments` Namespace is logging `Unauthenticated`. Workflows aren't failing, exactly; they're just... sitting there. Orders aren't getting charged. Refunds aren't going out. Somewhere, a queue of very patient Workflow Tasks is waiting for a Worker that will never come.
 
-I've been writing this up as a full validated pattern (with runnable samples in Go, Python, TypeScript, Java, .NET, Ruby, and Rust), and this post is the condensed version: the shape of the solution, and the handful of decisions that make it safe.
+You check the deploy log. Nothing shipped. You check Temporal Cloud's status page. All green. You restart the Workers, because of course you do. Still `Unauthenticated`.
+
+Forty-five minutes in, someone finally asks the right question: *"Hey, when does our API key expire?"*
+
+It expired at midnight UTC. Three months ago, someone set a calendar reminder to renew it. That someone changed teams in August. The reminder is still faithfully firing, every morning, into an inbox nobody reads. Temporal Cloud even sent expiry notifications, and they went to the exact same inbox.
+
+![Me, reading the Slack thread about the API key](this-is-fine.gif)
+
+So you create a new key in the UI at 3:40 AM, paste it into the secret store, and roll the Workers. Problem solved... today. But let's talk about solving the root problem.
+
+The outage was never a Temporal problem. Every Temporal Cloud API key expires, and so does every mTLS certificate (or at least they _really, really should_ before security comes down). The real problem is that if you miss a renewal, every Worker on the Namespace loses its connection. This should be fully automated, and something you trust to never fail.
 
 ---
 
@@ -26,12 +36,12 @@ This is what the **entity Workflow** pattern is for. You dedicate one Workflow E
 
 # The Shape of It
 
-One Workflow per Namespace, with the ID `credential-rotation:<namespace>`. Each run does one thing: wait until the credential is close to expiry, try to rotate it once, then Continue-As-New.
+One Workflow per Namespace, with the ID `credential-rotation:<namespace>`. Each run does one thing: wait until the credential is close to expiry, rotate it (retrying in the same run until it works), then Continue-As-New.
 
 ```mermaid
 flowchart TB
   accTitle: One rotation cycle
-  accDescr: The rotation Workflow sleeps until the lead time before expiry, then issues, validates, and publishes a new credential to Vault, and continues as new.
+  accDescr: The rotation Workflow sleeps until the lead time before expiry, then issues, validates, and publishes a new credential to Vault. A failure is reported and retried in the same run; only a successful rotation continues as new.
   wait["Durable Timer<br/>expiry − lead time"]
   ca["EnsureCaTrusted<br/>(mTLS only)"]
   issue["IssueCredential<br/>→ staged path"]
@@ -46,7 +56,7 @@ flowchart TB
   wait --> ca --> issue --> validate --> publish --> can
   issue -. "any step fails" .-> alert
   validate -. "any step fails" .-> alert
-  alert --> can
+  alert -- "same run,<br/>wait 1h" --> wait
   can -- "next run" --> wait
   publish --> vault
   vault --> sync --> workers
@@ -58,36 +68,37 @@ flowchart TB
   class workers app
 ```
 
-The defaults are: rotate 7 days before expiry, issue credentials that last 30 days, retry a failed attempt after 1 hour. Operators can override any of those per Namespace with a Signal.
+The defaults are: rotate 10 days before expiry, issue credentials that last 30 days, retry a failed attempt after 1 hour. Operators can override any of those per Namespace with a Signal. I'd keep the lead time around 10 days: long enough that a rotation that starts failing on a Friday afternoon survives a long weekend and still gets fixed before anything expires.
 
-The whole wait-or-wake step is a Timer raced against two Signals:
+The whole Workflow is one loop: wait until the rotation is due, try it, and either continue as new or go back to waiting for the retry.
 
 ```go
-now := workflow.Now(ctx)
-if rotateAt := nextRotationAt(in, now); rotateAt.After(now) {
-	timerCtx, cancelTimer := workflow.WithCancel(ctx)
-	timer := workflow.NewTimer(timerCtx, rotateAt.Sub(now))
+var retryAt *time.Time // set after a failed attempt
+for {
+	waitUntilDue(ctx, &in, retryAt, rotateNow, updateSettings) // Timer raced against two Signals
 
-	selector := workflow.NewSelector(ctx)
-	selector.AddFuture(timer, func(workflow.Future) {})
-	selector.AddReceive(rotateNow, func(c workflow.ReceiveChannel, _ bool) {
-		c.Receive(ctx, nil)
-	})
-	selector.AddReceive(updateSettings, func(c workflow.ReceiveChannel, _ bool) {
-		// replace settings, maybe Continue-As-New with the new rotation time
-	})
-	selector.Select(ctx)
-	cancelTimer()
+	rotationID := workflow.Now(ctx).UTC().Format("20060102T150405Z")
+	issued, failedStep, err := rotate(ctx, in, rotationID)
+	if err == nil {
+		in.Current = CredentialState{CredentialID: issued.CredentialID, ExpiresAt: issued.ExpiresAt}
+		break
+	}
+
+	// Stay in this run: the failed attempt's Activities and errors remain in Event History.
+	next := workflow.Now(ctx).Add(in.Settings.RetryInterval)
+	retryAt = &next
+	reportFailure(ctx, in, rotationID, failedStep, next, err)
 }
+return workflow.NewContinueAsNewError(ctx, CredentialRotationWorkflow, in)
 ```
 
 And deciding *when* to rotate is three lines of logic:
 
 ```go
-func nextRotationAt(in RotationInput, now time.Time) time.Time {
+func nextRotationAt(in RotationInput, retryAt *time.Time, now time.Time) time.Time {
 	switch {
-	case in.NextAttemptAt != nil: // a failed attempt scheduled a retry
-		return *in.NextAttemptAt
+	case retryAt != nil: // a failed attempt scheduled a retry
+		return *retryAt
 	case in.Current.ExpiresAt.IsZero(): // newly enrolled, expiry unknown
 		return now
 	default:
@@ -96,7 +107,7 @@ func nextRotationAt(in RotationInput, now time.Time) time.Time {
 }
 ```
 
-Every run ends with Continue-As-New, success or failure. The Workflow never fails on its own, and Event History stays tiny no matter how many years the Namespace lives.
+The Workflow never fails on its own, and it only continues as new after a rotation *succeeds*. Each run covers one credential's lifetime, so Event History stays tiny no matter how many years the Namespace lives.
 
 ---
 
@@ -134,7 +145,9 @@ So for mTLS, every rotation starts with `EnsureCaTrusted`. It compares the PKI's
 
 ## 5. Failures go to a human, then retry
 
-Any step that fails after its retries sends a JSON report to a webhook (your incident or ticketing system) with the Namespace, the failed step, the error, and, most importantly, when the *current* credential expires. Whoever picks it up knows exactly how much runway they have. Then the Workflow schedules another attempt in an hour and continues as new.
+Any step that fails after its retries sends a JSON report to a webhook (your incident or ticketing system) with the Namespace, the failed step, the error, and, most importantly, when the *current* credential expires. Whoever picks it up knows exactly how much runway they have. Then the Workflow waits an hour and tries again, **in the same run**.
+
+That last part matters more than it looks. Continue-As-New starts a fresh run with an empty Event History. If the Workflow continued as new after a failure, the on-call engineer would open it and find... a Workflow happily sleeping on a Timer, with the evidence of what broke sitting in a closed run they have to go dig up. Instead, the failing Activity, its error, and every retry are right there in the current run's history. Continue-As-New only happens once a rotation fully succeeds, which is the natural checkpoint anyway.
 
 If the alert webhook itself is down, the Workflow logs it and moves on. An alerting problem should never take down the rotation.
 
@@ -184,13 +197,14 @@ A few operational notes worth calling out:
 
 # Testing a 30-Day Cycle in Under a Second
 
-The Temporal test framework skips time while the Workflow waits on a Timer, so you can mock the Activities and test an entire rotation cycle instantly. The test I care about most makes `ValidateCredential` always fail and asserts:
+The Temporal test framework skips time while the Workflow waits on a Timer, so you can mock the Activities and test an entire rotation cycle instantly. The test I care about most makes `ValidateCredential` fail for the whole first attempt, then pass on the retry, and asserts:
 
-- `PublishCredential` is **never** called
+- `PublishCredential` is **not** called for the failed attempt
 - `ReportRotationFailure` is called exactly once
-- the run continues as new with the old credential still current and the next attempt one hour out
+- while the retry is pending, the `status` Query shows the failure, the old credential still current, and the next attempt one hour out
+- the retry runs an hour later in the **same run**, and only after it succeeds does the Workflow continue as new
 
-That's the core guarantee of the whole pattern in one test: an unverified credential never reaches a Worker, and somebody finds out.
+That's the core guarantee of the whole pattern in one test: an unverified credential never reaches a Worker, somebody finds out, and the evidence is still there when they look.
 
 ---
 
@@ -202,7 +216,7 @@ That's the core guarantee of the whole pattern in one test: an unverified creden
 | **Bad credential on Workers** | Possible if you rush | Validated before publish |
 | **Cutover** | Everyone at once | Old and new overlap |
 | **CA rollover** | Separate manual process | Checked before every mTLS rotation |
-| **Failures** | Discovered at outage time | Alert with time-to-expiry, auto-retry |
+| **Failures** | Discovered at outage time | Alert with time-to-expiry, auto-retry, full history kept in the run |
 | **Audit trail** | Whoever remembers | Event History + `status` Query |
 
 The thing I keep coming back to is how little code the Workflow actually is. Most of the value is in the boundaries: what crosses into Event History, what gets published when, and what's allowed to fail. Temporal handles the long sleep, the retries, and the bookkeeping; you just decide where the lines go.
