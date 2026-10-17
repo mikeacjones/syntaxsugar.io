@@ -1,0 +1,30 @@
+# syntax sugar
+
+> Michael Jones writes about durable execution, Temporal, distributed systems, and integration engineering.
+
+A personal blog by Michael Jones. Recent posts cover Temporal, durable execution, and Temporal Cloud; older posts cover MuleSoft and DataWeave. Every post and Markdown lab below links to a plain Markdown copy. The full text of every post is in [llms-full.txt](https://syntaxsugar.io/llms-full.txt).
+
+## Posts
+
+- [Rotating Temporal Cloud Credentials with an Entity Workflow](https://syntaxsugar.io/post/2026/rotate-temporal-cloud-credentials/index.md): Every Temporal Cloud API key and mTLS certificate expires. Here's a pattern that gives each Namespace its own long-lived Workflow to renew its Worker credential before it runs out, validate it, and hand it off to your key store, all without putting a single secret in Event History.
+- [Building a Reddit Bot on Temporal](https://syntaxsugar.io/post/2026/reddit-bot-temporal-journey/index.md): I spent 2 years building workarounds to keep a Reddit bot running reliably. This is the story of evolving from a fragile Python script, to a homegrown durability layer, to durable Temporal workflows; and what I learned about correctness under failure along the way.
+- [Broken Object Level Authorization: A Critical Security Vulnerability](https://syntaxsugar.io/post/2023/bola/index.md): Broken Object Level Authorization is a critical security vulnerability that can have severe consequences for an application. In this article, we will explore what Broken Object Level Authorization is, why it is a problem, and how to mitigate it. We will also provide a simple Python REST API example to demonstrate the impact of this vulnerability.
+- [Dataweave Modules and How to Make Them](https://syntaxsugar.io/post/2021/dw-module-how-to/index.md): As your integration processes with MuleSoft mature, you'll find yourself using the data-weave language more and more. More importantly, you'll find yourself creating multiple functions which you'll want to reuse throughout your organization; in this article I will present two different ways in which you can create reusable data-weave libraries which can be included from your central maven repository, how to setup module unit tests, and how to perform line-by-line data-weave debugging.
+- [Streaming Data and Deferred Dataweave](https://syntaxsugar.io/post/2021/streaming-and-deferred-dw/index.md): Processing data in an Enterprise environment frequently involves very large files. In a traditional approach, processing these files can involve issues around memory and time as it involves first downloading the entire file, attempting to load the entire file into memory to work on, and then saving the whole file to output. Instead of taking this old-fashioned approach, we can utilized data streaming and deferred DataWeave processing in order to streamline this process.
+- [Working with the Mongodb Connector](https://syntaxsugar.io/post/2020/working-with-mongodb-connector/index.md): Translating MQL for use with the MongoDB connector can be confusing. In this post I'm going to attempt to explain several common use cases and how to implement them with the Mules 4 MongoDB Connector. Hopefully by the end you will also have a better idea about the thought process that goes into making the translation.
+- [Dynamic Connector Configuration](https://syntaxsugar.io/post/2020/dynamic-connector-config/index.md): Frequently when building integrations, especially batch jobs, we don't necessarily know the configuration for all of the systems we will be connecting to ahead of time; the configurations are typically (and should be) externalized. While it doesn't feel intuitive, we can create a global configuration and use scoped variables to dynamically create new connector configurations at runtime.
+- [Optional Query Params via Dynamic SQL](https://syntaxsugar.io/post/2020/optional-query-params-dyanmic-sql/index.md): When building APIs, we typically provide the ability to sort or filter data on GET operations via query parameters. While building basic query parameters in MuleSoft is simple, expanding your API to support optional and repeatable parameters can seem daunting when you're new to the platform. We will be building a simplistic Product System API in order to demo optional and repeatable query params. To accomplish this, we will be building dynamic (parameterized) SQL, and as a bonus wrapping this functionality into a reusable library.
+- [CI/CD with MuleSoft](https://syntaxsugar.io/post/2020/cicd-with-mulesoft/index.md): Demo video of CI/CD with MuleSoft and link to hands on lab.
+- [Getting Started with Data-Weave](https://syntaxsugar.io/post/2020/getting-started-with-dw/index.md): Need to get working with data-weave as fast as possible? Let's talk about how you can hit the ground running, and where to go from there.
+
+## Labs
+
+- [Safe Deployments with Temporal Worker Versioning on Kubernetes](https://syntaxsugar.io/lab/temporal-safe-deploys/index.md): Learn how to safely deploy workflow code changes using Temporal's Worker Versioning on Kubernetes, without patching and without losing expensive in-flight work.
+- [Connect to Azure SQL using Azure AD Authentication](https://syntaxsugar.io/lab-content/connect-to-azure-sql-using-azure-ad-authentication/): This will walk you through setting up a project to connect to an Azure SQL instance using Azure AD authentication.
+- [Anypoint MQ Notification Demo](https://syntaxsugar.io/lab-content/async-notification-api-workshop/): In this example, you will build a MuleSoft application using multiple queues to facilitate notifications to multiple channels.
+- [CICD with GitHub Actions](https://syntaxsugar.io/lab-content/cicd-github-actions/): In this example, you will build a MuleSoft application with automated deployment to Sandbox and Production environments, using a secrets vault as well as environment based properties file.
+
+## Optional
+
+- [RSS feed](https://syntaxsugar.io/rss.xml)
+- [Sitemap](https://syntaxsugar.io/sitemap-index.xml)

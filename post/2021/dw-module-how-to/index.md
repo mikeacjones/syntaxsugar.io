@@ -1,0 +1,400 @@
+# Dataweave Modules and How to Make Them
+
+> As your integration processes with MuleSoft mature, you'll find yourself using the data-weave language more and more. More importantly, you'll find yourself creating multiple functions which you'll want to reuse throughout your organization; in this article I will present two different ways in which you can create reusable data-weave libraries which can be included from your central maven repository, how to setup module unit tests, and how to perform line-by-line data-weave debugging.
+
+- Author: Michael Jones
+- Published: 2021-08-09
+- Tags: mulesoft, dataweave
+- URL: https://syntaxsugar.io/post/2021/dw-module-how-to/
+
+# Dataweave Modules
+
+## What are they?
+
+DataWeave modules provide reusable functions that aren't necessarily core to the runtime, like `isAlpha`, `takeWhile`, `countBy`, etc. DataWeave provides a large number of built in libraries to help with common tasks which we can import; for example, if you wanted to create a signed JWT for authentication, you would leverage the Binaries and Crypto modules:
+
+```data-weave{2,3}
+%dw 2.0
+import toBase64 from dw::core::Binaries
+import HMACBinary from dw::Crypto
+
+fun binaryJson(obj: Object) = write(obj, 'application/json', { indent: false }) as Binary
+fun base64URL(str: Binary) = toBase64(str) replace "+" with "-" replace "/" with "_" replace "=" with ""
+fun base64Obj(obj: Object) = base64URL(binaryJson(obj))
+fun JWT(header: Object, body: Object, key: String) : String = do {
+    var jwt = "$(base64Obj(header)).$(base64Obj(body))"
+    ---
+    "$(jwt).$(base64URL(HMACBinary(key as Binary, jwt as Binary, "HmacSHA256")))"
+}
+
+output application/json
+---
+JWT({
+    alg: 'HS256',
+    typ: 'JWT'
+}, {
+    iat: now() as Number { unit: 'milliseconds' },
+    sub: now() as Number { unit: 'milliseconds' },
+    name: 'Michael Jones'
+},
+'y(O>KUIIj}m\$og)')
+```
+
+> If you run this in https://dwlang.fun, you'll see that it produces a valid JWT that you can test on https://jwt.io.
+
+So DataWeave provides a lot of out-of-the-box modules we can leverage for common tasks. 
+
+Like the code above, we frequently run into situtations where a reusable function would be extremely useful.. but there isn't one! So what can we do? Well, just like the vast majority of languages, we can create and publish our own reusable modules; once published, we can include it as a maven depedency just like anything else. Reusable modules provide benefits beyond just standardization and reuse - we can actually put these modules into their own CI/CD pipelines, which allows us to introduce new, reusable features that are properly tested and documented!
+
+# Let's Build a JWT Module!
+
+A large number of APIs require that we generate a signed JWT in order to authenticate. MuleSoft does not currently have a built in function/connector for this process, so we'll leverage functionality that already exists within DataWeave to build our own reusable library.
+
+## Development Environment Setup
+
+DataWeave modules are still Maven projects, so we can develop them in Anypoint Studio; however, using IntelliJ provides an extended tool set which makes for an improved developer experience.
+
+1. Install IntelliJ: If you don't already have IntelliJ installed, visit https://www.jetbrains.com/idea/ and download the Community edition.
+2. Add the DataWeave plugin, which provides tooling around DataWeave project types, line-by-line debugging, and more.
+
+*[Image: Animated GIF showing the installation of the DataWeave plugin, authored by MuleSoft]*
+
+## Create the DataWeave Project
+
+1. In IntelliJ, click Create Project
+2. Select the type “Weave Project”
+
+*[Image: Create weave project screenshot]*
+
+3. Set groupId to `com.mulesoft.codelabs`
+4. Set artifactId to `jwt-dw-module`
+5. Leave the version as `1.0.0-SNAPSHOT`
+
+*[Image: Screenshot of setting module IDs]*
+
+6. On the next screen, leave all of the defaults
+
+*[Image: Screenshot of leaving defaults]*
+
+7. Set the project name to `jwt-dw-module` and choose a location to save the files
+
+*[Image: Screenshot of project name]*
+
+8. Create the project
+
+## Examining the Project Structure
+
+Once the project has been created, you'll notice that a number of folders are present by default:
+
+*[Image: Image of project folders]*
+
+This is where we will setup our code, as well as any unit testing we wish to include. The project structure is dictated by the configuration in the POM file:
+
+*[Image: Image of POM file]*
+
+This entry indicates that, when building the project, we should look for DataWeave files in `src/main/dw`. Your folder structure here dictates what the import looks like; eg: creating a subfolder `src/main/dw/jwt` with a file called RSA.dwl will make our import: `import * from dw::jwt::RSA`.
+
+When adding DataWeave files in a Mule Application, we typically place them in the default `src/main/resources` directory; however, for the purposes of a DataWeave module best practice suggests using `src/main/dw`.
+
+*[Image: Image of POM file]*
+
+These entries dictate where the build plugin should check for unit tests that need to be run.
+
+## Populate the Code
+
+Now that we have the project scaffolded, let's add our code.
+
+### Common.dwl: Functions shared by both the RSA and HMAC functions
+
+1. In `src/main/dw`, create a folder called jwt.
+2. In `src/main/dw/jwt`, create a Dataweave Component (module) called `Common.dwl`
+
+*[Image: Image of module creation]*
+
+3. Paste the following code:
+
+```DataWeave
+%dw 2.0
+import toBase64 from dw::core::Binaries
+
+fun binaryJson(obj: Object) =
+    write(obj, 'application/json', { indent: false }) as Binary
+
+fun base64URL(str: Binary) =
+    toBase64(str) replace "+" with "-" replace "/" with "_" replace "=" with ""
+
+fun base64Obj(obj: Object) =
+    base64URL(binaryJson(obj))
+
+/** basic JWT with header and payload, no signing */
+fun JWT(header: Object, payload: Object) =
+    "$(base64Obj(header)).$(base64Obj(payload))"
+
+/** basic JWT with no user specified header */
+fun JWT(payload: Object) =
+    JWT({typ:'JWT'}, payload)
+```
+
+
+### HMAC.dwl: Functions used for creating HMAC-SHA signed JSON Web Tokens
+
+1. In `src/main/dw/jwt`, create a Dataweave Component (module) called `HMAC.dwl`
+
+*[Image: Image of module creation]*
+
+2. Paste the following code:
+
+```DataWeave
+%dw 2.0
+import HMACBinary from dw::Crypto
+import fail from dw::Runtime
+import jwt::Common
+
+var algMapping = {
+    "HmacSHA256": "HS256",
+    "HmacSHA384": "HS384",
+    "HmacSHA512": "HS512"
+}
+
+fun alg(algorithm: String) : String | Null =
+    algMapping[algorithm] default fail('Invalid algorithm provided for signing')
+
+fun signJWT(content: String, key: String, alg: String) : String =
+    Common::base64URL(HMACBinary(key as Binary, content as Binary, alg))
+
+/** JWT with header, payload, and signature by specific algorithm. valid algorithms dictated by HMACWith */
+fun JWT(header: Object, payload: Object, signingKey: String, algorithm: String) : String = do {
+    var jwt = Common::JWT({
+        (header - "alg" - "typ"),
+        alg: alg(algorithm),
+        typ: "JWT"
+    }, payload)
+    ---
+    "$(jwt).$(signJWT(jwt, signingKey, algorithm))"
+}
+
+/** JWT with header, payload, and signed with HMAC-SHA256*/
+fun JWT(header: Object, payload: Object, signingKey: String) : String = do {
+    JWT(header, payload, signingKey, 'HmacSHA256')
+}
+
+/** JWT with payload and automatically generated header, signed with HMAC-SHA256 */
+fun JWT(payload: Object, signingKey: String) : String =
+    JWT( {},payload, signingKey, 'HmacSHA256')
+```
+
+### RSAHelper.java: Provides functionality not available in DataWeave via Java necessary for RSA signing
+
+When creating DataWeave modules, we can even include and leverage custom Java code, or java dependencies! DataWeave does not currently have built in support for RSA signing, so we will create a simple helper java file to handle this for us.
+
+1. In `src/main/java`, create Java class `RSAHelper.java`
+2. Paste the following code:
+
+```java
+import java.io.UnsupportedEncodingException;
+import java.security.*;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.util.Base64;
+
+public class RSAHelper {
+    public static String signString(String content, String privateKeyContent, String algorithm) throws NoSuchAlgorithmException, InvalidKeySpecException, InvalidKeyException, UnsupportedEncodingException, SignatureException {
+        KeyFactory kf = KeyFactory.getInstance("RSA");
+        PKCS8EncodedKeySpec keySpecPKCS8 = new PKCS8EncodedKeySpec(Base64.getDecoder().decode(privateKeyContent));
+        PrivateKey pk = kf.generatePrivate(keySpecPKCS8);
+
+        Signature privateSignature = Signature.getInstance(algorithm);
+        privateSignature.initSign(pk);
+        privateSignature.update(content.getBytes("UTF-8"));
+        byte[] s = privateSignature.sign();
+        return Base64.getUrlEncoder().encodeToString(s).replace("=", "");
+    }
+}
+```
+
+### RSA.dwl: Functions used for creating RSA signed JSON Web Tokens
+
+1. In `src/main/dw/jwt`, create a Dataweave Component (module) `RSA.dwl`
+
+*[Image: Image of module creation]*
+
+2. Paste the following code:
+
+```DataWeave
+%dw 2.0
+import java!RSAHelper
+import jwt::Common
+import fail from dw::Runtime
+
+var algMapping = {
+    "Sha256withRSA": "RS256",
+    "Sha384withRSA": "RS384",
+    "Sha512withRSA": "RS512"
+}
+
+fun alg(algorithm: String) : String | Null =
+    algMapping[algorithm] default fail('Invalid algorithm provided for signing')
+
+fun cleanKey(key: String) : String =
+    key replace "\n" with "" replace /(-+)(BEGIN|END)(\sRSA)? (PRIVATE|PUBLIC) KEY(-+)/ with "" replace " " with ""
+
+fun signJWT(jwt: String, privateKey: String, algorithm: String) : String =
+    RSAHelper::signString(jwt, cleanKey(privateKey), algorithm)
+
+/** JWT with header, payload, and signature by specific algorithm. valid algorithms dictated by HMACWith */
+fun JWT(header: Object, payload: Object, pkcs8privateKey: String, algorithm: String) : String = do {
+    var jwt = Common::JWT(
+    { (header - "alg" - "typ"), alg: alg(algorithm), typ: 'JWT' },
+    payload)
+    ---
+    "$(jwt).$(signJWT(jwt, pkcs8privateKey, algorithm))"
+}
+
+/** JWT with payload and automatically generated header, signed with HMAC-SHA256 */
+fun JWT(payload: Object, pkcs8privateKey: String) : String =
+    JWT({}, payload, pkcs8privateKey, "Sha256withRSA")
+```
+
+> Seeing an error about the `import java!RSAHelper`? This is normal; unfortunately the DataWeave plugin isn't aware of changes made to Java code. While you can test and develop Java code like normal, you will need to reload the project after making changes before the DataWeave "linter" becomes aware. You may also have to build and install (mvn install) the project first.
+
+### Setup a simple mapping test:
+
+Next, in order to have an entry point for testing our code, lets setup a simple mapping.
+
+1. In `src/test/dwtest`, create a DataWeave Component (mapping) called `HMAC_Testing.dwl`
+
+*[Image: Image of module creation]*
+
+2. At the bottom of IntelliJ, click Weave Preview to open the mapping preview. This shows us a live preview of the results of our dataweave!
+
+*[Image: Weave output preview]*
+
+3. In order to simulate some incoming data, we'll add an input. This allows us to set a payload object with some JSON. Click the + button in the Inputs panel
+
+*[Image: Add new input]*
+
+4. Set a sample payload which we will include in our token:
+
+```json
+{
+  "firstName": "Michael",
+  "lastName": "Jones"
+}
+```
+
+5. And finally in the mapping DataWeave code, paste the following:
+
+```DataWeave
+%dw 2.0
+import jwt::HMAC
+output application/json
+---
+HMAC::JWT(payload, "Mulesoft123!")
+```
+
+And there we go! We should now see a signed JWT being output in the preview pane. That tokens should look like:
+
+```json
+"eyJhbGciOiAiSFMyNTYiLCJ0eXAiOiAiSldUIn0.eyJmaXJzdE5hbWUiOiAiTWljaGFlbCIsImxhc3ROYW1lIjogIkpvbmVzIn0.izgs2w_CIE-qa0TdvzFErTOW4TPSDWrZs4b7xXdChFk"
+```
+
+Assuming that you used the same input payload that I did. We can take this token and key, and use https://jwt.io in order to verify a valid token was created!
+
+*[Image: jwt.io screenshot]*
+
+Now that we have our module wrapped up, lets go ahead and add a basic Unit Test and run the test lifecycle phase to see what how it looks.
+
+## Setup a Unit Test
+
+1. In `src/test/dwmit`, create a new folder called `HMAC_Payload_Only`. This folder will contain a unit test against which we are testing calling `HMAC::JWT` with only a payload and key.
+2. In `src/test/dwmit/HMAC_Payload_Only`, create `transform.dwl` and paste the following code:
+
+```DataWeave
+%dw 2.0
+import jwt::HMAC
+output application/json
+---
+HMAC::JWT({
+            "firstName": "Michael",
+            "lastName": "Jones"
+          }, "Mulesoft123!")
+```
+
+3. In `src/test/dwmit/HMAC_Payload_Only`, create `out.json` and paste the following:
+
+```json
+"eyJhbGciOiAiSFMyNTYiLCJ0eXAiOiAiSldUIn0.eyJmaXJzdE5hbWUiOiAiTWljaGFlbCIsImxhc3ROYW1lIjogIkpvbmVzIn0.izgs2w_CIE-qa0TdvzFErTOW4TPSDWrZs4b7xXdChFk"
+```
+
+4. Open terminal, and run `mvn test`; you should see your test show up as passing!
+
+*[Image: MVN Test results]*
+
+Now that you see the basic functionality, take some time to play around with the test in order to see failures, or create additional tests!
+
+## Publish Module to Maven Repository
+
+For this example, we will be using your Anypoint Exchange as a maven repository target.
+
+> **Note:** This is not currently officially supported, as DataWeave modules are not recognized by the Exchange Maven Facade. You are free to deploy with this method, but until the Facade recognizes DataWeave modules it will not be officially supported.
+
+1. Find your organization ID:
+2. Log into https://anypoint.mulesoft.com
+3. Make sure you are in the master business group.
+
+*[Image: Master business group screenshot]*
+
+4. Navigate to Access Management
+5. Click on your master business group and copy your Organization Id
+
+*[Image: Screenshot of org info]*
+
+6. In your DataWeave project, remove the line `dw-library` in `POM.xml`
+7. In your DataWeave project, update your `groupId` key to your Organization Id in `POM.xml`
+8. In your DataWeave project, update your `POM.xml` by adding a `distributionManagement key`
+
+```xml
+<distributionManagement>
+  <repository>
+    <id>exchange-repository</id>
+    <url>https://maven.anypoint.mulesoft.com/api/v2/organizations/YOUR-ORG-ID-HERE/maven</url>
+    <layout>default</layout>
+  </repository>
+</distributionManagement>
+```
+
+> **Note:** In order to deploy, you will need a server entry with credentials for the repository id `exchange-repository`. For an example `settings.xml` file you can include in your maven install, check this file: https://github.com/mikeacjones/dw-jwt-module/blob/master/.maven/settings.xml Strictly speaking, the only piece required in this file is the server entry for `exchange-repository`.
+
+Now that we have a maven target setup, run the following commands in terminal:
+
+1. `mvn install` (this install into our local repo; if you can't get your credentials setup for the Exchange, this will allow us to continue with the next section)
+2. `mvn deploy` (this will deploy to our exchange maven repo, assuming your credentials are setup)
+
+*[Image: Screenshot of mvn install / deploy]*
+
+## Use our Module in a Mule Application
+
+There you go! We can now easily include this module in our Mule application simply by adding a dependency to our project's `POM.xml` file!
+
+```xml
+<dependency>
+    <!-- Use your ORG ID if you changed it earlier -->
+    <groupId>com.mulesoft.labs</groupId> 
+    <artifactId>jwt-dw-module</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+<dependency>
+```
+
+And now you can include it in your transform: 
+
+```DataWeave
+%dw 2.0
+import jwt::HMAC
+output application/json
+---
+HMAC::JWT({
+    name: 'Michael Jones'
+}, 'Mulesoft123!')
+```
+
+## And now we have a reusable library separate from our Mule applications, with its own Unit Testing and versioning!

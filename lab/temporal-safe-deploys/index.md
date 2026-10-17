@@ -1,0 +1,1010 @@
+# Safe Deployments with Temporal Worker Versioning on Kubernetes
+
+> Learn how to safely deploy workflow code changes using Temporal's Worker Versioning on Kubernetes, without patching and without losing expensive in-flight work.
+
+- Author: Michael Jones
+- Published: 2026-04-07
+- Tags: Temporal, Kubernetes, Worker Versioning
+- URL: https://syntaxsugar.io/lab/temporal-safe-deploys/
+
+## What We're Building
+
+I recently refactored some personal projects to use Temporal as the orchestrator. When I was updating my pipelines that handle the deployments, and while testing things (ie: playing whack-a-mole with bugs I created as I learned a new SDK), I ran into a fairly common problem in Temporal when making changes to your code base: determinism errors for in-flight workflows. This lead to diving into learning how to reset the event history, terminating my workflows before deployments, code patching / versioning...
+
+![Crazy mental connections I now needed to maintain..](https://media.giphy.com/media/rBA9YKPPA4v7DXPdvg/giphy.gif)
+
+Eventually though I started digging to see if there was a way to manage this without juggling multiple live versions of the workflow code. Enter the temporal worker controller. This post walks through an example exercise to help understand, at least at a high level, the problem the controller solves and the basic deployment pattern.
+
+> **Update (October 2026):** The Temporal Worker Controller is now Generally Available. This lab has been updated for the GA release. The biggest change is that the custom resources were renamed: `TemporalWorkerDeployment` is now `WorkerDeployment` and `TemporalConnection` is now `Connection`. If you ran through an earlier version of this lab, see [Upgrading from the Pre-GA Controller](#upgrading-from-the-pre-ga-controller) at the end.
+
+Picture this: you have an agentic workflow making expensive LLM calls. Each research step costs real money and takes real time. Three steps in, your workflow has burned through a few dollars of compute. Then someone deploys a code change. The in-flight workflow hits a non-determinism error and stops dead.
+
+Your options? Reset the workflow to a point before the change. Those LLM calls you already paid for? Gone. That work? Wasted.
+
+There has to be a better way. And there is.
+
+In this lab we'll build a research agent workflow, break it with a naive deployment, feel that pain firsthand, and then fix it with Temporal's Worker Versioning on Kubernetes. By the end you'll understand how to safely roll out workflow code changes without patching, without losing in-flight work, and without any of the usual deployment anxiety.
+
+Here's what we'll cover:
+
+| Section | What You'll Learn |
+|---------|-------------------|
+| The Research Agent | Build and deploy a multi-step agentic workflow |
+| The Breaking Change | See a non-determinism error destroy a running workflow |
+| Worker Versioning | Pin workflows to their version so old and new coexist |
+| Long-Running Workflows | Migrate a polling workflow to a new version with continue-as-new |
+| Sleeping Workflows | Handle the caveat where idle workflows don't notice version changes |
+| Scaling & Ramping | Understand the full HA story with progressive rollouts |
+| Per-Version Autoscaling | Scale each version on its own Temporal backlog with KEDA |
+
+### What You'll Need
+
+- [Docker](https://docs.docker.com/get-docker/) (make sure it's running)
+
+That's it. Everything else (Python, uv, kubectl, Helm, k3d, Temporal CLI) runs inside a dev environment container. Nothing gets installed on your machine.
+
+## Setup
+
+Clone the starter branch:
+
+```bash
+git clone -b starter https://github.com/mikeacjones/temporal-safe-deploys-lab
+cd temporal-safe-deploys-lab
+```
+
+### Start the Dev Environment
+
+The repo includes a containerized dev environment with everything pre-installed: Python, uv, kubectl, Helm, k3d, and the Temporal CLI. One command gets you a fully working environment:
+
+```bash
+./scripts/devenv.sh
+```
+
+This builds the dev container, then automatically:
+
+1. Installs Python dependencies
+2. Creates a k3d cluster (Kubernetes running inside Docker) with a local container registry
+3. Starts the Temporal dev server in a background screen session
+
+When it's done, you'll be dropped into a bash shell with everything ready. The Temporal UI is at [localhost:8233](http://localhost:8233).
+
+To check on the Temporal server logs, run `screen -r temporal` (Ctrl+A then D to detach back to your shell).
+
+When you're done with the lab, just `exit` the container. The k3d cluster, registry, and Temporal server are cleaned up automatically. Your system goes back to how it was.
+
+Quick sanity check that the cluster is up:
+
+```bash
+kubectl get nodes
+```
+
+You should see a single node in `Ready` state.
+
+## The Research Agent
+
+Let's walk through what the starter code gives you.
+
+### The Workflow
+
+`src/workflows.py` defines a `ResearchWorkflow` that runs a multi-step research pipeline:
+
+```python
+@workflow.defn
+class ResearchWorkflow:
+    @workflow.run
+    async def run(self, topic: str) -> str:
+        # Phase 1: Plan the research
+        plan = await workflow.execute_activity(
+            plan_research, topic,
+            start_to_close_timeout=timedelta(seconds=30),
+        )
+
+        # Phase 2: Execute each research step (the expensive part)
+        findings: list[StepFindings] = []
+        for step in plan.steps:
+            result = await workflow.execute_activity(
+                execute_research_step, step,
+                start_to_close_timeout=timedelta(seconds=30),
+            )
+            findings.append(result)
+
+        # Wait for proceed signal before synthesis
+        await workflow.wait_condition(lambda: self._proceed)
+
+        # Phase 3: Synthesize findings
+        summary = await workflow.execute_activity(
+            synthesize_findings, args=[topic, findings],
+            start_to_close_timeout=timedelta(seconds=30),
+        )
+
+        return summary.summary
+```
+
+The activities in `src/activities.py` wrap mocked LLM calls in `src/mock_llm.py`. Each `execute_research_step` call sleeps for 5 seconds to simulate an expensive API call. Three steps means about 15 seconds of "LLM compute" per workflow. After the research steps complete, the workflow waits for a `proceed` signal before running synthesis. This signal gate lets you pause the workflow at a controlled point, which is going to be important in the next section.
+
+There's also a `fact_check` activity already defined in the starter code. We're not using it yet, but it'll be important later.
+
+### The Worker
+
+`src/worker.py` is a straightforward Temporal worker. It registers both workflows and all four activities (including `fact_check`) on the `research-agent` task queue. Nothing fancy here.
+
+### Deploy V1
+
+Build the Docker image and deploy to your k3d cluster:
+
+```bash
+./scripts/build-and-deploy.sh v1
+```
+
+This builds the image, pushes it to your local registry, and deploys it as a standard Kubernetes Deployment via Helm. Check it's running:
+
+```bash
+kubectl get pods
+```
+
+You should see a pod for `research-agent` in a Running state.
+
+### Run a Workflow
+
+Start a research workflow:
+
+```bash
+temporal workflow start \
+  --task-queue research-agent \
+  --type ResearchWorkflow \
+  --input '"quantum computing"' \
+  --workflow-id research-test-1
+```
+
+Head to the Temporal UI at [localhost:8233](http://localhost:8233). You'll see the workflow has completed the plan activity and is working through the research steps (~5 seconds each). Once all three steps finish, the workflow waits for the `proceed` signal. Send it:
+
+```bash
+temporal workflow signal \
+  --workflow-id research-test-1 \
+  --name proceed
+```
+
+Now watch the workflow complete with the synthesis activity.
+
+{/* TODO: Screenshot of completed V1 workflow in Temporal UI */}
+
+## The Breaking Change
+
+Product wants each research step fact-checked before moving on to the next one. Totally reasonable. Let's add it.
+
+Open `src/workflows.py` and add the `fact_check` activity call inside the research loop, right after each step. First, update the import at the top of the file to include `fact_check`:
+
+```python
+with workflow.unsafe.imports_passed_through():
+    from src.activities import (
+        execute_research_step,
+        fact_check,         # [!code ++]
+        plan_research,
+        synthesize_findings,
+    )
+```
+
+Then modify the research loop to fact-check each step's findings before moving on:
+
+```python
+        findings: list[StepFindings] = []
+        for step in plan.steps:
+            result = await workflow.execute_activity(
+                execute_research_step, step,
+                start_to_close_timeout=timedelta(seconds=30),
+            )
+            await workflow.execute_activity(              # [!code ++]
+                fact_check, result,                       # [!code ++]
+                start_to_close_timeout=timedelta(seconds=30),  # [!code ++]
+            )                                             # [!code ++]
+            findings.append(result)
+```
+
+Now here's where things go wrong. Start a V1 workflow and let it run through the research steps:
+
+```bash
+temporal workflow start \
+  --task-queue research-agent \
+  --type ResearchWorkflow \
+  --input '"artificial intelligence"' \
+  --workflow-id research-test-2
+```
+
+Check the Temporal UI. The workflow runs the plan, then the three research steps (~15 seconds), and then waits for the `proceed` signal. All that expensive LLM work is done and recorded in the history.
+
+Now, while it's paused at the signal gate, deploy V2:
+
+```bash
+./scripts/build-and-deploy.sh v2
+```
+
+Wait for the new pod to be running (`kubectl get pods`), then send the proceed signal:
+
+```bash
+temporal workflow signal \
+  --workflow-id research-test-2 \
+  --name proceed
+```
+
+What happens: the V2 worker picks up the workflow task and replays the history. Plan matches. Step 1 matches. Then V2's code says "schedule fact_check" but the V1 history says "schedule step 2" at that position. The commands don't match the events. Non-determinism error.
+
+{/* TODO: Screenshot of the non-determinism error in Temporal UI */}
+
+![Picard Facepalm](https://media.tenor.com/FAuc6bmub8QAAAAM/picard-facepalm.gif)
+
+The workflow is stuck. Your options:
+
+1. **Reset the workflow** to a point before the code divergence. But those three `execute_research_step` activities already ran. In production, those were real LLM API calls. Real money. Gone.
+2. **Use patching** to branch the code so old and new workflows both replay correctly. Patching is a solid tool when you need it, but it requires you to maintain both code paths until all old workflows complete. For frequent deploys on long-running workflows, that's a lot of branches to juggle.
+
+Both options work. But there's a third option that sidesteps the problem entirely: what if old workflows could just finish on old workers, while new workflows start on new workers? That's Worker Versioning.
+
+## Worker Versioning
+
+The core idea is simple: multiple versions of your worker run simultaneously on the same task queue. The Temporal server routes tasks to the right version. Workflows that started on V1 stay on V1 workers. New workflows go to V2. No conflicts, no non-determinism errors, no lost work.
+
+One thing to call out: all versions share the same task queue. You don't need separate queues. The Temporal server handles the routing based on the build ID each worker registers with.
+
+On Kubernetes, the [Temporal Worker Controller](https://docs.temporal.io/production-deployment/worker-deployments/kubernetes-controller) automates all of this. It's a Kubernetes operator that watches `WorkerDeployment` resources and manages the full version lifecycle: spinning up new versions, draining old ones, and cleaning up when they're done. It's Generally Available with stable APIs, so this is the recommended way to run versioned workers on Kubernetes. The source is at [temporalio/temporal-worker-controller](https://github.com/temporalio/temporal-worker-controller) and the Helm charts are published to Docker Hub as OCI artifacts.
+
+When you update the image tag on a `WorkerDeployment`, the controller spins up new pods alongside old pods. Old pods drain their work and eventually get cleaned up. This is sometimes called "rainbow deployments" because you can have many versions running at once.
+
+### Install the Worker Controller
+
+Let's get it set up. The controller ships as two Helm charts, one for the CRDs and one for the controller itself, so the CRDs can be upgraded independently. Install the CRDs first, then the controller:
+
+```bash
+CHART_VERSION=0.31.0
+
+helm upgrade --install temporal-worker-controller-crds \
+  oci://docker.io/temporalio/temporal-worker-controller-crds \
+  --version $CHART_VERSION \
+  --namespace temporal-system \
+  --create-namespace \
+  --wait
+
+helm upgrade --install temporal-worker-controller \
+  oci://docker.io/temporalio/temporal-worker-controller \
+  --version $CHART_VERSION \
+  --namespace temporal-system \
+  --wait
+```
+
+A note on versions: the Helm chart version and the controller (app) version are numbered separately. Chart `0.31.0` installs controller `v1.12.0`. Pass the *chart* version to `--version`; the [releases page](https://github.com/temporalio/temporal-worker-controller/releases) lists the mapping. Anything from chart `0.26.0` (controller `v1.7.0`) onward is the GA API used in this lab.
+
+The controller's validating webhook needs a TLS certificate, and the recommended way to provide one is [cert-manager](https://cert-manager.io/). The dev environment already installed cert-manager into the cluster for you, so there's nothing extra to do here.
+
+Next, deploy a `Connection` resource so the controller knows how to reach our dev server. There's a Helm chart for this in the repo:
+
+```bash
+helm upgrade --install lab-infra ./charts/infra --namespace default
+```
+
+Take a look at `charts/infra/templates/connection.yaml` if you're curious. It points at `temporal-lab-devenv:7233` which is the dev environment container's hostname on the shared Docker network. The k3d cluster and devenv container are on the same network, so the pods can reach Temporal by container name.
+
+Verify everything is in place:
+
+```bash
+kubectl get crds | grep temporal
+kubectl get connections.temporal.io
+```
+
+You should see `workerdeployments.temporal.io` and `connections.temporal.io` in the CRDs, and a `lab-temporal` connection resource. (You'll also spot `temporalworkerdeployments.temporal.io` and `temporalconnections.temporal.io`. Those are the deprecated pre-GA kinds, kept around only so existing clusters can migrate. You can't create new resources of those kinds.)
+
+### Configure the Worker
+
+Let's add versioning to the worker. Open `src/worker.py` and add the deployment config. First, the new imports:
+
+```python
+from temporalio.common import VersioningBehavior, WorkerDeploymentVersion  # [!code ++]
+from temporalio.worker import Worker, WorkerDeploymentConfig               # [!code ++]
+from temporalio.worker import Worker                                       # [!code --]
+```
+
+Then add these constants and the `deployment_config` parameter to the `Worker` constructor:
+
+```python
+TASK_QUEUE = "research-agent"
+DEPLOYMENT_NAME = os.environ.get("TEMPORAL_DEPLOYMENT_NAME", "research-agent")  # [!code ++]
+BUILD_ID = os.environ.get("TEMPORAL_WORKER_BUILD_ID", "local-dev")              # [!code ++]
+
+# ... inside main():
+
+worker = Worker(
+    client,
+    task_queue=TASK_QUEUE,
+    workflows=[ResearchWorkflow, ResearchPollingWorkflow],
+    activities=[
+        plan_research,
+        execute_research_step,
+        synthesize_findings,
+        fact_check,
+    ],
+    deployment_config=WorkerDeploymentConfig(            # [!code ++]
+        version=WorkerDeploymentVersion(                 # [!code ++]
+            deployment_name=DEPLOYMENT_NAME,             # [!code ++]
+            build_id=BUILD_ID,                           # [!code ++]
+        ),                                               # [!code ++]
+        use_worker_versioning=True,                      # [!code ++]
+        default_versioning_behavior=VersioningBehavior.PINNED,  # [!code ++]
+    ),                                                   # [!code ++]
+)
+```
+
+The Worker Controller injects `TEMPORAL_DEPLOYMENT_NAME` and `TEMPORAL_WORKER_BUILD_ID` as environment variables when running inside Kubernetes. The `"local-dev"` fallbacks are for running outside the cluster.
+
+Notice the `default_versioning_behavior=VersioningBehavior.PINNED` on the config. This sets the default for all workflows registered on this worker. `PINNED` means: once a workflow starts on a particular build ID, all of its tasks get routed exclusively to workers running that same build. The code never changes underneath a running workflow.
+
+You can also set the behavior per-workflow with `@workflow.defn(versioning_behavior=VersioningBehavior.PINNED)` if you need different behaviors for different workflow types. See the [Python SDK versioning reference](https://docs.temporal.io/develop/python/versioning#pinned-vs-auto_upgrade-behaviors) for the full set of options.
+
+### The WorkerDeployment Chart
+
+Take a look at `charts/worker/templates/worker-deployment.yaml` to see what the Worker Controller manages:
+
+```yaml
+apiVersion: temporal.io/v1alpha1
+kind: WorkerDeployment
+metadata:
+  name: research-agent
+spec:
+  workerOptions:
+    connectionRef:
+      name: lab-temporal
+    temporalNamespace: default
+  rollout:
+    strategy: AllAtOnce
+  sunset:
+    scaledownDelay: 5s
+    deleteDelay: 10s
+  deployment:
+    replicas: 1
+    template:
+      spec:
+        containers:
+          - name: worker
+            image: "k3d-registry.localhost:5050/research-agent:v1-versioned"
+```
+
+Don't let the `v1alpha1` in `apiVersion` throw you. The GA release kept that API version, and the project has committed to no more breaking changes to these resources.
+
+The `deployment` block takes a standard Kubernetes `DeploymentSpec` (replicas, pod template, `minReadySeconds`, and so on). The controller stamps out one real Kubernetes Deployment per version from it. Older examples put `replicas` and `template` directly under `spec`. That form still works but is deprecated.
+
+The key fields: `rollout.strategy` controls how new versions are introduced (we'll cover `Progressive` later in the ramping section). `sunset` controls how long old version pods stick around after they stop receiving new work. The controller handles creating versioned Kubernetes Deployments, registering build IDs with Temporal, and cleaning up drained versions automatically.
+
+### Test It
+
+First, uninstall the old simple deployment since we're switching to the Worker Controller:
+
+```bash
+helm uninstall research-agent -n default
+```
+
+Now rebuild and deploy V1 with versioning enabled:
+
+```bash
+./scripts/build-and-deploy.sh v1-versioned --versioned
+```
+
+The `--versioned` flag tells the deploy script to use the `WorkerDeployment` chart instead of a plain Kubernetes Deployment.
+
+Head to the Temporal UI at [localhost:8233](http://localhost:8233) and check the **Deployments** tab. You should see a `default/research-agent` deployment (the controller names it `<k8s namespace>/<resource name>`) with a build ID that starts with `v1-versioned`. The controller builds the build ID from the image tag plus a short hash of the pod template, so any change to the pod spec produces a new version. This is where you'll be able to see multiple versions coexisting once we deploy V2.
+
+{/* TODO: Screenshot of the Deployments tab showing v1-versioned */}
+
+Now start a workflow, let the research steps complete, then deploy V2 mid-flight:
+
+```bash
+temporal workflow start \
+  --task-queue research-agent \
+  --type ResearchWorkflow \
+  --input '"machine learning"' \
+  --workflow-id research-test-3
+```
+
+Wait for the workflow to reach the signal gate (research steps done), then deploy V2:
+
+```bash
+./scripts/build-and-deploy.sh v2-versioned --versioned
+```
+
+Check `kubectl get pods`. You'll see pods for both versions running simultaneously. Head over to the deployments tab again, and then click on the deployment to see the versions - you'll see a current and draining deployment. Clicking into the draining deployment, you'll see the in-flight workflow is currently "on" this deployment. Until the workflow completes successfully, this deployment version will stay in the draining state, allowing the workflow to complete. If you were to start a new workflow now, you'd see the new workflow route to the current deployment version.
+
+
+Now signal the V1 workflow:
+
+```bash
+temporal workflow signal \
+  --workflow-id research-test-3 \
+  --name proceed
+```
+
+This time the V1 workflow finishes on the V1 pod. If we had made a change that broke determinism before deploying V2, there would have been no determinism errors - the V1 worker would continue handling the workflow.
+
+{/* TODO: Screenshot showing both V1 and V2 workflows coexisting */}
+
+| | Without Versioning | With Versioning |
+|---|---|---|
+| In-flight V1 workflows | Non-determinism error | Complete normally on V1 |
+| New workflows | Start on V2 | Start on V2 |
+| LLM spend | Lost on event history reset | Preserved |
+| Old workers | Replaced immediately | Drain, then removed |
+
+## Long-Running Workflows
+
+So far we've been working with the `ResearchWorkflow`, which starts, does its thing, and completes. Worker Versioning handles that beautifully: V1 workflows finish on V1 workers, V2 workflows start on V2 workers, everyone's happy.
+
+But what about the `ResearchPollingWorkflow`? It runs indefinitely, processing research requests as they come in via signals. It never completes. Since our worker is configured with `PINNED` behavior, this workflow stays on V1 forever. That means the V1 worker pod sticks around forever too, which defeats the purpose of draining old versions.
+
+We need a way for long-running workflows to migrate to new versions. There are two pieces to this, and we'll tackle them one at a time.
+
+### Part 1: Continue-as-New with AUTO_UPGRADE
+
+The starter code already has a basic `continue_as_new` for history management:
+
+```python
+if workflow.info().is_continue_as_new_suggested():
+    workflow.continue_as_new(
+        PollingState(
+            pending_requests=list(self._pending),
+            completed_count=state.completed_count,
+        )
+    )
+```
+
+This is standard Temporal practice: when the event history gets large, the workflow restarts itself with fresh history. But with `PINNED` behavior, the continued execution stays on the same version. It doesn't migrate.
+
+The fix is one line. Add `initial_versioning_behavior=AUTO_UPGRADE` to the continue-as-new call:
+
+```python
+if workflow.info().is_continue_as_new_suggested():
+    workflow.continue_as_new(
+        PollingState(
+            pending_requests=list(self._pending),
+            completed_count=state.completed_count,
+        ),
+        initial_versioning_behavior=(                            # [!code ++]
+            workflow.ContinueAsNewVersioningBehavior.AUTO_UPGRADE  # [!code ++]
+        ),                                                       # [!code ++]
+    )
+```
+
+Now when the history gets large enough to trigger a continue-as-new, the new execution starts on the current (latest) version instead of staying pinned to the old one. The state carries over. Pending requests and the completed count survive the migration. From the outside it looks like the workflow just kept running, but under the hood it jumped from V1 to V2.
+
+This is the simplest version migration path. It works, but it's passive. The workflow only migrates when Temporal suggests a continue-as-new, which might not happen for a while if the workflow isn't doing much. Let's see that in action.
+
+### Try It Out
+
+Start the polling workflow on the current versioned deployment:
+
+```bash
+temporal workflow start \
+  --task-queue research-agent \
+  --type ResearchPollingWorkflow \
+  --input '{"pending_requests": [], "completed_count": 0}' \
+  --workflow-id research-polling
+```
+
+Check the Deployments tab in the Temporal UI. The polling workflow is running on the current version. Now deploy a new version:
+
+```bash
+./scripts/build-and-deploy.sh v3-versioned --versioned
+```
+
+Check the Deployments tab again. The previous version is now Draining because the polling workflow is still pinned to it. Now send it some work:
+
+```bash
+temporal workflow signal \
+  --workflow-id research-polling \
+  --name submit_request \
+  --input '{"topic": "quantum computing", "request_id": "poll-test-1"}'
+```
+
+The polling workflow wakes up, processes the research request on the V2 worker, and goes back to sleep. Check the Deployments tab again. It's still on the `v2-versioned` build. It processed the work just fine, but it didn't migrate because the history isn't large enough to trigger `is_continue_as_new_suggested()`.
+
+The V2 pod is going to stick around until the history grows enough. For a workflow that processes a few requests a day, that could be a long time.
+
+### Part 2: Detecting Version Changes
+
+What if you want the workflow to migrate as soon as it has a chance, not just whenever the history happens to get large?
+
+Temporal provides `workflow.info().is_target_worker_deployment_version_changed()`. This returns `True` when the server has set a newer "current" version for this deployment. We can add it to the wait condition so that when the workflow receives new work and wakes up, it checks for a version change and migrates immediately.
+
+First, terminate the running polling workflow so we can redeploy with the updated code:
+
+```bash
+temporal workflow terminate --workflow-id research-polling
+```
+
+Open `src/workflows.py` and update the `ResearchPollingWorkflow`. Add a field to track draining state:
+
+```python
+class ResearchPollingWorkflow:
+    def __init__(self) -> None:
+        self._pending: list[ResearchRequest] = []
+        self._draining: bool = False    # [!code ++]
+```
+
+Now update the main loop to check for version changes:
+
+```python
+    @workflow.run
+    async def run(self, state: PollingState) -> None:
+        self._pending = list(state.pending_requests)
+
+        while True:
+            await workflow.wait_condition(
+                lambda: (
+                    len(self._pending) > 0
+                    or workflow.info().is_continue_as_new_suggested()
+                    or workflow.info().is_target_worker_deployment_version_changed()  # [!code ++]
+                )
+            )
+
+            if workflow.info().is_continue_as_new_suggested(): #[!code --]
+            if ( # [!code ++]
+                workflow.info().is_continue_as_new_suggested() # [!code ++]
+                or workflow.info().is_target_worker_deployment_version_changed()       # [!code ++]
+            ): # [!code ++]
+                self._draining = True                                                 # [!code ++]
+                await workflow.wait_condition(workflow.all_handlers_finished)          # [!code ++]
+                workflow.continue_as_new(
+                    PollingState(
+                        pending_requests=list(self._pending),
+                        completed_count=state.completed_count,
+                    ),
+                    initial_versioning_behavior=(
+                        workflow.ContinueAsNewVersioningBehavior.AUTO_UPGRADE
+                    ),
+                )
+
+            if self._pending:
+                request = self._pending.pop(0)
+                await workflow.execute_child_workflow(
+                    ResearchWorkflow.run,
+                    args=[request.topic, False],
+                    id=f"research-{request.request_id}",
+                )
+                state.completed_count += 1
+```
+
+### See It Work
+
+Deploy the updated code and start the polling workflow: 
+
+> Wait for the 30 second sleep here; the new pod needs to get promoted to the current version
+
+```bash
+./scripts/build-and-deploy.sh v4-versioned --versioned && sleep 30 && \
+temporal workflow start \
+  --task-queue research-agent \
+  --type ResearchPollingWorkflow \
+  --input '{"pending_requests": [], "completed_count": 0}' \
+  --workflow-id research-polling
+```
+
+Now deploy another new version:
+
+```bash
+./scripts/build-and-deploy.sh v5-versioned --versioned
+```
+
+Check the Deployments tab. The polling workflow is still on the `v4-versioned` build. Now send it a research request:
+
+```bash
+temporal workflow signal \
+  --workflow-id research-polling \
+  --name submit_request \
+  --input '{"topic": "quantum computing", "request_id": "poll-test-2"}'
+```
+
+This time the workflow wakes up, sees the version change, drains, and continues-as-new onto the `v5-versioned` build. Check the Deployments tab again. The workflow has migrated. The old deployment should transition to Drained.
+
+{/* TODO: Screenshot showing the continue-as-new chain in the Temporal UI */}
+
+### The Draining Pattern
+
+Let's unpack what happens when a version change is detected:
+
+1. We set `self._draining = True`. This is a flag you can check in signal handlers to stop accepting new work during migration.
+2. We wait for `workflow.all_handlers_finished()`. This ensures any in-flight signal handlers or update handlers complete before we migrate.
+3. We call `continue_as_new` with `initial_versioning_behavior=AUTO_UPGRADE`. The new execution starts on the current version.
+
+The combination of these two pieces gives you full control: the `AUTO_UPGRADE` on continue-as-new ensures the workflow actually moves to the new version (instead of staying pinned), and the `is_target_worker_deployment_version_changed()` check ensures the workflow migrates promptly when it has work to do, rather than waiting for the history to grow.
+
+{/* TODO: Screenshot showing the continue-as-new chain from V1 to V2 in the Temporal UI */}
+
+## Sleeping Workflows
+
+Here's a gotcha that's easy to miss.
+
+If the polling workflow is idle, sitting in `wait_condition` with no pending requests, it's completely evicted from the worker's memory. The `is_target_worker_deployment_version_changed()` flag only gets checked when the workflow executes a Workflow Task. An idle workflow isn't executing anything. It doesn't know a new version exists.
+
+You could just wait. The next time a signal comes in (a new research request), the workflow will wake up, check the condition, see the version change, and migrate. Any workflow task will trigger this. But if requests are infrequent, the old worker pod could be sitting around for hours or days waiting for that to happen.
+
+### The Wake-Up Signal
+
+The solution: add a dedicated signal that wakes up idle workflows so they can check for version changes.
+
+```python
+class ResearchPollingWorkflow:
+    def __init__(self) -> None:
+        self._pending: list[ResearchRequest] = []
+        self._draining: bool = False
+
+    @workflow.signal                    # [!code ++]
+    async def wake_up(self) -> None:    # [!code ++]
+        pass #we just need the workflow to wake up            # [!code ++]
+```
+
+After deploying a new version, send the signal to nudge the workflow:
+
+```bash
+temporal workflow signal \
+  --workflow-id research-polling \
+  --name wake_up
+```
+
+The signal causes a Workflow Task. The workflow wakes up, checks the wait condition, sees the version change, and migrates.
+
+In production, you could automate this with a post-deploy script that signals all long-running workflows.
+
+### Another Angle: Replay-Gated AUTO_UPGRADE
+
+There's a third option I've been thinking about. Fair warning: I'm about three weeks into learning Temporal, so take this with a grain of salt. I'm not sure if this is an anti-pattern or a legitimate strategy. But it's interesting enough to discuss.
+
+The idea: what if your CI/CD pipeline decides the versioning strategy based on whether the code change is replay-compatible?
+
+Temporal provides a `Replayer` that can download workflow histories from the server and replay them against your new code. If replay succeeds, there are no determinism issues. The new code is safe to run against existing workflow histories. If replay fails, you have a breaking change.
+
+Here's where it gets interesting. With AUTO_UPGRADE behavior, the server routes Workflow Tasks to the current version's workers. When a sleeping workflow eventually wakes up (timer fires, signal arrives), its next task gets dispatched to the new version. If the code is replay-compatible, the new worker replays the history successfully and the workflow continues on V2. No continue-as-new needed. No wake-up signal needed. It just works.
+
+So the CI/CD pattern could look like this: keep PINNED as the default on the workflow definition (safest default), but as part of the deploy pipeline, if the replayer passes, batch-update all running workflow executions to AUTO_UPGRADE:
+
+1. Run the Replayer against live workflow histories with the new code
+2. Replayer passes (no determinism errors) → deploy the new version, then flip running workflows to AUTO_UPGRADE:
+
+```bash
+temporal workflow update-options \
+  --query 'WorkflowType="ResearchPollingWorkflow" AND ExecutionStatus="Running"' \
+  --versioning-override-behavior auto_upgrade
+```
+
+Sleeping workflows naturally drain off the old version even without waking up; a sleeping workflow isn't actually running on the worker, and with the AUTO_UGPRADE flag set, Temporal knows it can now route that workflow, and any new workflow tasks, to the new worker immediately. No signals, no continue-as-new.
+
+3. Replayer fails (breaking change) → deploy with PINNED. Use the continue-as-new migration pattern we covered in the previous section.
+
+One thing to know: this override is sticky. Once you set it on a running execution, it persists for the lifetime of that workflow and takes precedence over whatever behavior the SDK declared. You can clear it later with `--versioning-override-behavior unspecified` to revert to the original SDK behavior, but you don't have to. So in practice, your deploy pipeline would need to handle both cases: set the override when the replayer passes, and leave it alone (letting PINNED + continue-as-new do its thing) when it doesn't.
+
+This gives you the safety of PINNED by default with the convenience of AUTO_UPGRADE when the code is compatible. The old version drains naturally without extra tooling.
+
+Like I said, I'm not sure if this is a blessed pattern or if there are edge cases I'm not seeing. But the pieces are all there in the platform. If you try this, I'd love to hear how it goes.
+
+## Scaling and Ramping
+
+Everything so far has been hands-on. This section is conceptual, covering the broader HA story that Worker Versioning enables. We'll get back to the terminal for autoscaling after it.
+
+### Version Lifecycle
+
+Every version goes through a lifecycle:
+
+| State | What's Happening |
+|-------|-----------------|
+| Active | Currently receiving new workflows and/or ramping traffic |
+| Draining | No new work, but existing pinned workflows are still running |
+| Drained | All work complete, safe to remove |
+
+The Worker Controller manages this automatically. When a version enters the Drained state, the controller scales down and then deletes its Kubernetes resources based on the sunset configuration:
+
+```yaml
+sunset:
+  scaledownDelay: 5m   # scale to zero 5 min after the version is drained
+  deleteDelay: 30m     # delete the Deployment 30 min after the version is drained
+```
+
+Both delays are measured from when the version becomes Drained. If you leave them out, the defaults are 1 hour and 24 hours. In this lab we use a few seconds so you can watch it happen.
+
+### Progressive Rollouts
+
+Instead of deploying all-at-once, you can ramp traffic to a new version gradually. The Worker Controller supports this via the `Progressive` rollout strategy:
+
+```yaml
+rollout:
+  strategy: Progressive
+  steps:
+    - rampPercentage: 10
+      pauseDuration: 5m
+    - rampPercentage: 50
+      pauseDuration: 10m
+```
+
+This sends 10% of new workflow starts to the new version, waits 5 minutes, bumps to 50%, waits 10 more, then promotes to full current. If something goes wrong at 10%, you can roll back before most of your traffic is affected.
+
+Rolling back is now built in. Point the `WorkerDeployment` back at the previous build by redeploying the old image tag with the same pod template. If that build was the current version within the last hour, the controller sends 100% of traffic back to it immediately and skips the progressive steps.
+
+You can also have a version prove itself before it receives any real traffic. A **gate** is a workflow type that must run to completion on the new version before the controller starts ramping:
+
+```yaml
+rollout:
+  strategy: Progressive
+  gate:
+    workflowType: "SmokeTestWorkflow"
+  steps:
+    - rampPercentage: 10
+      pauseDuration: 5m
+```
+
+If you'd rather drive routing yourself, use `strategy: Manual`. The controller still creates and scales a Deployment for each version, but it leaves the current and ramping versions alone. You then promote with the CLI:
+
+```bash
+# Set a ramping version at 5%
+temporal worker deployment set-ramping-version \
+  --deployment-name default/research-agent \
+  --build-id <build-id> \
+  --percentage 5
+
+# Once verified, promote to current
+temporal worker deployment set-current-version \
+  --deployment-name default/research-agent \
+  --build-id <build-id>
+```
+
+You can only change routing from the CLI if you own the deployment. The controller claims ownership by setting the deployment's *manager identity*, and the server rejects routing changes from any other identity. With any strategy other than `Manual`, you first take control with `temporal worker deployment manager-identity set --deployment-name default/research-agent --self`. When you're done, give it back with `manager-identity unset`.
+
+## Per-Version Autoscaling
+
+Back to hands-on. So far every version has run a fixed number of pods. In production you want each version to scale with its own load: the new version grows as traffic shifts to it, and the old version shrinks as its pinned workflows finish. Sizing them together, with one autoscaler on the whole task queue, gets both wrong.
+
+The Worker Controller does this with a `WorkerResourceTemplate`. You write one template, and the controller stamps out a copy for every version and points each copy at that version's Deployment. The template can hold an HPA, a PodDisruptionBudget, a VPA, or a [KEDA](https://keda.sh/) `ScaledObject`. We'll use KEDA, because its Temporal scaler asks the Temporal server directly how many tasks are waiting for one specific version. You don't need a metrics pipeline in between.
+
+### Install KEDA
+
+Install KEDA from its Helm chart. Per-version scaling needs KEDA 2.20.0 or later:
+
+```bash
+helm repo add kedacore https://kedacore.github.io/charts
+helm repo update kedacore
+
+helm upgrade --install keda kedacore/keda \
+  --version 2.21.0 \
+  --namespace keda \
+  --create-namespace \
+  --wait
+```
+
+KEDA serves Kubernetes' external metrics API, and a cluster can only have one provider for it. If you already run prometheus-adapter in a real cluster, you have to choose one or the other.
+
+### Let the Controller Create ScaledObjects
+
+The controller only creates resource kinds that are on its allow-list, and by default the list holds just `HorizontalPodAutoscaler`. The repo includes a values file that adds `ScaledObject`, in `config/worker-controller-keda.yaml`:
+
+```yaml
+workerResourceTemplate:
+  allowedResources:
+    - kinds: ["HorizontalPodAutoscaler"]
+      apiGroups: ["autoscaling"]
+      resources: ["horizontalpodautoscalers"]
+    - kinds: ["ScaledObject"]
+      apiGroups: ["keda.sh"]
+      resources: ["scaledobjects"]
+```
+
+The list replaces the chart's default, which is why it repeats the HPA entry. Upgrade the controller with it, keeping the rest of your values:
+
+```bash
+helm upgrade temporal-worker-controller \
+  oci://docker.io/temporalio/temporal-worker-controller \
+  --version $CHART_VERSION \
+  --namespace temporal-system \
+  --reuse-values \
+  -f config/worker-controller-keda.yaml \
+  --wait
+```
+
+If you've opened a new shell since installing the controller, set `CHART_VERSION=0.31.0` again first.
+
+### The Autoscaler Template
+
+The worker chart already contains the template, in `charts/worker/templates/worker-autoscaler.yaml`. It's switched off until you turn it on. Here it is with the values filled in:
+
+```yaml
+apiVersion: temporal.io/v1alpha1
+kind: WorkerResourceTemplate
+metadata:
+  name: research-agent-keda
+spec:
+  workerDeploymentRef:
+    name: research-agent
+  template:
+    apiVersion: keda.sh/v1alpha1
+    kind: ScaledObject
+    spec:
+      scaleTargetRef: {}
+      minReplicaCount: 1
+      maxReplicaCount: 5
+      pollingInterval: 5
+      advanced:
+        horizontalPodAutoscalerConfig:
+          behavior:
+            scaleDown:
+              stabilizationWindowSeconds: 30
+      triggers:
+        - type: temporal
+          metadata:
+            endpoint: "temporal-lab-devenv:7233"
+            enableTLS: "false"
+            taskQueue: research-agent
+            queueTypes: activity
+            targetQueueSize: "5"
+            namespace: ""
+            workerDeploymentName: ""
+            workerDeploymentBuildId: ""
+```
+
+The empty values are deliberate. They tell the controller to fill those fields in for each version:
+
+- `scaleTargetRef: {}` becomes a reference to that version's Deployment.
+- `namespace`, `workerDeploymentName` and `workerDeploymentBuildId` scope the backlog query to that one version. The controller fills in `default`, `default/research-agent` and the version's build ID. The webhook rejects the template if you set any of them yourself.
+
+The other settings:
+
+- `queueTypes: activity` counts the activity backlog, because that's where the work piles up. Workflow tasks come and go quickly.
+- `targetQueueSize: "5"` aims for about five waiting tasks per pod. With 22 tasks waiting, KEDA asks for five pods.
+- `enableTLS: "false"` is needed because the scaler uses TLS by default and our dev server doesn't. For Temporal Cloud you'd leave TLS on and pass an API key through a KEDA `TriggerAuthentication`.
+- `minReplicaCount` stays at 1 or higher. A version only gets promoted once Temporal sees its workers polling, so a version scaled to zero would never finish rolling out.
+- `pollingInterval` and the 30-second scale-down window are short so you can watch the whole cycle in a couple of minutes. Each poll costs one Temporal API call, so production values are usually longer.
+
+Turn it on in `charts/worker/values.yaml`:
+
+```yaml
+autoscaling:
+  enabled: false  # [!code --]
+  enabled: true   # [!code ++]
+  minReplicas: 1
+  maxReplicas: 5
+  targetQueueSize: 5
+```
+
+With autoscaling enabled, the chart leaves `replicas` out of the `deployment` block, so the controller and the autoscaler don't both try to set the pod count.
+
+### Give Each Worker a Limit
+
+There's one problem before we try it. The Python SDK lets each worker run up to 100 activities at once, and our "LLM calls" are just sleeps. A single pod would absorb any load we throw at it, no backlog would build, and nothing would scale.
+
+Real workers hit a limit long before that, whether it's CPU, memory or an API rate limit. To give ours one, open `src/worker.py` and cap it at two activities at a time:
+
+```python
+worker = Worker(
+    client,
+    task_queue=TASK_QUEUE,
+    workflows=[ResearchWorkflow, ResearchPollingWorkflow],
+    activities=[
+        plan_research,
+        execute_research_step,
+        synthesize_findings,
+        fact_check,
+    ],
+    max_concurrent_activities=2,  # [!code ++]
+    deployment_config=WorkerDeploymentConfig(
+        # ...unchanged
+    ),
+)
+```
+
+Once a pod is running two activities, Temporal keeps further tasks in the queue, and that queue is the backlog KEDA scales on.
+
+### Deploy and Load It
+
+Deploy a new version with both changes:
+
+```bash
+./scripts/build-and-deploy.sh v6-versioned --versioned
+```
+
+Once it's current, look at what the controller created:
+
+```bash
+kubectl get scaledobjects
+kubectl get hpa
+```
+
+Each version has its own `ScaledObject`, and KEDA has created an HPA behind each one. The names end in a short version of the build ID, such as `...-keda-v6-8f71df48`. You might also see one for the version your `research-polling` workflow is still pinned to. That version is still running, so it gets an autoscaler too.
+
+Open a second terminal into the dev environment so you can watch the autoscalers:
+
+```bash
+docker exec -it temporal-lab-devenv bash
+kubectl get hpa -w
+```
+
+Back in the first terminal, start 30 research workflows at once:
+
+```bash
+for i in $(seq 1 30); do
+  temporal workflow start \
+    --task-queue research-agent \
+    --type ResearchWorkflow \
+    --input "\"topic $i\"" \
+    --workflow-id batch-a-$i > /dev/null
+done
+```
+
+Within about ten seconds, the v6 HPA's target jumps to around `28/5`: 28 activity tasks waiting, against a target of 5 per pod. Its replica count climbs to 5. With five pods running two activities each, the backlog drains in under a minute. Thirty seconds after it hits zero, the HPA starts removing pods again. The workflows are now parked at the `proceed` signal gate, so they don't need a worker.
+
+### Two Versions, Two Autoscalers
+
+Now for the reason to scale per version. Leave batch A parked on v6 and deploy another version:
+
+```bash
+./scripts/build-and-deploy.sh v7-versioned --versioned
+```
+
+v7 becomes current and gets its own `ScaledObject`. v6 moves to Draining, because the 30 parked workflows are pinned to it. Start a second batch, which lands on v7:
+
+```bash
+for i in $(seq 1 30); do
+  temporal workflow start \
+    --task-queue research-agent \
+    --type ResearchWorkflow \
+    --input "\"topic $i\"" \
+    --workflow-id batch-b-$i > /dev/null
+done
+```
+
+Only the v7 HPA reacts. Now release batch A by signalling every workflow in it at once:
+
+```bash
+temporal workflow signal \
+  --query 'WorkflowId STARTS_WITH "batch-a-"' \
+  --name proceed \
+  --yes
+```
+
+The 30 synthesis activities can only run on v6 workers, so v6's backlog jumps and its HPA scales v6 back up. v7 is unaffected. A shared autoscaler would have spread that capacity across both versions and given most of it to the wrong one.
+
+When batch A finishes, nothing is left pinned to v6. Temporal checks for drained versions periodically, so it can take a few minutes for v6 to show as Drained. After that, the controller scales v6 down, deletes its Deployment, and deletes its `ScaledObject` with it.
+
+In production you'd tune these settings for real traffic. The Temporal API rate limit caps how many `ScaledObject`s can poll how often. Some teams also prefer an HPA on Temporal Cloud metrics through Prometheus. The Worker Controller's [scaling recommendations](https://github.com/temporalio/temporal-worker-controller/blob/main/docs/scaling-recommendations.md) compare the two approaches and the trade-offs.
+
+This is the full HA picture: versioned deployments that scale independently, progressive rollouts, and automatic cleanup. No more all-or-nothing deploys.
+
+## Wrapping Up
+
+Here's what we covered:
+
+| Concept | Key Takeaway |
+|---------|-------------|
+| Non-determinism errors | Changing workflow code breaks in-flight workflows during replay |
+| PINNED versioning | Workflows complete on the version they started on |
+| Rainbow deployments | Multiple worker versions run simultaneously on the same task queue |
+| Continue-as-new migration | Long-running workflows detect version changes and migrate with AUTO_UPGRADE |
+| Sleeping workflow caveat | Idle workflows need a signal or timer to notice version changes |
+| Progressive rollouts | Ramp traffic gradually, gate on a smoke-test workflow, and roll back by redeploying a previous build |
+| Per-version autoscaling | One KEDA `ScaledObject` per version, each scaling on that version's backlog |
+
+The finished code is on the [main branch](https://github.com/mikeacjones/temporal-safe-deploys-lab). The starter branch has everything you need to follow along from scratch.
+
+For a real-world example of all these patterns in production, check out [Building a Reddit Bot on Temporal](/post/2026/reddit-bot-temporal-journey/) where I use worker versioning, continue-as-new migration, and the wake-up signal pattern in a 24/7 bot.
+
+### Upgrading from the Pre-GA Controller
+
+If you have a cluster that's still running a pre-GA version of the controller (chart `0.25.x` or earlier), the upgrade is mostly a rename:
+
+| Pre-GA | GA |
+|---|---|
+| `TemporalWorkerDeployment` | `WorkerDeployment` |
+| `TemporalConnection` | `Connection` |
+| `WorkerResourceTemplate.spec.temporalWorkerDeploymentRef` | `WorkerResourceTemplate.spec.workerDeploymentRef` |
+
+Upgrade the CRDs chart first, then the controller chart. Then change `kind:` in your manifests and re-apply. **Keep the resource names exactly the same.** The Temporal Worker Deployment name is derived from `<namespace>/<name>`, so renaming the resource creates a brand-new deployment. The controller hands ownership from the old resources to the new ones without interrupting your workers. Don't roll the CRDs chart back after migrating. The full steps are in the [CRD rename migration guide](https://github.com/temporalio/temporal-worker-controller/blob/main/docs/migration-crd-rename.md).
+
+For a throwaway environment like this lab, the easiest path is to tear it down and start fresh.
+
+### Further Reading
+
+- [Worker Versioning docs](https://docs.temporal.io/production-deployment/worker-deployments/worker-versioning)
+- [Temporal Worker Controller](https://docs.temporal.io/production-deployment/worker-deployments/kubernetes-controller)
+- [Worker Controller configuration reference](https://github.com/temporalio/temporal-worker-controller/blob/main/docs/configuration.md)
+- [Worker Controller scaling recommendations](https://github.com/temporalio/temporal-worker-controller/blob/main/docs/scaling-recommendations.md)
+- [KEDA Temporal scaler](https://keda.sh/docs/latest/scalers/temporal/)
+- [Safe Deployment Guide](https://docs.temporal.io/develop/safe-deployments)
+- [Python SDK Versioning Reference](https://docs.temporal.io/develop/python/versioning)
