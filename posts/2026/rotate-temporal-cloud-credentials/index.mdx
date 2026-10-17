@@ -3,7 +3,7 @@ title: "Rotating Temporal Cloud Credentials with an Entity Workflow"
 date: 2026-10-17
 tags: [temporal, temporal-cloud, security, vault, go]
 shortDescription: "Every Temporal Cloud API key and mTLS certificate expires. Here's a pattern that gives each Namespace its own long-lived Workflow to renew its Worker credential before it runs out, validate it, and hand it off to your key store, all without putting a single secret in Event History."
-published: false
+published: true
 ---
 
 Every Temporal Cloud API key expires. Every mTLS certificate expires. And the way a lot of teams keep track of that is some combination of a spreadsheet, a calendar reminder, and the expiry email that lands in someone's inbox while they're on vacation.
