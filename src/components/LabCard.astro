@@ -8,13 +8,21 @@ interface Props {
   categories: string[];
   url: string;
   duration?: string;
+  // Set for a course: shown in place of the duration.
+  lessons?: number;
 }
 
-const { title, date, shortDescription, categories, url, duration } = Astro.props;
+const { title, date, shortDescription, categories, url, duration, lessons } = Astro.props;
 ---
 
 <article class="Entry Entry--lab">
-  <div class="Entry-duration">{duration && <span aria-label={`Takes about ${duration}`}>{duration}</span>}</div>
+  <div class="Entry-duration">
+    {lessons ? (
+      <span class="Entry-lessons">{lessons}<small>lessons</small></span>
+    ) : (
+      duration && <span aria-label={`Takes about ${duration}`}>{duration}</span>
+    )}
+  </div>
   <div>
     <h2 class="Entry-title"><a href={url}>{title}</a></h2>
     <p class="Entry-summary">{shortDescription}</p>

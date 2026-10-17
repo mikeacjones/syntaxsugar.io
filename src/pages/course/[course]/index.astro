@@ -1,0 +1,71 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import ArticleHeader from '../../../components/ArticleHeader.astro';
+import CodeBlock from '../../../components/CodeBlock.astro';
+import CourseNav from '../../../components/CourseNav.astro';
+import CourseScripts from '../../../components/CourseScripts.astro';
+import ZoomableImage from '../../../components/ZoomableImage.astro';
+import { render } from 'astro:content';
+import { AUTHOR, courseUrl, lessonUrl, courseLessons, publishedCourses } from '../../../helpers/llm';
+
+export async function getStaticPaths() {
+  const courses = await publishedCourses();
+  return courses.map((course) => ({ params: { course: course.id }, props: { course } }));
+}
+
+const { course } = Astro.props;
+const { Content } = await render(course);
+const lessons = await courseLessons(course.id);
+const first = course.data.pages[0];
+const repoUrl = `https://github.com/${course.data.repo}`;
+---
+
+<BaseLayout
+  title={course.data.title}
+  description={course.data.shortDescription}
+  article={{
+    date: course.data.date,
+    modified: course.data.updated,
+    tags: course.data.categories,
+    type: 'Course',
+    schema: {
+      provider: { '@type': 'Person', name: AUTHOR, url: Astro.site },
+      isAccessibleForFree: true,
+      inLanguage: 'en',
+      programmingLanguage: course.data.languages.map((l) => l.label),
+      codeRepository: repoUrl,
+      hasPart: lessons.map((lesson) => ({
+        '@type': 'LearningResource',
+        name: lesson.data.title,
+        description: lesson.data.shortDescription,
+        url: new URL(lessonUrl(lesson.id), Astro.site),
+      })),
+    },
+  }}
+  breadcrumbs={[{ name: 'Labs', url: '/labs' }]}
+  hasMarkdown
+>
+  <div class="post-view">
+    <ArticleHeader title={course.data.title} date={course.data.date} tags={course.data.categories} linkTags={false} />
+
+    <div class="codelab-wrapper">
+      <CourseNav course={course} />
+      <div class="codelab-content">
+        <p class="CourseIntro">{course.data.shortDescription}</p>
+        <div class="CourseActions">
+          {first && <a class="codelab-nav-btn codelab-next" href={`${courseUrl(course.id)}${first.slug}/`}>Start the course &rarr;</a>}
+          {course.data.languages.map((lang) => (
+            <a class="codelab-nav-btn" href={lang.codespace} target="_blank" rel="noreferrer">Open a {lang.label} Codespace</a>
+          ))}
+          <a class="codelab-nav-btn" href={repoUrl} target="_blank" rel="noreferrer">GitHub</a>
+        </div>
+        <div class="post-view-content">
+          <Content />
+        </div>
+      </div>
+    </div>
+  </div>
+  <CodeBlock />
+  <ZoomableImage />
+  <CourseScripts />
+</BaseLayout>

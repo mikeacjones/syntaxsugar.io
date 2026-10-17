@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import ArticleHeader from '../../components/ArticleHeader.astro';
+import { isoDuration } from '../../helpers/format';
 import CodeBlock from '../../components/CodeBlock.astro';
 import ZoomableImage from '../../components/ZoomableImage.astro';
 import Mermaid from '../../components/Mermaid.astro';
@@ -25,7 +26,13 @@ const { Content } = await render(lab);
 <BaseLayout
   title={lab.data.title}
   description={lab.data.shortDescription}
-  article={{ date: lab.data.date, tags: lab.data.categories }}
+  article={{
+    date: lab.data.date,
+    tags: lab.data.categories,
+    type: ['TechArticle', 'LearningResource'],
+    schema: { learningResourceType: 'Lab', timeRequired: isoDuration(lab.data.duration) },
+  }}
+  breadcrumbs={[{ name: 'Labs', url: '/labs' }]}
   hasMarkdown={lab.data.published}
 >
   <div class="post-view">

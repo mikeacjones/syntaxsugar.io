@@ -40,4 +40,45 @@ const claatLabs = defineCollection({
   }),
 });
 
-export const collections = { blog, labs, claatLabs };
+// Courses are pulled from GitHub into .courses/ by scripts/sync-courses.mjs.
+const courses = defineCollection({
+  loader: glob({
+    pattern: '*/index.md',
+    base: './.courses',
+    generateId: ({ entry }) => entry.replace(/\/index\.md$/, ''),
+  }),
+  schema: z.object({
+    title: z.string(),
+    shortTitle: z.string(),
+    shortDescription: z.string(),
+    date: z.coerce.date(),
+    updated: z.coerce.date(),
+    categories: z.array(z.string()),
+    published: z.boolean(),
+    duration: z.string().optional(),
+    repo: z.string(),
+    defaultBranch: z.string(),
+    languages: z.array(z.object({ branch: z.string(), label: z.string(), codespace: z.string() })),
+    pages: z.array(z.object({ slug: z.string(), title: z.string(), section: z.string() })),
+  }),
+});
+
+const courseLessons = defineCollection({
+  loader: glob({
+    pattern: '*/*/index.md',
+    base: './.courses',
+    generateId: ({ entry }) => entry.replace(/\/index\.md$/, ''),
+  }),
+  schema: z.object({
+    course: z.string(),
+    title: z.string(),
+    navTitle: z.string(),
+    section: z.string(),
+    order: z.number(),
+    shortDescription: z.string(),
+    updated: z.coerce.date(),
+    source: z.string(),
+  }),
+});
+
+export const collections = { blog, labs, claatLabs, courses, courseLessons };

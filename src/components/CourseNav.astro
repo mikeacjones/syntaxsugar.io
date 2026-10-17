@@ -1,0 +1,41 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import { courseUrl } from '../helpers/llm';
+
+interface Props {
+  course: CollectionEntry<'courses'>;
+  // The lesson slug being viewed, or undefined on the overview.
+  current?: string;
+}
+
+const { course, current } = Astro.props;
+const base = courseUrl(course.id);
+
+const sections: { name: string; pages: typeof course.data.pages }[] = [];
+for (const page of course.data.pages) {
+  const last = sections.at(-1);
+  if (last?.name === page.section) last.pages.push(page);
+  else sections.push({ name: page.section, pages: [page] });
+}
+---
+
+<nav class="codelab-steps-nav CourseNav" aria-label={`${course.data.shortTitle} lessons`} data-course={course.id}>
+  <a class:list={['codelab-step-link', { active: !current }]} href={base} aria-current={!current ? 'page' : undefined}>
+    Overview
+  </a>
+  {sections.map((section) => (
+    <>
+      <span class="CourseNav-section">{section.name}</span>
+      {section.pages.map((page) => (
+        <a
+          class:list={['codelab-step-link', { active: page.slug === current }]}
+          href={`${base}${page.slug}/`}
+          data-lesson={page.slug}
+          aria-current={page.slug === current ? 'page' : undefined}
+        >
+          <span class="codelab-step-label">{page.title}</span>
+        </a>
+      ))}
+    </>
+  ))}
+</nav>

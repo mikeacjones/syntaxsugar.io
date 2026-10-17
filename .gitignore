@@ -68,3 +68,6 @@ yarn-error.log
 # Yarn Integrity file
 .yarn-integrity
 /.metadata/
+
+# Courses pulled from GitHub by scripts/sync-courses.mjs
+.courses/

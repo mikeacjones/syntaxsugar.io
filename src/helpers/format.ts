@@ -18,3 +18,10 @@ export function postUrl(id: string): string {
   const parts = id.replace(/\/index$/, '').split('/');
   return `/post/${parts[0]}/${parts.slice(1).join('/')}/`;
 }
+
+// "75 min" or "2 hours" as an ISO 8601 duration ("PT75M"), for schema.org timeRequired.
+export function isoDuration(duration?: string): string | undefined {
+  const match = duration && /(\d+)\s*(h|hr|hour|m|min|minute)s?\b/i.exec(duration);
+  if (!match) return undefined;
+  return `PT${match[1]}${match[2][0].toLowerCase() === 'h' ? 'H' : 'M'}`;
+}

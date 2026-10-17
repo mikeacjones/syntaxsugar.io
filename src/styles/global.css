@@ -873,6 +873,141 @@ pre.astro-code .line.diff.remove::before {
   color: var(--paper);
 }
 
+/* ===== Courses =====
+   Course pages reuse the lab step nav; lessons are links rather than buttons. */
+.CourseNav .codelab-step-link {
+  text-decoration: none;
+}
+
+.CourseNav .codelab-step-link.done::after {
+  content: '✓';
+  margin-left: auto;
+  padding-right: 4px;
+  color: var(--mark);
+}
+
+.CourseNav-section {
+  padding: 18px 0 4px 14px;
+  font-size: var(--step--1);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-muted);
+}
+
+.CourseCrumb {
+  margin: 56px 0 -40px;
+  font-size: var(--step--1);
+  color: var(--ink-muted);
+}
+
+.CourseCrumb a {
+  color: inherit;
+}
+
+.CourseIntro {
+  max-width: var(--measure);
+  margin: 0 0 20px;
+  font-size: var(--step-1);
+  line-height: 1.45;
+}
+
+.CourseActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  max-width: var(--measure);
+  margin-bottom: 40px;
+}
+
+.CourseActions .codelab-next {
+  margin-left: 0;
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--paper);
+}
+
+.CourseActions .codelab-next:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--paper);
+}
+
+.CourseSource {
+  max-width: var(--measure);
+  margin: 40px 0 0;
+  font-size: var(--step--1);
+  color: var(--ink-muted);
+}
+
+.CourseSource a {
+  color: inherit;
+}
+
+.CourseLang-tabs {
+  display: flex;
+  gap: 4px;
+  max-width: var(--measure);
+  margin: 0 0 8px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.CourseLang-tabs button {
+  padding: 8px 14px;
+  margin-bottom: -1px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--ink-muted);
+  font-family: inherit;
+  font-size: 0.92rem;
+  cursor: pointer;
+}
+
+.CourseLang-tabs button:hover {
+  color: var(--ink);
+}
+
+.CourseLang-tabs button[aria-selected='true'] {
+  color: var(--ink);
+  border-bottom-color: var(--mark);
+  font-weight: 500;
+}
+
+.post-view-content .contains-task-list {
+  list-style: none;
+  padding-left: 0;
+}
+
+.post-view-content .task-list-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0 12px;
+  align-items: baseline;
+}
+
+.post-view-content .task-list-item > :not(input) {
+  grid-column: 2;
+}
+
+.post-view-content .task-list-item input[type='checkbox'] {
+  width: 1.05em;
+  height: 1.05em;
+  margin: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.post-view-content .task-list-item.checked > p:first-of-type,
+.post-view-content .task-list-item.checked {
+  color: var(--ink-muted);
+}
+
+.Entry-lessons small {
+  display: block;
+  font-size: var(--step--1);
+  font-weight: 400;
+}
+
 /* ===== 404 ===== */
 .NotFound {
   max-width: var(--measure);
@@ -914,6 +1049,18 @@ pre.astro-code .line.diff.remove::before {
   .codelab-step-link.active {
     border-bottom-color: var(--mark);
   }
+
+  .CourseNav-section {
+    display: none;
+  }
+
+  .CourseNav .codelab-step-link.done::after {
+    margin-left: 6px;
+  }
+
+  .CourseCrumb {
+    margin: 36px 0 -24px;
+  }
 }
 
 @media (max-width: 640px) {
@@ -943,6 +1090,12 @@ pre.astro-code .line.diff.remove::before {
     font-size: var(--step-0);
     font-weight: 400;
     margin-bottom: 4px;
+  }
+
+  .Entry-lessons small {
+    display: inline;
+    margin-left: 0.4em;
+    font-size: inherit;
   }
 
   .ArticleHeader,

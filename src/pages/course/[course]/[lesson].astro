@@ -1,0 +1,81 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import ArticleHeader from '../../../components/ArticleHeader.astro';
+import CodeBlock from '../../../components/CodeBlock.astro';
+import CourseNav from '../../../components/CourseNav.astro';
+import CourseScripts from '../../../components/CourseScripts.astro';
+import ZoomableImage from '../../../components/ZoomableImage.astro';
+import { render } from 'astro:content';
+import { courseUrl, courseLessons, publishedCourses } from '../../../helpers/llm';
+
+export async function getStaticPaths() {
+  const courses = await publishedCourses();
+  const paths = await Promise.all(
+    courses.map(async (course) => {
+      const lessons = await courseLessons(course.id);
+      return lessons.map((lesson, i) => ({
+        params: { course: course.id, lesson: lesson.id.split('/').pop() },
+        props: { course, lesson, prev: lessons[i - 1], next: lessons[i + 1] },
+      }));
+    }),
+  );
+  return paths.flat();
+}
+
+const { course, lesson, prev, next } = Astro.props;
+const { Content } = await render(lesson);
+const base = courseUrl(course.id);
+const slug = lesson.id.split('/').pop();
+const href = (entry: typeof lesson) => `${base}${entry.id.split('/').pop()}/`;
+---
+
+<BaseLayout
+  title={`${lesson.data.title} · ${course.data.shortTitle}`}
+  description={lesson.data.shortDescription}
+  article={{
+    date: course.data.date,
+    modified: lesson.data.updated,
+    tags: course.data.categories,
+    type: ['TechArticle', 'LearningResource'],
+    schema: {
+      headline: lesson.data.title,
+      learningResourceType: lesson.data.section === 'Reference' ? 'Reference' : 'Lesson',
+      position: lesson.data.order + 1,
+      isPartOf: { '@type': 'Course', name: course.data.title, url: new URL(base, Astro.site) },
+      programmingLanguage: course.data.languages.map((l) => l.label),
+    },
+  }}
+  breadcrumbs={[
+    { name: 'Labs', url: '/labs' },
+    { name: course.data.shortTitle, url: base },
+  ]}
+  hasMarkdown
+>
+  <div class="post-view">
+    <p class="CourseCrumb"><a href={base}>{course.data.shortTitle}</a> · {lesson.data.section}</p>
+    <ArticleHeader title={lesson.data.title} />
+
+    <div class="codelab-wrapper">
+      <CourseNav course={course} current={slug} />
+      <div class="codelab-content">
+        <div class="post-view-content" data-course-lesson={slug}>
+          <Content />
+        </div>
+        <p class="CourseSource">
+          <a href={lesson.data.source} target="_blank" rel="noreferrer">Edit this lesson on GitHub</a>
+        </p>
+        <div class="codelab-step-nav">
+          {prev && <a class="codelab-nav-btn codelab-prev" href={href(prev)}>Back: {prev.data.navTitle}</a>}
+          {next ? (
+            <a class="codelab-nav-btn codelab-next" href={href(next)}>Next: {next.data.navTitle}</a>
+          ) : (
+            <a class="codelab-nav-btn codelab-next" href={base}>Back to the course</a>
+          )}
+        </div>
+      </div>
+    </div>
+  </div>
+  <CodeBlock />
+  <ZoomableImage />
+  <CourseScripts />
+</BaseLayout>

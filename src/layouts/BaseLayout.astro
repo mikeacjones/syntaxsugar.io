@@ -6,32 +6,47 @@ import { AUTHOR, SITE_DESCRIPTION, SITE_NAME, markdownUrl } from '../helpers/llm
 interface Props {
   title?: string;
   description?: string;
-  // Set for posts and labs: switches Open Graph and JSON-LD to an article.
-  article?: { date: Date; tags: string[] };
+  // Set for posts, labs, and courses: switches Open Graph and JSON-LD to an article.
+  // `type` is the schema.org type (BlogPosting by default) and `schema` adds fields to it.
+  article?: {
+    date: Date;
+    tags: string[];
+    modified?: Date;
+    type?: string | string[];
+    schema?: Record<string, unknown>;
+  };
+  // Trail of parent pages, emitted as a BreadcrumbList. The current page is added last.
+  breadcrumbs?: { name: string; url: string }[];
   // True when the page has a Markdown twin at <page>/index.md.
   hasMarkdown?: boolean;
 }
 
-const { title = SITE_NAME, description = SITE_DESCRIPTION, article, hasMarkdown = false } = Astro.props;
+const { title = SITE_NAME, description = SITE_DESCRIPTION, article, breadcrumbs, hasMarkdown = false } = Astro.props;
 
 const siteTitle = title === SITE_NAME ? `${SITE_NAME} | ${AUTHOR}` : `${title} | ${SITE_NAME}`;
 const canonical = new URL(Astro.url.pathname, Astro.site);
 const image = new URL('/images/profilePicture.png', Astro.site);
 const author = { '@type': 'Person', name: AUTHOR, url: Astro.site, sameAs: ['https://github.com/mikeacjones', 'https://www.linkedin.com/in/michael-jones-5a870678'] };
 
+// Course content can predate the day it went up here; only report a later edit.
+const modified = article?.modified && article.modified > article.date ? article.modified : undefined;
+
 const jsonLd = article
   ? {
       '@context': 'https://schema.org',
-      '@type': 'BlogPosting',
+      '@type': article.type ?? 'BlogPosting',
+      name: title,
       headline: title,
       description,
       datePublished: article.date.toISOString(),
+      ...(modified && { dateModified: modified.toISOString() }),
       keywords: article.tags.join(', '),
       url: canonical,
       mainEntityOfPage: canonical,
       image,
       author,
       publisher: author,
+      ...article.schema,
     }
   : {
       '@context': 'https://schema.org',
@@ -41,6 +56,17 @@ const jsonLd = article
       url: Astro.site,
       author,
     };
+
+const breadcrumbLd = breadcrumbs && {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [...breadcrumbs, { name: title, url: canonical.pathname }].map((crumb, i) => ({
+    '@type': 'ListItem',
+    position: i + 1,
+    name: crumb.name,
+    item: new URL(crumb.url, Astro.site),
+  })),
+};
 ---
 
 <!doctype html>
@@ -65,6 +91,7 @@ const jsonLd = article
     <meta property="og:image" content={image} />
     <meta property="og:image:alt" content={AUTHOR} />
     {article && <meta property="article:published_time" content={article.date.toISOString()} />}
+    {modified && <meta property="article:modified_time" content={modified.toISOString()} />}
     {article && <meta property="article:author" content={AUTHOR} />}
     {article?.tags.map((tag) => <meta property="article:tag" content={tag} />)}
     <meta name="twitter:card" content="summary" />
@@ -74,6 +101,7 @@ const jsonLd = article
 
     <!-- Structured data -->
     <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+    {breadcrumbLd && <script type="application/ld+json" set:html={JSON.stringify(breadcrumbLd)} />}
 
     <!-- Feeds and machine-readable copies -->
     <link rel="alternate" type="application/rss+xml" title={SITE_NAME} href="/rss.xml" />

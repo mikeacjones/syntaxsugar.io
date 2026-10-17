@@ -2,11 +2,30 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import LabCard from '../components/LabCard.astro';
 import { getCollection } from 'astro:content';
+import { courseUrl, publishedCourses } from '../helpers/llm';
 
 const mdxLabs = await getCollection('labs', ({ data }) => data.published === true);
 const claatLabs = await getCollection('claatLabs', ({ data }) => data.published === true);
+const courses = await publishedCourses();
 
-const allLabs = [
+const allLabs: {
+  title: string;
+  date: Date;
+  shortDescription: string;
+  categories: string[];
+  duration?: string;
+  lessons?: number;
+  url: string;
+}[] = [
+  ...courses.map((course) => ({
+    title: course.data.title,
+    date: course.data.date,
+    shortDescription: course.data.shortDescription,
+    categories: course.data.categories,
+    // Count the core lessons, not optional exercises or reference pages.
+    lessons: course.data.pages.filter((p) => p.section === course.data.pages[0].section).length,
+    url: courseUrl(course.id),
+  })),
   ...mdxLabs.map((lab) => ({
     title: lab.data.title,
     date: lab.data.date,
@@ -31,7 +50,7 @@ allLabs.sort((a, b) => b.date.getTime() - a.date.getTime());
 <BaseLayout title="Labs" description="Hands-on, step-by-step labs you run on your own machine.">
   <header class="PageHeader">
     <h1>Labs</h1>
-    <p>Step-by-step exercises you run on your own machine. Each one builds something, breaks it, and then fixes it properly.</p>
+    <p>Step-by-step exercises you run on your own machine, and longer courses you work through one lesson at a time. Each one builds something, breaks it, and then fixes it properly.</p>
   </header>
 
   <div class="Year-entries Labs">
@@ -43,6 +62,7 @@ allLabs.sort((a, b) => b.date.getTime() - a.date.getTime());
         categories={lab.categories}
         url={lab.url}
         duration={lab.duration}
+        lessons={lab.lessons}
       />
     ))}
   </div>

@@ -7,6 +7,26 @@ import { parse as parsePlist } from 'fast-plist';
 import { bundledLanguages } from 'shiki';
 import { transformerNotationDiff } from '@shikijs/transformers';
 import remarkCleanLang from './src/plugins/remark-clean-lang.mjs';
+import { syncCourses } from './scripts/sync-courses.mjs';
+
+// Pulls the courses in courses/*.json into .courses/ before content loads. A
+// build always pulls fresh copies; dev reuses the last copy unless
+// COURSES_REFRESH is set.
+function courseSync() {
+  return {
+    name: 'course-sync',
+    hooks: {
+      'astro:config:setup': ({ command, logger }) => {
+        if (command === 'preview') return;
+        syncCourses({
+          refresh: command === 'build' || Boolean(process.env.COURSES_REFRESH),
+          strict: command === 'build',
+          logger,
+        });
+      },
+    },
+  };
+}
 
 // Load custom TextMate grammars from vendor VSIX extracts
 const dwGrammarRaw = readFileSync(new URL('./vendor/data-weave.tmLanguage', import.meta.url), 'utf-8');
@@ -33,6 +53,7 @@ export default defineConfig({
     service: { entrypoint: 'astro/assets/services/noop' },
   },
   integrations: [
+    courseSync(),
     mdx(),
     sitemap(),
   ],
