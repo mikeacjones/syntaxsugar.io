@@ -22,7 +22,12 @@ const { Content } = await render(lab);
 
 ---
 
-<BaseLayout title={lab.data.title} description={lab.data.shortDescription}>
+<BaseLayout
+  title={lab.data.title}
+  description={lab.data.shortDescription}
+  article={{ date: lab.data.date, tags: lab.data.categories }}
+  hasMarkdown={lab.data.published}
+>
   <div class="post-view">
     <ArticleHeader
       title={lab.data.title}

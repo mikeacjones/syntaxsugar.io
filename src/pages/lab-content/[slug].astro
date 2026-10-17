@@ -22,7 +22,11 @@ const parsed = await parseClaatHtml(lab.id, LAB_CONTENT_DIR);
 
 ---
 
-<BaseLayout title={lab.data.title} description={lab.data.shortDescription}>
+<BaseLayout
+  title={lab.data.title}
+  description={lab.data.shortDescription}
+  article={{ date: lab.data.date, tags: lab.data.categories }}
+>
   <div class="post-view">
     <ArticleHeader
       title={lab.data.title}

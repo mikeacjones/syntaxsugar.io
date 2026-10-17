@@ -23,7 +23,12 @@ const { Content } = await render(post);
 
 ---
 
-<BaseLayout title={post.data.title} description={post.data.shortDescription}>
+<BaseLayout
+  title={post.data.title}
+  description={post.data.shortDescription}
+  article={{ date: post.data.date, tags: post.data.tags }}
+  hasMarkdown={post.data.published}
+>
   <div class="post-view">
     <ArticleHeader title={post.data.title} date={post.data.date} tags={post.data.tags} />
     <div class="post-view-content">
