@@ -1,0 +1,286 @@
+<!DOCTYPE html><html lang="en"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="description" content="I built a platform where a Solutions Architect drops one YAML file in a repo and gets a live, TLS-terminated Temporal demo or a published Instruqt workshop, with its own Temporal Cloud Namespace, scoped API key, images, and teardown. The operator behind it is just a set of Temporal Workflows. Here's how it works, what broke along the way, and what having every step durable ended up unlocking."><meta name="color-scheme" content="light dark"><meta name="theme-color" content="#f7f7fb" media="(prefers-color-scheme: light)"><meta name="theme-color" content="#141414" media="(prefers-color-scheme: dark)"><title>One YAML File to a Live Demo: Running a Demo Platform on Temporal | syntax sugar</title><link rel="canonical" href="https://syntaxsugar.io/post/2026/temporal-demo-cloud/"><meta name="author" content="Michael Jones"><!-- Social cards --><meta property="og:site_name" content="syntax sugar"><meta property="og:type" content="article"><meta property="og:title" content="One YAML File to a Live Demo: Running a Demo Platform on Temporal"><meta property="og:description" content="I built a platform where a Solutions Architect drops one YAML file in a repo and gets a live, TLS-terminated Temporal demo or a published Instruqt workshop, with its own Temporal Cloud Namespace, scoped API key, images, and teardown. The operator behind it is just a set of Temporal Workflows. Here's how it works, what broke along the way, and what having every step durable ended up unlocking."><meta property="og:url" content="https://syntaxsugar.io/post/2026/temporal-demo-cloud/"><meta property="og:image" content="https://syntaxsugar.io/images/profilePicture.png"><meta property="og:image:alt" content="Michael Jones"><meta property="article:published_time" content="2026-11-17T00:00:00.000Z"><meta property="article:author" content="Michael Jones"><meta property="article:tag" content="temporal"><meta property="article:tag" content="temporal-cloud"><meta property="article:tag" content="kubernetes"><meta property="article:tag" content="python"><meta property="article:tag" content="instruqt"><meta property="article:tag" content="platform-engineering"><meta name="twitter:card" content="summary"><meta name="twitter:title" content="One YAML File to a Live Demo: Running a Demo Platform on Temporal"><meta name="twitter:description" content="I built a platform where a Solutions Architect drops one YAML file in a repo and gets a live, TLS-terminated Temporal demo or a published Instruqt workshop, with its own Temporal Cloud Namespace, scoped API key, images, and teardown. The operator behind it is just a set of Temporal Workflows. Here's how it works, what broke along the way, and what having every step durable ended up unlocking."><meta name="twitter:image" content="https://syntaxsugar.io/images/profilePicture.png"><!-- Structured data --><script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","name":"One YAML File to a Live Demo: Running a Demo Platform on Temporal","headline":"One YAML File to a Live Demo: Running a Demo Platform on Temporal","description":"I built a platform where a Solutions Architect drops one YAML file in a repo and gets a live, TLS-terminated Temporal demo or a published Instruqt workshop, with its own Temporal Cloud Namespace, scoped API key, images, and teardown. The operator behind it is just a set of Temporal Workflows. Here's how it works, what broke along the way, and what having every step durable ended up unlocking.","datePublished":"2026-11-17T00:00:00.000Z","keywords":"temporal, temporal-cloud, kubernetes, python, instruqt, platform-engineering","url":"https://syntaxsugar.io/post/2026/temporal-demo-cloud/","mainEntityOfPage":"https://syntaxsugar.io/post/2026/temporal-demo-cloud/","image":"https://syntaxsugar.io/images/profilePicture.png","author":{"@type":"Person","name":"Michael Jones","url":"https://syntaxsugar.io/","sameAs":["https://github.com/mikeacjones","https://www.linkedin.com/in/michael-jones-5a870678"]},"publisher":{"@type":"Person","name":"Michael Jones","url":"https://syntaxsugar.io/","sameAs":["https://github.com/mikeacjones","https://www.linkedin.com/in/michael-jones-5a870678"]}}</script><!-- Feeds and machine-readable copies --><link rel="alternate" type="application/rss+xml" title="syntax sugar" href="/rss.xml"><link rel="alternate" type="text/plain" title="llms.txt" href="/llms.txt"><!-- Favicons --><link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="icon" type="image/x-icon" href="/favicon.ico"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="manifest" href="/site.webmanifest"><link rel="mask-icon" href="/safari-pinned-tab.svg" color="#444ce7"><!-- Google Fonts --><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap" rel="stylesheet"><!-- Sitemap --><link rel="sitemap" href="/sitemap-index.xml"><link rel="stylesheet" href="/_astro/_lesson_.Cg0MnJyz.css"></head> <body> <a class="SkipLink" href="#main">Skip to content</a> <header class="Masthead"> <a class="Wordmark" href="/" aria-label="syntax sugar, home"> <span>syntax</span><span class="Wordmark-cube" aria-hidden="true"></span><span>sugar</span> </a> <nav class="Masthead-nav" aria-label="Primary"> <a href="/" aria-current="page">Writing</a><a href="/labs">Labs</a> </nav> </header> <main id="main">  <div class="post-view"> <header class="ArticleHeader"> <h1>One YAML File to a Live Demo: Running a Demo Platform on Temporal</h1> <div class="ArticleHeader-meta"> <time datetime="2026-11-17">November 17, 2026</time>  <span class="Entry-tags"> <a class="Tag" href="/tag/temporal">temporal</a><a class="Tag" href="/tag/temporal-cloud">temporal-cloud</a><a class="Tag" href="/tag/kubernetes">kubernetes</a><a class="Tag" href="/tag/python">python</a><a class="Tag" href="/tag/instruqt">instruqt</a><a class="Tag" href="/tag/platform-engineering">platform-engineering</a> </span> </div> </header> <div class="post-view-content"> 
+<p>Here’s how demos used to work. Someone builds a great one. It runs perfectly on their laptop against <code>temporal server start-dev</code>. It’s in a repo with a README that says “run these six commands.” And then, five minutes before a customer call, somebody else tries to run it and finds out their Python is the wrong version, the API key in their <code>.env</code> expired in August, and the Docker image doesn’t build on Apple Silicon.</p>
+<p>Workshops were their own flavor of the same problem. Every Instruqt track had a hand-built image, a hand-pushed track config, and a tribal-knowledge list of steps for publishing a fix.</p>
+<p>So I built <strong>tmprl-demo.cloud</strong>: a catalog where a Solutions Architect adds <strong>one YAML file</strong> to a repo, opens a PR, and gets back a live demo at <code>&lt;name&gt;.tmprl-demo.cloud</code>. Or a published Instruqt workshop. Everything in between is automated, and every step of that automation is a Temporal Workflow.</p>
+
+<hr/>
+<h1 id="what-it-actually-does">What It Actually Does</h1>
+<p>A demo is one <code>DemoProject</code> custom resource. Here’s the whole file for the banking money transfer demo, trimmed a bit:</p>
+<pre class="astro-code astro-code-themes github-light temporal-dark" style="background-color:#fff;--shiki-dark-bg:#171626;color:#24292e;--shiki-dark:#f8fafc;overflow-x:auto;white-space:pre-wrap;word-wrap:break-word" tabindex="0" data-language="yaml"><code><span class="line"><span style="color:#22863A;--shiki-dark:#59FDA0">apiVersion</span><span style="color:#24292E;--shiki-dark:#F8FAFC">: </span><span style="color:#032F62;--shiki-dark:#EDC38D">registry.tmprl-demo.cloud/v1alpha1</span></span>
+<span class="line"><span style="color:#22863A;--shiki-dark:#59FDA0">kind</span><span style="color:#24292E;--shiki-dark:#F8FAFC">: </span><span style="color:#032F62;--shiki-dark:#EDC38D">DemoProject</span></span>
+<span class="line"><span style="color:#22863A;--shiki-dark:#59FDA0">metadata</span><span style="color:#24292E;--shiki-dark:#F8FAFC">:</span></span>
+<span class="line"><span style="color:#22863A;--shiki-dark:#59FDA0">  name</span><span style="color:#24292E;--shiki-dark:#F8FAFC">: </span><span style="color:#032F62;--shiki-dark:#EDC38D">banking-money-transfer</span></span>
+<span class="line"><span style="color:#22863A;--shiki-dark:#59FDA0">spec</span><span style="color:#24292E;--shiki-dark:#F8FAFC">:</span></span>
+<span class="line"><span style="color:#22863A;--shiki-dark:#59FDA0">  registry</span><span style="color:#24292E;--shiki-dark:#F8FAFC">:</span></span>
+<span class="line"><span style="color:#22863A;--shiki-dark:#59FDA0">    title</span><span style="color:#24292E;--shiki-dark:#F8FAFC">: </span><span style="color:#032F62;--shiki-dark:#EDC38D">Banking Money Transfer</span></span>
+<span class="line"><span style="color:#22863A;--shiki-dark:#59FDA0">    tags</span><span style="color:#24292E;--shiki-dark:#F8FAFC">: [</span><span style="color:#032F62;--shiki-dark:#EDC38D">Banking</span><span style="color:#24292E;--shiki-dark:#F8FAFC">, </span><span style="color:#032F62;--shiki-dark:#EDC38D">Saga</span><span style="color:#24292E;--shiki-dark:#F8FAFC">]</span></span>
+<span class="line"><span style="color:#22863A;--shiki-dark:#59FDA0">    temporalSdks</span><span style="color:#24292E;--shiki-dark:#F8FAFC">: [</span><span style="color:#032F62;--shiki-dark:#EDC38D">Python</span><span style="color:#24292E;--shiki-dark:#F8FAFC">]</span></span>
+<span class="line"><span style="color:#22863A;--shiki-dark:#59FDA0">  source</span><span style="color:#24292E;--shiki-dark:#F8FAFC">:</span></span>
+<span class="line"><span style="color:#22863A;--shiki-dark:#59FDA0">    repo</span><span style="color:#24292E;--shiki-dark:#F8FAFC">: </span><span style="color:#032F62;--shiki-dark:#EDC38D">https://github.com/temporal-sa/temporal-demo-banking-app-money-transfer</span></span>
+<span class="line"><span style="color:#22863A;--shiki-dark:#59FDA0">  builds</span><span style="color:#24292E;--shiki-dark:#F8FAFC">:</span></span>
+<span class="line"><span style="color:#22863A;--shiki-dark:#59FDA0">    frontend</span><span style="color:#24292E;--shiki-dark:#F8FAFC">: { </span><span style="color:#22863A;--shiki-dark:#59FDA0">context</span><span style="color:#24292E;--shiki-dark:#F8FAFC">: </span><span style="color:#005CC5;--shiki-dark:#59FDA0">.</span><span style="color:#24292E;--shiki-dark:#F8FAFC">, </span><span style="color:#22863A;--shiki-dark:#59FDA0">dockerfile</span><span style="color:#24292E;--shiki-dark:#F8FAFC">: </span><span style="color:#032F62;--shiki-dark:#EDC38D">docker/frontend.Dockerfile</span><span style="color:#24292E;--shiki-dark:#F8FAFC"> }</span></span>
+<span class="line"><span style="color:#22863A;--shiki-dark:#59FDA0">    backend</span><span style="color:#24292E;--shiki-dark:#F8FAFC">:  { </span><span style="color:#22863A;--shiki-dark:#59FDA0">context</span><span style="color:#24292E;--shiki-dark:#F8FAFC">: </span><span style="color:#005CC5;--shiki-dark:#59FDA0">.</span><span style="color:#24292E;--shiki-dark:#F8FAFC">, </span><span style="color:#22863A;--shiki-dark:#59FDA0">dockerfile</span><span style="color:#24292E;--shiki-dark:#F8FAFC">: </span><span style="color:#032F62;--shiki-dark:#EDC38D">docker/backend.Dockerfile</span><span style="color:#24292E;--shiki-dark:#F8FAFC"> }</span></span>
+<span class="line"><span style="color:#22863A;--shiki-dark:#59FDA0">    worker</span><span style="color:#24292E;--shiki-dark:#F8FAFC">:   { </span><span style="color:#22863A;--shiki-dark:#59FDA0">context</span><span style="color:#24292E;--shiki-dark:#F8FAFC">: </span><span style="color:#005CC5;--shiki-dark:#59FDA0">.</span><span style="color:#24292E;--shiki-dark:#F8FAFC">, </span><span style="color:#22863A;--shiki-dark:#59FDA0">dockerfile</span><span style="color:#24292E;--shiki-dark:#F8FAFC">: </span><span style="color:#032F62;--shiki-dark:#EDC38D">docker/worker-python.Dockerfile</span><span style="color:#24292E;--shiki-dark:#F8FAFC"> }</span></span>
+<span class="line"><span style="color:#22863A;--shiki-dark:#59FDA0">  components</span><span style="color:#24292E;--shiki-dark:#F8FAFC">:</span></span>
+<span class="line"><span style="color:#22863A;--shiki-dark:#59FDA0">    frontend</span><span style="color:#24292E;--shiki-dark:#F8FAFC">:</span></span>
+<span class="line"><span style="color:#22863A;--shiki-dark:#59FDA0">      build</span><span style="color:#24292E;--shiki-dark:#F8FAFC">: </span><span style="color:#032F62;--shiki-dark:#EDC38D">frontend</span></span>
+<span class="line"><span style="color:#22863A;--shiki-dark:#59FDA0">      ports</span><span style="color:#24292E;--shiki-dark:#F8FAFC">: [{ </span><span style="color:#22863A;--shiki-dark:#59FDA0">containerPort</span><span style="color:#24292E;--shiki-dark:#F8FAFC">: </span><span style="color:#005CC5;--shiki-dark:#59FDA0">5173</span><span style="color:#24292E;--shiki-dark:#F8FAFC">, </span><span style="color:#22863A;--shiki-dark:#59FDA0">servicePort</span><span style="color:#24292E;--shiki-dark:#F8FAFC">: </span><span style="color:#005CC5;--shiki-dark:#59FDA0">80</span><span style="color:#24292E;--shiki-dark:#F8FAFC"> }]</span></span>
+<span class="line"><span style="color:#22863A;--shiki-dark:#59FDA0">    backend</span><span style="color:#24292E;--shiki-dark:#F8FAFC">:</span></span>
+<span class="line"><span style="color:#22863A;--shiki-dark:#59FDA0">      build</span><span style="color:#24292E;--shiki-dark:#F8FAFC">: </span><span style="color:#032F62;--shiki-dark:#EDC38D">backend</span></span>
+<span class="line"><span style="color:#22863A;--shiki-dark:#59FDA0">      temporalAccess</span><span style="color:#24292E;--shiki-dark:#F8FAFC">: </span><span style="color:#005CC5;--shiki-dark:#59FDA0">true</span></span>
+<span class="line"><span style="color:#22863A;--shiki-dark:#59FDA0">      ports</span><span style="color:#24292E;--shiki-dark:#F8FAFC">: [{ </span><span style="color:#22863A;--shiki-dark:#59FDA0">containerPort</span><span style="color:#24292E;--shiki-dark:#F8FAFC">: </span><span style="color:#005CC5;--shiki-dark:#59FDA0">8000</span><span style="color:#24292E;--shiki-dark:#F8FAFC">, </span><span style="color:#22863A;--shiki-dark:#59FDA0">servicePort</span><span style="color:#24292E;--shiki-dark:#F8FAFC">: </span><span style="color:#005CC5;--shiki-dark:#59FDA0">8000</span><span style="color:#24292E;--shiki-dark:#F8FAFC"> }]</span></span>
+<span class="line"><span style="color:#22863A;--shiki-dark:#59FDA0">    worker</span><span style="color:#24292E;--shiki-dark:#F8FAFC">:</span></span>
+<span class="line"><span style="color:#22863A;--shiki-dark:#59FDA0">      build</span><span style="color:#24292E;--shiki-dark:#F8FAFC">: </span><span style="color:#032F62;--shiki-dark:#EDC38D">worker</span></span>
+<span class="line"><span style="color:#22863A;--shiki-dark:#59FDA0">      worker</span><span style="color:#24292E;--shiki-dark:#F8FAFC">: </span><span style="color:#005CC5;--shiki-dark:#59FDA0">true</span></span>
+<span class="line"><span style="color:#22863A;--shiki-dark:#59FDA0">  ingress</span><span style="color:#24292E;--shiki-dark:#F8FAFC">:</span></span>
+<span class="line"><span style="color:#22863A;--shiki-dark:#59FDA0">    subdomain</span><span style="color:#24292E;--shiki-dark:#F8FAFC">: </span><span style="color:#032F62;--shiki-dark:#EDC38D">banking-app</span></span>
+<span class="line"><span style="color:#22863A;--shiki-dark:#59FDA0">  smokeCheck</span><span style="color:#24292E;--shiki-dark:#F8FAFC">:</span></span>
+<span class="line"><span style="color:#22863A;--shiki-dark:#59FDA0">    path</span><span style="color:#24292E;--shiki-dark:#F8FAFC">: </span><span style="color:#032F62;--shiki-dark:#EDC38D">/api/health</span></span>
+<span class="line"><span style="color:#22863A;--shiki-dark:#59FDA0">    expectedStatus</span><span style="color:#24292E;--shiki-dark:#F8FAFC">: </span><span style="color:#005CC5;--shiki-dark:#59FDA0">200</span></span></code></pre>
+<p>Notice what’s <em>not</em> in there: no Kubernetes namespace, no Temporal Cloud Namespace, no API key, no image tags, no ECR repo, no <code>TEMPORAL_ADDRESS</code>. The operator derives all of it from <code>metadata.name</code>. The author says <em>what</em> the demo is; the platform decides <em>where</em> it lives.</p>
+<p>When that file merges, this happens with nobody touching anything:</p>
+<pre><code class="language-mermaid">flowchart TB
+  accTitle: From a merged YAML file to a live demo
+  accDescr: Flux delivers the DemoProject. A watch loop signals one entity Workflow per project, which provisions the Temporal Cloud Namespace and key, builds images on CodeBuild, deploys a candidate, smoke tests it, promotes the route, and publishes the catalog.
+  git[&quot;Merged CR in&lt;br/&gt;projects/demo/&quot;]
+  flux[&quot;Flux&quot;]
+  watch[&quot;Watch loop&lt;br/&gt;(outside Temporal)&quot;]
+  subgraph wf[&quot;DemoProjectWorkflow · one per project&quot;]
+    direction TB
+    tc[&quot;Temporal Cloud Namespace&lt;br/&gt;+ scoped API key&quot;]
+    ecr[&quot;ECR repos&quot;]
+    build[&quot;CodeBuild images&quot;]
+    cand[&quot;Candidate rollout&quot;]
+    smoke[&quot;Readiness + smoke check&quot;]
+    promote[&quot;Promote route + TLS&quot;]
+  end
+  catalog[&quot;Catalog&quot;]
+  live[&quot;banking-app.tmprl-demo.cloud&quot;]
+
+  git --&gt; flux --&gt; watch
+  watch -- &quot;SignalWithStart&lt;br/&gt;reconcile&quot; --&gt; tc
+  tc --&gt; ecr --&gt; build --&gt; cand --&gt; smoke --&gt; promote
+  promote --&gt; live
+  watch --&gt; catalog
+
+  class tc,ecr,build,cand,smoke,promote workflow
+  class flux,watch app
+  class git,catalog,live external
+</code></pre>
+<p>Delete the file and it runs in reverse: Kubernetes namespace, Temporal Cloud API key, service account, Namespace, secrets, ECR repos, all gone, held behind a finalizer until the Workflow confirms the teardown.</p>
+<p>Instruqt courses work the same way with an <code>InstruqtCourse</code> resource: the operator builds the course images, publishes them to public ECR, renders the track config with the right image references injected, and runs <code>instruqt track push</code>. Push a <code>live-test</code> branch to the course repo and you get a separate testing track. Delete the branch and the testing track goes away.</p>
+<hr/>
+<h1 id="why-build-the-operator-on-temporal">Why Build the Operator on Temporal?</h1>
+<p>The obvious way to build this is a Kubernetes operator: a controller with a reconcile loop. I went with Temporal Workflows instead, and I’d make the same call again. The reconcile isn’t really a Kubernetes problem. Most of the work happens <em>outside</em> the cluster, and most of it is slow:</p>
+<ul>
+<li><strong>CodeBuild runs take minutes.</strong> A controller reconcile loop doesn’t want to sit on a ten-minute build; you end up storing “build in progress, ID abc” somewhere and re-checking it on every pass.</li>
+<li><strong>Temporal Cloud is eventually consistent in ways that matter.</strong> A new API key can take a few minutes before it’s accepted. A new Namespace reports <code>ACTIVE</code> before its hostname resolves everywhere.</li>
+<li><strong>Failures need compensation.</strong> If the build fails <em>after</em> I created a Temporal Cloud Namespace, a service account, a key, and three secrets, something has to clean those up, in the right order.</li>
+<li><strong>Some waits are measured in weeks.</strong> Every runtime API key is a 30-day key, rotated 10 days before it expires.</li>
+</ul>
+<p>Every one of those is “a long-running, stateful process that talks to flaky external systems.” That’s the thing Temporal is for. (If the key rotation part sounds familiar, it’s the <a href="/post/2026/rotate-temporal-cloud-credentials">entity Workflow pattern from my last post</a>, just living inside a bigger Workflow.)</p>
+<hr/>
+<h1 id="the-shape-of-it">The Shape of It</h1>
+<p>There’s one long-lived <strong>entity Workflow</strong> per project, with the ID <code>demo-project/&lt;name&gt;</code>. It spends almost all of its life asleep, waiting for something to do: a new spec, a forced reconcile, a key rotation coming due, a finalize, or a new operator version.</p>
+<pre class="astro-code astro-code-themes github-light temporal-dark" style="background-color:#fff;--shiki-dark-bg:#171626;color:#24292e;--shiki-dark:#f8fafc;overflow-x:auto;white-space:pre-wrap;word-wrap:break-word" tabindex="0" data-language="python"><code><span class="line"><span style="color:#6F42C1;--shiki-dark:#F8FAFC">@</span><span style="color:#6F42C1;--shiki-dark:#CCCEF0">workflow</span><span style="color:#6F42C1;--shiki-dark:#F8FAFC">.</span><span style="color:#6F42C1;--shiki-dark:#CCCEF0">run</span></span>
+<span class="line"><span style="color:#D73A49;--shiki-dark:#7F86F1">async</span><span style="color:#D73A49;--shiki-dark:#7F86F1"> def</span><span style="color:#6F42C1;--shiki-dark:#CCCEF0"> run</span><span style="color:#24292E;--shiki-dark:#F8FAFC">(</span><span style="color:#24292E;--shiki-dark:#59FDA0">self</span><span style="color:#24292E;--shiki-dark:#F8FAFC">, request: DemoProjectRunRequest) -&gt; </span><span style="color:#005CC5;--shiki-dark:#59FDA0">None</span><span style="color:#24292E;--shiki-dark:#F8FAFC">:</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#F8FAFC">    self</span><span style="color:#24292E;--shiki-dark:#F8FAFC">.</span><span style="color:#24292E;--shiki-dark:#CCCEF0">_apply_carried_state</span><span style="color:#24292E;--shiki-dark:#F8FAFC">(request, request.project_name)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#D73A49;--shiki-dark:#7F86F1">    while</span><span style="color:#D73A49;--shiki-dark:#7F86F1"> not</span><span style="color:#005CC5;--shiki-dark:#F8FAFC"> self</span><span style="color:#24292E;--shiki-dark:#F8FAFC">._shutdown:</span></span>
+<span class="line"><span style="color:#D73A49;--shiki-dark:#7F86F1">        await</span><span style="color:#005CC5;--shiki-dark:#F8FAFC"> self</span><span style="color:#24292E;--shiki-dark:#F8FAFC">.</span><span style="color:#24292E;--shiki-dark:#CCCEF0">_wait_for_next_action</span><span style="color:#24292E;--shiki-dark:#F8FAFC">()  </span><span style="color:#6A737D;--shiki-dark:#7C8FB1"># Signals, or a durable Timer for key rotation</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#D73A49;--shiki-dark:#7F86F1">        if</span><span style="color:#005CC5;--shiki-dark:#F8FAFC"> self</span><span style="color:#24292E;--shiki-dark:#F8FAFC">._finalize:</span></span>
+<span class="line"><span style="color:#D73A49;--shiki-dark:#7F86F1">            await</span><span style="color:#005CC5;--shiki-dark:#F8FAFC"> self</span><span style="color:#24292E;--shiki-dark:#F8FAFC">.</span><span style="color:#24292E;--shiki-dark:#CCCEF0">_run_finalize</span><span style="color:#24292E;--shiki-dark:#F8FAFC">(project_name)</span></span>
+<span class="line"><span style="color:#D73A49;--shiki-dark:#7F86F1">            return</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#D73A49;--shiki-dark:#7F86F1">        if</span><span style="color:#005CC5;--shiki-dark:#F8FAFC"> self</span><span style="color:#24292E;--shiki-dark:#F8FAFC">._continue_as_new_for_worker_version:</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#F8FAFC">            self</span><span style="color:#24292E;--shiki-dark:#F8FAFC">.</span><span style="color:#24292E;--shiki-dark:#CCCEF0">_continue_as_new_if_needed</span><span style="color:#24292E;--shiki-dark:#F8FAFC">(project_name)</span></span>
+<span class="line"><span style="color:#D73A49;--shiki-dark:#7F86F1">            continue</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#F8FAFC">        reconcile_input </span><span style="color:#D73A49;--shiki-dark:#F8FAFC">=</span><span style="color:#D73A49;--shiki-dark:#7F86F1"> await</span><span style="color:#005CC5;--shiki-dark:#F8FAFC"> self</span><span style="color:#24292E;--shiki-dark:#F8FAFC">.</span><span style="color:#24292E;--shiki-dark:#CCCEF0">_select_demo_project_for_reconcile</span><span style="color:#24292E;--shiki-dark:#F8FAFC">(project_name)</span></span>
+<span class="line"><span style="color:#D73A49;--shiki-dark:#7F86F1">        if</span><span style="color:#D73A49;--shiki-dark:#7F86F1"> await</span><span style="color:#005CC5;--shiki-dark:#F8FAFC"> self</span><span style="color:#24292E;--shiki-dark:#F8FAFC">.</span><span style="color:#24292E;--shiki-dark:#CCCEF0">_run_demo_project_reconcile</span><span style="color:#24292E;--shiki-dark:#F8FAFC">(project_name, reconcile_input):</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#F8FAFC">            self</span><span style="color:#24292E;--shiki-dark:#F8FAFC">.</span><span style="color:#24292E;--shiki-dark:#CCCEF0">_complete_current_reconcile</span><span style="color:#24292E;--shiki-dark:#F8FAFC">()</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#F8FAFC">        self</span><span style="color:#24292E;--shiki-dark:#F8FAFC">.</span><span style="color:#24292E;--shiki-dark:#CCCEF0">_continue_as_new_if_needed</span><span style="color:#24292E;--shiki-dark:#F8FAFC">(project_name)</span></span></code></pre>
+<p>The actual reconcile is a pipeline of small Activities and a few Child Workflows (one for image builds, one for the Kubernetes runtime, one for AWS Lambda-backed serverless Workers). Each Activity is split along a retry boundary: <code>plan_external_resources</code>, <code>reconcile_ecr_repositories</code>, <code>reconcile_temporal_cloud_resource</code>, <code>start_project_image_build</code>, <code>wait_for_project_image_build</code>, and so on. If CodeBuild flakes, I retry the wait, not the ECR setup.</p>
+<h2 id="the-watch-loop-lives-outside-temporal">The watch loop lives outside Temporal</h2>
+<p>What triggers the Workflow? A plain Python loop that lists <code>DemoProject</code> resources every 15 seconds. When a spec changes, it does a <code>SignalWithStart</code>:</p>
+<pre class="astro-code astro-code-themes github-light temporal-dark" style="background-color:#fff;--shiki-dark-bg:#171626;color:#24292e;--shiki-dark:#f8fafc;overflow-x:auto;white-space:pre-wrap;word-wrap:break-word" tabindex="0" data-language="python"><code><span class="line"><span style="color:#D73A49;--shiki-dark:#7F86F1">await</span><span style="color:#24292E;--shiki-dark:#F8FAFC"> temporal_client.</span><span style="color:#24292E;--shiki-dark:#CCCEF0">start_workflow</span><span style="color:#24292E;--shiki-dark:#F8FAFC">(</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#F8FAFC">    DemoProjectWorkflow.run,</span></span>
+<span class="line"><span style="color:#E36209;--shiki-dark:#F8FAFC">    args</span><span style="color:#D73A49;--shiki-dark:#F8FAFC">=</span><span style="color:#24292E;--shiki-dark:#F8FAFC">[</span><span style="color:#24292E;--shiki-dark:#CCCEF0">DemoProjectRunRequest</span><span style="color:#24292E;--shiki-dark:#F8FAFC">(</span><span style="color:#E36209;--shiki-dark:#F8FAFC">project_name</span><span style="color:#D73A49;--shiki-dark:#F8FAFC">=</span><span style="color:#24292E;--shiki-dark:#F8FAFC">name)],</span></span>
+<span class="line"><span style="color:#E36209;--shiki-dark:#F8FAFC">    id</span><span style="color:#D73A49;--shiki-dark:#F8FAFC">=</span><span style="color:#24292E;--shiki-dark:#CCCEF0">demo_project_workflow_id</span><span style="color:#24292E;--shiki-dark:#F8FAFC">(name, config.cluster),</span></span>
+<span class="line"><span style="color:#E36209;--shiki-dark:#F8FAFC">    task_queue</span><span style="color:#D73A49;--shiki-dark:#F8FAFC">=</span><span style="color:#24292E;--shiki-dark:#F8FAFC">config.task_queue,</span></span>
+<span class="line"><span style="color:#E36209;--shiki-dark:#F8FAFC">    start_signal</span><span style="color:#D73A49;--shiki-dark:#F8FAFC">=</span><span style="color:#032F62;--shiki-dark:#EDC38D">&quot;reconcile&quot;</span><span style="color:#24292E;--shiki-dark:#F8FAFC">,</span></span>
+<span class="line"><span style="color:#E36209;--shiki-dark:#F8FAFC">    start_signal_args</span><span style="color:#D73A49;--shiki-dark:#F8FAFC">=</span><span style="color:#24292E;--shiki-dark:#F8FAFC">[signal_arg],  </span><span style="color:#6A737D;--shiki-dark:#7C8FB1"># the full desired spec</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#F8FAFC">)</span></span></code></pre>
+<p>Two decisions here that I’m happy with:</p>
+<ol>
+<li><strong>The poller isn’t a Workflow.</strong> Polling Kubernetes every 15 seconds forever is not a durable-execution problem, and it’d burn Actions for nothing. The loop only signals when a spec’s hash changes.</li>
+<li><strong>The Signal is level-triggered.</strong> It carries the <em>entire</em> desired spec, not “something changed.” A missed Signal gets fixed on the next pass, and a duplicate is a no-op because the Workflow dedupes on a reconcile identity. That’s the Kubernetes mindset, and it fits Temporal nicely.</li>
+</ol>
+<hr/>
+<h1 id="lessons-learned-aka-things-that-broke">Lessons Learned (a.k.a. Things That Broke)</h1>
+<p>381 commits in four months. Not all of them were features. 😅 These are the ones that taught me something.</p>
+<h2 id="1-signalwithstart-and-the-signal-that-vanished">1. <code>SignalWithStart</code> and the Signal that vanished</h2>
+<p>The very first version had a bug where a brand-new project would just… hang. The Workflow was running, it had received the Signal, and it was sitting in <code>wait_condition</code> forever.</p>
+<p>With <code>SignalWithStart</code>, the Signal is delivered on the <strong>first Workflow Task</strong>, so its handler can run before or alongside the start of <code>run()</code>. My <code>run()</code> started by restoring state carried over from Continue-As-New, and on a fresh start that state was <code>None</code>. So:</p>
+<ol>
+<li>Signal handler sets <code>self._pending_spec = spec</code></li>
+<li><code>run()</code> sets <code>self._pending_spec = request.carried_pending_spec</code> (which is <code>None</code>)</li>
+<li><code>wait_condition(lambda: self._pending_spec is not None)</code> waits forever</li>
+</ol>
+<p>The fix is one <code>if</code>:</p>
+<pre class="astro-code astro-code-themes github-light temporal-dark" style="background-color:#fff;--shiki-dark-bg:#171626;color:#24292e;--shiki-dark:#f8fafc;overflow-x:auto;white-space:pre-wrap;word-wrap:break-word" tabindex="0" data-language="python"><code><span class="line"><span style="color:#6A737D;--shiki-dark:#7C8FB1"># Only adopt a spec actually carried over from continue-as-new; a fresh</span></span>
+<span class="line"><span style="color:#6A737D;--shiki-dark:#7C8FB1"># SignalWithStart has already set it in the signal handler.</span></span>
+<span class="line"><span style="color:#D73A49;--shiki-dark:#7F86F1">if</span><span style="color:#24292E;--shiki-dark:#F8FAFC"> request.carried_pending_spec </span><span style="color:#D73A49;--shiki-dark:#7F86F1">is</span><span style="color:#D73A49;--shiki-dark:#7F86F1"> not</span><span style="color:#005CC5;--shiki-dark:#59FDA0"> None</span><span style="color:#24292E;--shiki-dark:#F8FAFC">:</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#F8FAFC">    self</span><span style="color:#24292E;--shiki-dark:#F8FAFC">._pending_spec </span><span style="color:#D73A49;--shiki-dark:#F8FAFC">=</span><span style="color:#24292E;--shiki-dark:#F8FAFC"> request.carried_pending_spec</span></span></code></pre>
+<p>Lesson: with <code>SignalWithStart</code>, treat your Signal handler as part of initialization. Better yet, use <code>@workflow.init</code> and never assign handler-owned state in <code>run()</code>.</p>
+<h2 id="2-no-patching-ever-worker-versioning-instead">2. No patching. Ever. Worker Versioning instead.</h2>
+<p>The operator changes <em>constantly</em>. Early on I was using <code>workflow.patched()</code> to keep in-flight entity Workflows replay-safe, and it got ugly fast: a new patch for nearly every reconcile change, layered on top of each other, in Workflows that live for months.</p>
+<p>So the operator moved to <strong>Worker Versioning</strong> with the <a href="https://github.com/temporalio/temporal-worker-controller" rel="noreferrer" target="_blank">Temporal Worker Controller</a> and <strong>Pinned</strong> Workflows. A running Workflow finishes on the code it started with. New code ships as a new Worker Deployment Version. And the patches all got deleted.</p>
+<p>The catch with long-lived entity Workflows is that “finish on the version you started on” might mean “never.” So each entity Workflow listens for a <code>check_worker_version</code> Signal and hops to the new version at a safe point:</p>
+<pre class="astro-code astro-code-themes github-light temporal-dark" style="background-color:#fff;--shiki-dark-bg:#171626;color:#24292e;--shiki-dark:#f8fafc;overflow-x:auto;white-space:pre-wrap;word-wrap:break-word" tabindex="0" data-language="python"><code><span class="line"><span style="color:#6F42C1;--shiki-dark:#F8FAFC">@</span><span style="color:#6F42C1;--shiki-dark:#CCCEF0">workflow</span><span style="color:#6F42C1;--shiki-dark:#F8FAFC">.</span><span style="color:#6F42C1;--shiki-dark:#CCCEF0">signal</span></span>
+<span class="line"><span style="color:#D73A49;--shiki-dark:#7F86F1">def</span><span style="color:#6F42C1;--shiki-dark:#CCCEF0"> check_worker_version</span><span style="color:#24292E;--shiki-dark:#F8FAFC">(</span><span style="color:#24292E;--shiki-dark:#59FDA0">self</span><span style="color:#24292E;--shiki-dark:#F8FAFC">, _signal: CheckWorkerVersionSignal) -&gt; </span><span style="color:#005CC5;--shiki-dark:#59FDA0">None</span><span style="color:#24292E;--shiki-dark:#F8FAFC">:</span></span>
+<span class="line"><span style="color:#D73A49;--shiki-dark:#7F86F1">    if</span><span style="color:#24292E;--shiki-dark:#F8FAFC"> workflow.</span><span style="color:#24292E;--shiki-dark:#CCCEF0">info</span><span style="color:#24292E;--shiki-dark:#F8FAFC">().</span><span style="color:#24292E;--shiki-dark:#CCCEF0">is_target_worker_deployment_version_changed</span><span style="color:#24292E;--shiki-dark:#F8FAFC">():</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#F8FAFC">        self</span><span style="color:#24292E;--shiki-dark:#F8FAFC">._continue_as_new_for_worker_version </span><span style="color:#D73A49;--shiki-dark:#F8FAFC">=</span><span style="color:#005CC5;--shiki-dark:#59FDA0"> True</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D;--shiki-dark:#7C8FB1"># ...later, between reconciles</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#F8FAFC">workflow.</span><span style="color:#24292E;--shiki-dark:#CCCEF0">continue_as_new</span><span style="color:#24292E;--shiki-dark:#F8FAFC">(</span></span>
+<span class="line"><span style="color:#E36209;--shiki-dark:#F8FAFC">    args</span><span style="color:#D73A49;--shiki-dark:#F8FAFC">=</span><span style="color:#24292E;--shiki-dark:#F8FAFC">[</span><span style="color:#24292E;--shiki-dark:#CCCEF0">DemoProjectRunRequest</span><span style="color:#24292E;--shiki-dark:#F8FAFC">(</span><span style="color:#E36209;--shiki-dark:#F8FAFC">project_name</span><span style="color:#D73A49;--shiki-dark:#F8FAFC">=</span><span style="color:#24292E;--shiki-dark:#F8FAFC">name, </span><span style="color:#E36209;--shiki-dark:#F8FAFC">carried_status</span><span style="color:#D73A49;--shiki-dark:#F8FAFC">=</span><span style="color:#005CC5;--shiki-dark:#59FDA0">...</span><span style="color:#24292E;--shiki-dark:#F8FAFC">, </span><span style="color:#005CC5;--shiki-dark:#59FDA0">...</span><span style="color:#24292E;--shiki-dark:#F8FAFC">)],</span></span>
+<span class="line"><span style="color:#E36209;--shiki-dark:#F8FAFC">    initial_versioning_behavior</span><span style="color:#D73A49;--shiki-dark:#F8FAFC">=</span><span style="color:#24292E;--shiki-dark:#F8FAFC">workflow.ContinueAsNewVersioningBehavior.</span><span style="color:#005CC5;--shiki-dark:#59FDA0">AUTO_UPGRADE</span><span style="color:#24292E;--shiki-dark:#F8FAFC">,</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#F8FAFC">)</span></span></code></pre>
+<p>I got this wrong the first time. My original version did the upgrade <em>driven by the Signal itself</em> instead of through Continue-As-New, which meant the new version never got a clean history handoff. That defeats the whole point: the reason Continue-As-New is the upgrade path is that the new run starts with an empty Event History, so the new code never has to replay the old code’s decisions.</p>
+<h2 id="3-the-operator-deploys-itself">3. The operator deploys itself</h2>
+<p>This is the part I’m proudest of, and the part that hurt the most.</p>
+<p>The operator is a Temporal Worker. The registry web app and the operator’s own Worker are just… another <code>DemoProject</code>. So when I push operator code, the operator builds its own next image, renders its own <code>WorkerDeployment</code>, and the Worker Controller rolls it out.</p>
+<p>That’s terrifying without a gate, so the gate is a <strong>canary <code>DemoProject</code></strong>. Before the new operator version becomes current, it has to create a real demo end-to-end (Namespace, key, build, candidate, smoke check, promote), rotate its credentials, spin up and crash a disposable workspace, and then tear it all back down and <em>prove</em> the cleanup happened. If any of that fails, the old version stays current.</p>
+<pre><code class="language-mermaid">flowchart TB
+  accTitle: Operator self-upgrade gate
+  accDescr: A push builds a new operator image. The Worker Controller registers it as the target version and runs the canary Workflow on it. Only if the canary creates, promotes, and fully tears down a demo does the new version become current.
+  push[&quot;Push to operator code&quot;]
+  build[&quot;Operator builds&lt;br/&gt;its own image&quot;]
+  target[&quot;New Worker Deployment&lt;br/&gt;Version (target)&quot;]
+  canary[&quot;Canary Workflow&lt;br/&gt;create → promote → crash → tear down&quot;]
+  current[&quot;New version&lt;br/&gt;becomes current&quot;]
+  stay[&quot;Old version&lt;br/&gt;stays current&quot;]
+
+  push --&gt; build --&gt; target --&gt; canary
+  canary -- &quot;passes&quot; --&gt; current
+  canary -. &quot;fails&quot; .-&gt; stay
+
+  class build,target workflow
+  class canary activity
+  class stay pain
+  class current app
+</code></pre>
+<p>Getting there was a saga (heh). The first cutover to self-management got rolled back because the versioned Worker would never register its Worker Deployment Version with Temporal Cloud: <code>PermissionDenied</code>, <code>WaitingForPollers</code>, the rollout hung, and since the catalog web app was in the same project, the catalog went down with it. The root cause turned out to be my <code>requirements.txt</code> saying <code>temporalio&gt;=1.29,&lt;2</code> with no lockfile, so a rebuild quietly floated to a new SDK version. Then there were a couple of rounds of revert, reapply, revert-the-revert, and finally a cutover in a maintenance window.</p>
+<p>Lesson: when the thing you’re deploying is the thing that does the deploying, <strong>pin everything</strong>, and make sure there’s a way to get back to a known-good image without the system’s help.</p>
+<h2 id="4-sagas-and-the-failures-you-cant-see">4. Sagas, and the failures you can’t see</h2>
+<p>Compensation went through two big rewrites, and both taught me something.</p>
+<p><strong>Round one: first-time vs. established.</strong> If a brand-new project fails halfway through, tear down everything this pass created. If an <em>established</em> project’s new rollout fails, do the opposite: leave production alone, report <code>WorkerRolloutFailed</code>, and keep the entity Workflow alive. Simple enough. Except every established project kept getting classified as “first-time,” because the reconcile Signal carried only the spec and stripped the status, and status was where “has an active version” lived. A failed rollout on the operator’s <em>own</em> project failed its entity Workflow. Fun.</p>
+<p><strong>Round two: stop swallowing errors.</strong> My early Activities caught their own exceptions and returned <code>{&quot;ok&quot;: False, &quot;error&quot;: ...}</code>, and the Workflow orchestrated compensation off of that. It worked, but every failure was invisible in Event History. You’d open a Workflow in the UI and see a row of green, successful Activities and a status that said “failed.” The fix was to let Activities <strong>actually fail</strong>, let the retry policy do its job, and run compensation in the saga when the failure finally surfaces. Now the red thing in the UI is the thing that broke.</p>
+
+<p>This is the same lesson as the credential rotation post, in a different costume: Event History is your debugger. Don’t hide things from it.</p>
+<h2 id="5-the-cloud-is-eventually-consistent-and-retry-policies-are-the-answer">5. The cloud is eventually consistent, and retry policies are the answer</h2>
+<p>A surprising amount of my commit history is variations of “wait for the thing that says it’s ready to actually be ready”:</p>
+<ul>
+<li><strong>New API keys</strong> can take minutes before Temporal Cloud accepts them. The operator validates a staged key before any pod sees it.</li>
+<li><strong>New Namespaces</strong> report <code>ACTIVE</code> before their gRPC host resolves. One rollout failed because the Worker Controller couldn’t resolve the host for five minutes, timed out, and compensated away a perfectly good Namespace. There’s now a <code>wait_for_temporal_cloud_namespace_dns</code> Activity that retries for up to 20 minutes (the <code>tmprl.cloud</code> negative DNS TTL is 15).</li>
+<li><strong>New IAM roles</strong> for Lambda Workers can’t be assumed for a few seconds after creation.</li>
+<li><strong>Lambda Worker Deployments</strong> can’t be deleted for five minutes after the last invocation, because Temporal remembers recent pollers.</li>
+</ul>
+<p>Without Temporal, each of those is a hand-rolled <code>while not ready: sleep()</code> that dies when the process restarts. With Temporal, it’s an Activity that raises a retryable error and a retry policy with a sensible schedule-to-close timeout. The difference is that the waiting is <em>durable</em>: a Worker deploy in the middle of a 20-minute DNS wait doesn’t matter.</p>
+<h2 id="6-make-retries-reattach-not-repeat">6. Make retries reattach, not repeat</h2>
+<p>CodeBuild builds are the most expensive thing the operator does. If the Worker restarts during a build, a naive retry starts a second build. Instead, <code>start_project_image_build</code> heartbeats the CodeBuild build ID, and on retry the Activity picks it back up from the heartbeat details and reattaches. Same trick for the Kubernetes Jobs that run the onboarding agent (more on that below): the Job name is derived from the run ID, so a retried Activity finds the Job that’s already running.</p>
+<h2 id="7-keep-secrets-out-of-event-history">7. Keep secrets out of Event History</h2>
+<p>I won’t repeat the whole argument from the <a href="/post/2026/rotate-temporal-cloud-credentials">credential rotation post</a>, but it applies everywhere here. Temporal API keys go straight into AWS Secrets Manager inside the Activity, and the Workflow only ever sees paths and metadata. User-entered demo secrets go from the web server straight to Secrets Manager and never enter Temporal at all. LiteLLM keys minted for agent runs go into a Kubernetes Secret owned by the Job and are revoked when the run ends.</p>
+<h2 id="8-some-things-temporal-cant-fix">8. Some things Temporal can’t fix</h2>
+<p>Not everything was a Workflow problem. For about a week, the operator Worker would occasionally wedge: the pod was <code>Running 1/1</code>, but its gRPC DNS resolver was stuck and it had stopped polling. Nothing in the reconcile path could fix it, because reconciling <em>requires</em> polling.</p>
+<p>I tried <code>ndots:2</code>, NodeLocal DNSCache, periodic re-resolution, and a heartbeat file driven by <code>describe_namespace</code> behind a liveness probe. My best guess is that it’s caused by the temporary Workers the canary spins up not shutting down cleanly. The commit message where I gave up and added the automatic pod restart back reads, in full, <em>“I’m very certain at this point it is being caused by the temporary worker not exiting cleanly, but whatever for now.”</em> Honest engineering. 🙃</p>
+<h2 id="9-dont-let-automation-destroy-what-it-cant-prove">9. Don’t let automation destroy what it can’t prove</h2>
+<p>One rule I added later: if you remove an extra Temporal Namespace from a live project’s spec, the operator does <strong>not</strong> delete it. It reports it as orphaned in status and waits for a human.</p>
+<p>Deleting a Temporal Cloud Namespace destroys its history irreversibly, and the “is this orphaned?” check reads from status. A status patch that failed to land would be enough to delete a live Namespace. Full project teardown is fine, because that’s an explicit, finalizer-held action. Inferring a deletion from a diff is not.</p>
+<hr/>
+<h1 id="what-it-unlocked">What It Unlocked</h1>
+<p>This is the part that surprised me. Once every step was a durable Workflow, new features stopped being new infrastructure. They became <em>composition</em>: a new Workflow that calls the Activities and Workflows that already exist.</p>
+<h2 id="other-people-started-shipping-demos">Other people started shipping demos</h2>
+
+<p>The catalog has <strong>23 demos</strong> and <strong>6 Instruqt workshops</strong> in it today, and a good chunk of them weren’t added by me. Other SAs open a PR with one file, CI validates it against the schema and cross-file rules, and it’s live a few minutes after merge. Nobody needs <code>kubectl</code> access. Nobody needs a Temporal Cloud admin key. Nobody needs to know what Flux is.</p>
+<h2 id="crashable-workspaces">Crashable workspaces</h2>
+<p>The best Temporal demo is killing a Worker in the middle of a Workflow and watching it pick up where it left off. That’s hard to do on a shared demo without ruining it for everyone else.</p>
+<p>So any signed-in user can now spin up a <strong>crashable workspace</strong>: a private, time-limited copy of a demo with its own Kubernetes namespace, hostname, and Task Queue, plus buttons to crash the Worker pods, scale them to zero, and bring them back. It’s a <code>CrashableWorkspaceWorkflow</code> per user per demo, with a TTL on a durable Timer. When it expires, it batch-terminates any open Workflows from that workspace and deletes everything. There’s a shareable guest link, so you can hand the customer the “crash” button yourself.</p>
+<p>For Lambda-backed demos (where there’s no pod to kill) there’s an <strong>isolated workspace</strong> instead: a per-user copy with its own Lambda functions and Worker Deployment, reusing the demo’s image and IAM roles.</p>
+<h2 id="workshops-that-publish-themselves">Workshops that publish themselves</h2>
+<p>Instruqt courses went from “remember the steps” to “merge to <code>main</code>.” The <code>InstruqtCourseWorkflow</code> builds the images, publishes them, injects the image references, and pushes the track. A <code>live-test</code> branch gets you a testing track for free.</p>
+<p>The catalog side brought along two companions:</p>
+<ul>
+<li>A <strong>LiteLLM gateway and token broker</strong>, so every learner in an AI workshop gets their own budget-capped, time-limited model key instead of a shared one.</li>
+<li>A small, KMS-signed <strong>secret-broker CLI</strong> that Instruqt setup scripts call to mint those keys inside the sandbox.</li>
+</ul>
+<h2 id="onboarding-from-the-ui-with-an-agent">Onboarding from the UI, with an agent</h2>
+<p>The newest piece: you don’t have to write the YAML at all. In the catalog, “Add a Demo” starts a <code>CatalogOnboardingWorkflow</code> (one per user). You point it at a GitHub repo, and a Claude Agent SDK agent clones it into a locked-down Kubernetes Job (no service account token, no cloud credentials, egress firewall) and drafts the <code>DemoProject</code> for you. It explains each field, answers questions about a section, and suggests patches to the demo repo when something’s hardcoded that shouldn’t be.</p>
+<p>The agent’s output is a <strong>proposal</strong>. It always goes through the same validator CI uses, and the user applies it or ignores it. The agent never touches the draft directly.</p>
+<p>Then there’s an optional <strong>48-hour test deploy</strong>: an <code>OnboardingPreviewWorkflow</code> creates a hidden <code>pv-&lt;name&gt;</code> project, waits for it to promote, and tears it down on a durable Timer. Which, if you squint, is just the canary from lesson 3 with a friendlier UI. That’s the composition thing I mean: the preview didn’t need new provisioning code; it reused the canary’s cleanup proof.</p>
+<p>The hand-off is a pull request the user opens as themselves. Once it merges, the regular GitOps path takes over.</p>
+
+<h2 id="demos-that-talk-to-each-other">Demos that talk to each other</h2>
+<p>Projects can declare extra Temporal Namespaces and Nexus Endpoints, which means demos can call each other. My favorite example: the booth game we bring to events calls the event lead tracker demo over Nexus, so playing the game checks you into the event. Two demos, two Namespaces, one YAML change each.</p>
+<hr/>
+<h1 id="still-learning">Still Learning</h1>
+
+<p>A few things I’d tell myself on day one:</p>
+<ul>
+<li><strong>Start with Worker Versioning.</strong> Patching a Workflow that lives for months is a trap. Pinned Workflows plus a Continue-As-New hop at a safe point is so much simpler.</li>
+<li><strong>Let Activities fail.</strong> Returning error objects from Activities feels tidy and makes your Event History lie to you.</li>
+<li><strong>Split Activities on retry boundaries from the start.</strong> I refactored the “one big reconcile Activity” into granular steps twice. Ask “what should be retried independently?” up front.</li>
+<li><strong>Pin your SDK and use a lockfile,</strong> especially for anything that deploys itself.</li>
+</ul>
+<hr/>
+<h1 id="wrap-up">Wrap Up</h1>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th></th><th>Before</th><th>tmprl-demo.cloud</th></tr></thead><tbody><tr><td><strong>Adding a demo</strong></td><td>README + six commands + luck</td><td>One YAML file in a PR</td></tr><tr><td><strong>Temporal credentials</strong></td><td>Long-lived keys in <code>.env</code> files</td><td>Per-demo Namespace, 30-day scoped key, auto-rotated</td></tr><tr><td><strong>Deploys</strong></td><td>Whoever has access</td><td>Candidate, smoke check, promote; failed candidates never take the route</td></tr><tr><td><strong>Teardown</strong></td><td>Mostly never</td><td>Delete the file; finalizer-held, ordered teardown</td></tr><tr><td><strong>Workshops</strong></td><td>Hand-built images, hand-pushed tracks</td><td>Merge to <code>main</code>; testing track per branch</td></tr><tr><td><strong>”Can I crash the Worker?”</strong></td><td>Not on the shared demo</td><td>Private crashable workspace, with a guest link</td></tr><tr><td><strong>Operator upgrades</strong></td><td>n/a</td><td>Self-built, canary-gated, Pinned Worker Versioning</td></tr></tbody></table>
+
+<p>The thing I keep noticing is how much of this platform is <em>waiting</em>. Waiting on builds, on DNS, on API keys, on rollouts, on 30-day timers, on a user to click “End preview.” Temporal turned all of that waiting from something I had to babysit into something I could just write down. And once the waiting was solved, the interesting features (workspaces, previews, the onboarding agent) were mostly a matter of stitching together Workflows that already existed.</p> </div> </div> <script type="module" src="/_astro/CodeBlock.astro_astro_type_script_index_0_lang.CtkjkfEA.js"></script> <script type="module">function o(){const a=document.querySelector(".post-view-content");if(!a)return;a.querySelectorAll("img").forEach(e=>{e.dataset.zoomable!=="true"&&(e.dataset.zoomable="true",e.style.cursor="pointer",e.addEventListener("click",()=>{const t=document.createElement("div");t.className="zoomable-overlay";const n=document.createElement("img");n.src=e.src,n.alt=e.alt,t.appendChild(n),document.body.appendChild(t),t.addEventListener("click",()=>{t.remove()}),document.addEventListener("keydown",function d(r){r.key==="Escape"&&(t.remove(),document.removeEventListener("keydown",d))})}))})}document.readyState==="loading"?document.addEventListener("DOMContentLoaded",o):o();document.addEventListener("astro:page-load",o);</script> <script type="module" src="/_astro/Mermaid.astro_astro_type_script_index_0_lang.B3Hn6hcL.js"></script>  </main> <footer class="SiteFooter"> <div class="About"> <img src="/images/profilePicture.png" alt="Michael Jones" width="44" height="44" loading="lazy"> <p>Written by Michael Jones, mostly about Temporal and durable execution, with older posts on MuleSoft and DataWeave.</p> </div> <nav aria-label="Elsewhere"> <a href="https://github.com/mikeacjones" target="_blank" rel="noreferrer">GitHub</a> <a href="https://www.linkedin.com/in/michael-jones-5a870678" target="_blank" rel="noreferrer">LinkedIn</a> <a href="https://stackoverflow.com/users/10890536/michael-jones" target="_blank" rel="noreferrer">Stack Overflow</a> <a href="/rss.xml">RSS</a> <a href="/sitemap-index.xml">Sitemap</a> </nav> </footer> </body></html>
