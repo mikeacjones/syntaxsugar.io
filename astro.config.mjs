@@ -5,8 +5,13 @@ import rehypeExternalLinks from 'rehype-external-links';
 import { readFileSync } from 'fs';
 import { parse as parsePlist } from 'fast-plist';
 import { bundledLanguages } from 'shiki';
-import { transformerNotationDiff } from '@shikijs/transformers';
+import {
+  transformerMetaHighlight,
+  transformerNotationDiff,
+  transformerNotationHighlight,
+} from '@shikijs/transformers';
 import remarkCleanLang from './src/plugins/remark-clean-lang.mjs';
+import temporalDark from './src/plugins/shiki-temporal-theme.mjs';
 import { syncCourses } from './scripts/sync-courses.mjs';
 
 // Pulls the courses in courses/*.json into .courses/ before content loads. A
@@ -62,10 +67,15 @@ export default defineConfig({
     // and rendered client-side by the Mermaid component.
     syntaxHighlight: { type: 'shiki', excludeLangs: ['math', 'mermaid'] },
     shikiConfig: {
-      themes: { light: 'github-light', dark: 'material-theme-palenight' },
+      themes: { light: 'github-light', dark: temporalDark },
       wrap: true,
       langs: [...Object.keys(bundledLanguages), dataWeaveLang, ramlLang],
-      transformers: [transformerNotationDiff()],
+      // Highlight lines with ```python {3,5-7} or a // [!code highlight] comment.
+      transformers: [
+        transformerNotationDiff(),
+        transformerMetaHighlight(),
+        transformerNotationHighlight(),
+      ],
     },
     remarkPlugins: [remarkCleanLang],
     rehypePlugins: [

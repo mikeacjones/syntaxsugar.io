@@ -17,6 +17,7 @@
   --code-bg: #ffffff;
   --add-bg: rgba(31, 136, 61, 0.12);
   --remove-bg: rgba(207, 34, 46, 0.1);
+  --code-gutter: #5b6478;
 
   --font-text: 'JetBrains Mono', ui-monospace, Menlo, monospace;
   --font-code: 'JetBrains Mono', ui-monospace, Menlo, monospace;
@@ -51,6 +52,7 @@
     --code-bg: #171626;
     --add-bg: rgba(31, 241, 165, 0.12);
     --remove-bg: rgba(248, 81, 73, 0.14);
+    --code-gutter: #6b7f9e;
   }
 }
 
@@ -68,6 +70,7 @@
   --code-bg: #171626;
   --add-bg: rgba(31, 241, 165, 0.12);
   --remove-bg: rgba(248, 81, 73, 0.14);
+  --code-gutter: #6b7f9e;
 }
 
 /* ===== Base ===== */
@@ -610,6 +613,8 @@ code:not(pre code) {
 }
 
 /* ===== Code blocks =====
+   Laid out like the demo buildkit's code view: a numbered gutter, and
+   highlighted lines marked with a bar and a tint in the --mark color.
    Shiki renders both themes; flip to the dark token colors with the page. */
 pre.astro-code,
 pre.shiki {
@@ -623,6 +628,13 @@ pre.shiki {
   border-radius: var(--radius);
   border: 1px solid var(--rule);
   background-color: var(--code-bg) !important;
+  tab-size: 2;
+}
+
+pre.astro-code:has(.line) {
+  padding-left: 0;
+  padding-right: 0;
+  counter-reset: line;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -647,39 +659,62 @@ pre.astro-code code {
   padding: 0;
 }
 
+/* A grid drops the newline text between the line spans, so each line is a
+   block without doubling the spacing. */
+pre.astro-code:has(.line) code {
+  display: grid;
+}
+
 pre.astro-code .line {
+  position: relative;
+  min-height: 1lh;
+  padding: 0 1.4rem 0 3.4rem;
+  border-left: 3px solid transparent;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
 
-pre.astro-code .line.diff {
-  position: relative;
-  display: inline-block;
-  width: calc(100% + 2.8rem);
-  margin: 0 -1.4rem;
-  padding: 0 1.4rem;
+/* The number sits in the left padding so wrapped lines indent under the code. */
+pre.astro-code .line::before {
+  counter-increment: line;
+  content: counter(line);
+  position: absolute;
+  left: 0;
+  width: 2.2rem;
+  text-align: right;
+  color: var(--code-gutter);
+  user-select: none;
+}
+
+pre.astro-code .line.highlighted {
+  background: color-mix(in srgb, var(--mark) 12%, transparent);
+  border-left-color: var(--mark);
 }
 
 pre.astro-code .line.diff.add {
   background: var(--add-bg);
+  border-left-color: #1f883d;
 }
 
 pre.astro-code .line.diff.remove {
   background: var(--remove-bg);
+  border-left-color: #cf222e;
   opacity: 0.75;
 }
 
-pre.astro-code .line.diff::before {
+pre.astro-code .line.diff::after {
   position: absolute;
-  left: 0.5rem;
+  left: 2.55rem;
+  top: 0;
+  user-select: none;
 }
 
-pre.astro-code .line.diff.add::before {
+pre.astro-code .line.diff.add::after {
   content: '+';
   color: #1f883d;
 }
 
-pre.astro-code .line.diff.remove::before {
+pre.astro-code .line.diff.remove::after {
   content: '-';
   color: #cf222e;
 }
@@ -1108,10 +1143,8 @@ pre.astro-code .line.diff.remove::before {
     padding-right: 1rem;
   }
 
-  pre.astro-code .line.diff {
-    width: calc(100% + 2rem);
-    margin: 0 -1rem;
-    padding: 0 1rem;
+  pre.astro-code .line {
+    padding-right: 1rem;
   }
 }
 
